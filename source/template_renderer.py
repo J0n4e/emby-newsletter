@@ -277,6 +277,11 @@ class SecureTemplateRenderer:
 
     def _render_movie_item(self, movie: Dict[str, Any]) -> str:
         """Render a single movie item"""
+        # Handle case where movie might not be a proper dict
+        if not isinstance(movie, dict):
+            logger.warning(f"Movie item is not a dictionary: {type(movie)}")
+            return ""
+
         title = self._secure_escape(movie.get('title', 'Unknown'))
         year = self._secure_escape(movie.get('year', ''))
         overview = self._secure_escape(movie.get('tmdb_overview') or movie.get('overview', ''))
@@ -297,10 +302,16 @@ class SecureTemplateRenderer:
         # Build genres HTML
         genres_html = ''
         genres = movie.get('tmdb_genres') or movie.get('genres', [])
-        if genres:
+        if genres and isinstance(genres, list):
             genre_tags = []
             for genre in genres[:5]:  # Limit to 5 genres
-                genre_name = self._secure_escape(genre if isinstance(genre, str) else genre.get('Name', ''))
+                if isinstance(genre, dict):
+                    genre_name = self._secure_escape(genre.get('Name', ''))
+                elif isinstance(genre, str):
+                    genre_name = self._secure_escape(genre)
+                else:
+                    genre_name = self._secure_escape(str(genre))
+
                 if genre_name:
                     genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
 
@@ -321,17 +332,22 @@ class SecureTemplateRenderer:
 
     def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
         """Render a single TV show item"""
+        # Handle case where show might not be a proper dict
+        if not isinstance(show, dict):
+            logger.warning(f"TV show item is not a dictionary: {type(show)}")
+            return ""
+
         title = self._secure_escape(show.get('title', 'Unknown'))
         overview = ''
 
         # Get overview from TMDB data if available
         tmdb_data = show.get('tmdb_data', {})
-        if tmdb_data and tmdb_data.get('overview'):
+        if isinstance(tmdb_data, dict) and tmdb_data.get('overview'):
             overview = self._secure_escape(tmdb_data['overview'])
 
         # Build poster HTML
         poster_url = ''
-        if tmdb_data and tmdb_data.get('poster_path'):
+        if isinstance(tmdb_data, dict) and tmdb_data.get('poster_path'):
             poster_url = f"https://image.tmdb.org/t/p/w500{self._secure_escape(tmdb_data['poster_path'])}"
         elif show.get('poster_url'):
             poster_url = self._secure_escape(show['poster_url'])
@@ -347,23 +363,25 @@ class SecureTemplateRenderer:
         # Build seasons HTML
         seasons_html = ''
         seasons = show.get('seasons', {})
-        if seasons:
+        if isinstance(seasons, dict):
             season_parts = []
             for season_name, episodes in seasons.items():
                 season_name_escaped = self._secure_escape(season_name)
                 season_parts.append(f'<div class="tv-season"><h4>{season_name_escaped}</h4>')
 
-                for episode in episodes[:10]:  # Limit episodes per season
-                    episode_num = self._secure_escape(episode.get('episode_number', ''))
-                    episode_name = self._secure_escape(episode.get('name', 'Unknown'))
-                    episode_overview = self._secure_escape(episode.get('overview', ''))
+                if isinstance(episodes, list):
+                    for episode in episodes[:10]:  # Limit episodes per season
+                        if isinstance(episode, dict):
+                            episode_num = self._secure_escape(episode.get('episode_number', ''))
+                            episode_name = self._secure_escape(episode.get('name', 'Unknown'))
+                            episode_overview = self._secure_escape(episode.get('overview', ''))
 
-                    episode_overview_html = f'<div style="margin-top: 5px; font-size: 0.9em; color: #666;">{episode_overview}</div>' if episode_overview else ''
+                            episode_overview_html = f'<div style="margin-top: 5px; font-size: 0.9em; color: #666;">{episode_overview}</div>' if episode_overview else ''
 
-                    season_parts.append(f'''<div class="episode">
-                            <strong>Episode {episode_num}: {episode_name}</strong>
-                            {episode_overview_html}
-                        </div>''')
+                            season_parts.append(f'''<div class="episode">
+                                    <strong>Episode {episode_num}: {episode_name}</strong>
+                                    {episode_overview_html}
+                                </div>''')
 
                 season_parts.append('</div>')
 
@@ -455,6 +473,13 @@ class SecureTemplateRenderer:
     def _sanitize_nested_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize nested dictionary data"""
         sanitized = {}
+
+        # Handle case where data might be a string instead of dict
+        if isinstance(data, str):
+            return {'name': self._sanitize_string(data)}
+
+        if not isinstance(data, dict):
+            return {}
 
         for key, value in data.items():
             if isinstance(value, str):
