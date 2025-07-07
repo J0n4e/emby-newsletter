@@ -1,4 +1,48 @@
-#!/usr/bin/env python3
+# Build poster HTML
+if poster_url:
+    poster_html = f'''<img src="{poster_url}" alt="{title} poster">
+                                <div class="poster-overlay"></div>'''
+else:
+    poster_html = '<div class="no-poster">No Poster<br>Available</div>'
+
+# Build meta information
+meta_parts = []
+if year:
+    meta_parts.append(f'<span class="item-year">{year}</span>')
+
+meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
+
+# Build overview HTML (truncate if too long)
+if overview and len(overview) > 300:
+    overview = overview[:300] + "..."
+overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
+
+# Build genres HTML
+genres_html = ''
+genres = movie.get('tmdb_genres') or movie.get('genres', [])
+if genres and isinstance(genres, list):
+    genre_tags = []
+    for genre in genres[:5]:  # Limit to 5 genres
+        if isinstance(genre, dict):
+            genre_name = self._secure_escape(genre.get('Name', ''))
+        elif isinstance(genre, str):
+            genre_name = self._secure_escape(genre)
+        else:
+            genre_name = self._secure_escape(str(genre))
+
+        if genre_name:
+            genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
+
+    if genre_tags:
+        genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
+
+return f'''                            <div class="item">
+                                <div class="item-poster">
+                                    {poster_html}
+                                </div>
+                                <div class="item-content">
+                                    <div class="item-title">{title}</div>
+                                    {meta_html# !/usr/bin/env python3
 """
 Secure template rendering for Emby Newsletter using string templates
 """
@@ -10,7 +54,8 @@ import re
 from typing import Dict, List, Any
 from string import Template
 
-logger = logging.getLogger(__name__)
+logger =
+logging.getLogger(__name__)
 
 
 class SecureTemplateRenderer:
@@ -83,278 +128,529 @@ class SecureTemplateRenderer:
         # Build HTML structure
         html_parts = []
 
-        # HTML header with modern styling
+        # HTML header with professional dark theme and red accents
         html_parts.append(f'''<!DOCTYPE html>
 <html lang="{language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <title>{title}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #ffffff;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0;
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            min-height: 100vh;
-        }}
-        .container {{
-            background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%);
+            color: #e5e7eb;
             margin: 0;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            border-radius: 0;
+            padding: 0;
+            background: #0a0a0a;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }}
+
+        .email-wrapper {{
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }}
+
+        .container {{
+            max-width: 680px;
+            margin: 0 auto;
+            background: #111827;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 
+                        0 0 0 1px rgba(255, 255, 255, 0.05);
+        }}
+
+        .header {{
+            background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+            position: relative;
+            padding: 48px 40px;
+            text-align: center;
             overflow: hidden;
         }}
-        .header {{
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
-            text-align: center;
-            padding: 40px 30px;
+
+        .header::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
         }}
+
+        .header-content {{
+            position: relative;
+            z-index: 2;
+        }}
+
         .header h1 {{
             color: #ffffff;
-            margin: 0;
-            font-size: 2.5em;
+            margin: 0 0 12px 0;
+            font-size: 2.75em;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            letter-spacing: -0.025em;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }}
-        .header p {{
+
+        .header .subtitle {{
             color: rgba(255, 255, 255, 0.9);
-            margin: 15px 0 0 0;
-            font-size: 1.1em;
-            font-weight: 300;
+            margin: 0;
+            font-size: 1.125em;
+            font-weight: 400;
+            letter-spacing: 0.015em;
         }}
+
+        .divider {{
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #dc2626 50%, transparent 100%);
+            margin: 0;
+        }}
+
         .section {{
-            padding: 40px 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 48px 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }}
+
+        .section:last-of-type {{
+            border-bottom: none;
+        }}
+
+        .section-header {{
+            display: flex;
+            align-items: center;
+            margin-bottom: 32px;
+            gap: 16px;
+        }}
+
         .section h2 {{
-            color: #ef4444;
-            font-size: 1.8em;
+            color: #f9fafb;
+            font-size: 1.875em;
             font-weight: 600;
-            margin: 0 0 30px 0;
-            padding-bottom: 15px;
-            border-bottom: 3px solid rgba(239, 68, 68, 0.4);
+            margin: 0;
+            letter-spacing: -0.025em;
         }}
+
+        .section-icon {{
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            box-shadow: 0 8px 16px rgba(220, 38, 38, 0.3);
+        }}
+
+        .section-line {{
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, #dc2626 0%, rgba(220, 38, 38, 0.2) 100%);
+            border-radius: 1px;
+        }}
+
         .item {{
-            background: linear-gradient(145deg, #1a1a1a 0%, #262626 100%);
-            margin: 25px 0;
-            border-radius: 15px;
+            background: linear-gradient(145deg, #1f2937 0%, #374151 100%);
+            margin: 24px 0;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4),
+                        0 0 0 1px rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(220, 38, 38, 0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             display: table;
             width: 100%;
             table-layout: fixed;
         }}
+
+        .item:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(220, 38, 38, 0.3);
+        }}
+
         .item-poster {{
             display: table-cell;
-            width: 120px;
-            height: 180px;
+            width: 140px;
+            height: 210px;
             vertical-align: top;
             padding: 0;
+            position: relative;
         }}
+
         .item-poster img {{
-            width: 120px;
-            height: 180px;
+            width: 140px;
+            height: 210px;
             object-fit: cover;
             display: block;
         }}
+
         .no-poster {{
-            width: 120px;
-            height: 180px;
-            background: linear-gradient(135deg, #262626 0%, #404040 100%);
+            width: 140px;
+            height: 210px;
+            background: linear-gradient(145deg, #374151 0%, #4b5563 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #999;
-            font-size: 0.8em;
+            color: #9ca3af;
+            font-size: 0.875em;
             text-align: center;
-            border-radius: 8px;
+            font-weight: 500;
         }}
+
+        .poster-overlay {{
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(90deg, transparent 0%, rgba(31, 41, 55, 0.8) 100%);
+        }}
+
         .item-content {{
             display: table-cell;
-            padding: 25px;
+            padding: 32px;
             vertical-align: top;
         }}
+
         .item-title {{
-            font-size: 1.4em;
+            font-size: 1.5em;
             font-weight: 700;
-            color: #ffffff;
+            color: #f9fafb;
             margin-bottom: 8px;
             line-height: 1.3;
+            letter-spacing: -0.025em;
         }}
-        .item-year {{
-            color: #fca5a5;
-            font-size: 0.95em;
-            font-weight: 500;
-            margin-bottom: 15px;
-        }}
-        .item-overview {{
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.95em;
-            line-height: 1.5;
+
+        .item-meta {{
+            display: flex;
+            align-items: center;
+            gap: 16px;
             margin-bottom: 20px;
         }}
+
+        .item-year {{
+            background: rgba(220, 38, 38, 0.15);
+            color: #fca5a5;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875em;
+            font-weight: 500;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }}
+
+        .item-rating {{
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875em;
+            font-weight: 500;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }}
+
+        .item-overview {{
+            color: #d1d5db;
+            font-size: 0.9375em;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            font-weight: 400;
+        }}
+
+        .genres {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: auto;
+        }}
+
         .genre-tag {{
             background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             color: #ffffff;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.8em;
+            font-size: 0.8125em;
             font-weight: 500;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            display: inline-block;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }}
+
+        .tv-seasons {{
+            margin-top: 24px;
+        }}
+
         .tv-season {{
-            margin: 20px 0;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            border-left: 4px solid #ef4444;
+            background: rgba(220, 38, 38, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 16px 0;
+            border-left: 4px solid #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.2);
         }}
+
         .tv-season h4 {{
-            color: #fca5a5;
-            margin: 0 0 15px 0;
-            font-size: 1.2em;
+            color: #f87171;
+            margin: 0 0 16px 0;
+            font-size: 1.125em;
             font-weight: 600;
+            letter-spacing: -0.025em;
         }}
+
         .episode {{
-            background: rgba(255, 255, 255, 0.08);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 16px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
             border-left: 3px solid #dc2626;
+            transition: background 0.2s ease;
         }}
-        .episode strong {{
-            color: #fca5a5;
+
+        .episode:hover {{
+            background: rgba(255, 255, 255, 0.08);
+        }}
+
+        .episode-title {{
+            color: #f87171;
             font-weight: 600;
+            font-size: 0.9375em;
+            margin-bottom: 6px;
         }}
+
         .episode-overview {{
-            margin-top: 8px;
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.4;
+            color: #d1d5db;
+            font-size: 0.875em;
+            line-height: 1.5;
+            font-weight: 400;
         }}
+
         .footer {{
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             text-align: center;
-            padding: 40px 30px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9em;
+            padding: 48px 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }}
+
+        .footer-logo {{
+            font-size: 1.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            letter-spacing: -0.025em;
+        }}
+
+        .footer-content {{
+            color: #9ca3af;
+            font-size: 0.9375em;
+            line-height: 1.6;
+        }}
+
         .footer a {{
             color: #ef4444;
             text-decoration: none;
             font-weight: 500;
+            transition: color 0.2s ease;
         }}
-        .footer-logo {{
-            font-size: 1.5em;
-            font-weight: 700;
-            color: #ef4444;
-            margin-bottom: 15px;
+
+        .footer a:hover {{
+            color: #f87171;
         }}
+
+        .footer-divider {{
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+            margin: 24px 0;
+        }}
+
         .no-items {{
             text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-style: italic;
-            padding: 60px 20px;
-            background: rgba(239, 68, 68, 0.05);
-            border-radius: 15px;
-            margin: 20px 0;
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #9ca3af;
+            padding: 80px 40px;
+            background: rgba(220, 38, 38, 0.05);
+            border-radius: 16px;
+            margin: 24px 0;
+            border: 1px solid rgba(220, 38, 38, 0.15);
         }}
-        @media only screen and (max-width: 600px) {{
+
+        .no-items-icon {{
+            font-size: 4em;
+            margin-bottom: 24px;
+            opacity: 0.6;
+        }}
+
+        .no-items h3 {{
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #f9fafb;
+            margin: 0 0 8px 0;
+        }}
+
+        .no-items p {{
+            font-size: 1em;
+            margin: 0;
+            line-height: 1.6;
+        }}
+
+        @media only screen and (max-width: 640px) {{
+            .email-wrapper {{
+                padding: 10px;
+            }}
+
+            .container {{
+                border-radius: 12px;
+            }}
+
+            .header {{
+                padding: 32px 24px;
+            }}
+
+            .header h1 {{
+                font-size: 2.25em;
+            }}
+
+            .section {{
+                padding: 32px 24px;
+            }}
+
+            .section h2 {{
+                font-size: 1.5em;
+            }}
+
+            .section-icon {{
+                width: 40px;
+                height: 40px;
+                font-size: 1.25em;
+            }}
+
             .item {{
                 display: block;
+                margin: 20px 0;
             }}
+
             .item-poster {{
                 display: block;
                 width: 100%;
-                height: 200px;
+                height: 240px;
                 text-align: center;
             }}
+
             .item-poster img {{
                 width: auto;
-                height: 200px;
+                height: 240px;
                 max-width: 100%;
             }}
+
             .no-poster {{
                 width: 100%;
-                height: 200px;
+                height: 240px;
             }}
+
+            .poster-overlay {{
+                display: none;
+            }}
+
             .item-content {{
                 display: block;
+                padding: 24px;
+            }}
+
+            .tv-season {{
                 padding: 20px;
+            }}
+
+            .footer {{
+                padding: 32px 24px;
             }}
         }}
     </style>
 </head>
 <body>
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-        <tr>
-            <td>
-                <div class="container">
-                    <div class="header">
-                        <h1>{title}</h1>
-                        <p>{subtitle}</p>
-                    </div>''')
+    <div class="email-wrapper">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td>
+                    <div class="container">
+                        <div class="header">
+                            <div class="header-content">
+                                <h1>{title}</h1>
+                                <p class="subtitle">{subtitle}</p>
+                            </div>
+                        </div>
+                        <div class="divider"></div>''')
 
         # Movies section
         if movies and len(movies) > 0:
             html_parts.append('''
-                    <div class="section">
-                        <h2>🎬 New Movies</h2>''')
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon">🎬</div>
+                                <h2>New Movies</h2>
+                                <div class="section-line"></div>
+                            </div>''')
 
             for movie in movies:
                 movie_html = self._render_movie_item(movie)
                 html_parts.append(movie_html)
 
-            html_parts.append('                    </div>')
+            html_parts.append('                        </div>')
 
         # TV Shows section
         if tv_shows and len(tv_shows) > 0:
             html_parts.append('''
-                    <div class="section">
-                        <h2>📺 New TV Episodes</h2>''')
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon">📺</div>
+                                <h2>New TV Episodes</h2>
+                                <div class="section-line"></div>
+                            </div>''')
 
             for show in tv_shows:
                 show_html = self._render_tv_show_item(show)
                 html_parts.append(show_html)
 
-            html_parts.append('                    </div>')
+            html_parts.append('                        </div>')
 
         # No content message
         if (not movies or len(movies) == 0) and (not tv_shows or len(tv_shows) == 0):
             html_parts.append('''
-                    <div class="section">
-                        <div class="no-items">
-                            <p>No new content has been added recently.</p>
-                            <p>Check back soon for the latest movies and TV shows!</p>
-                        </div>
-                    </div>''')
+                        <div class="section">
+                            <div class="no-items">
+                                <div class="no-items-icon">🎭</div>
+                                <h3>No New Content</h3>
+                                <p>No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
+                            </div>
+                        </div>''')
 
         # Footer
         html_parts.append(f'''
-                    <div class="footer">
-                        <div class="footer-logo">{emby_owner_name}</div>
-                        <p>
-                            🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
-                        </p>
-                        <p>
-                            <small>
-                                📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
-                            </small>
-                        </p>
+                        <div class="footer">
+                            <div class="footer-logo">{emby_owner_name}</div>
+                            <div class="footer-divider"></div>
+                            <div class="footer-content">
+                                <p>
+                                    🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
+                                </p>
+                                <p>
+                                    📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </td>
-        </tr>
-    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>''')
 
@@ -373,12 +669,17 @@ class SecureTemplateRenderer:
 
         # Build poster HTML
         if poster_url:
-            poster_html = f'<img src="{poster_url}" alt="{title} poster">'
+            poster_html = f'''<img src="{poster_url}" alt="{title} poster">
+                                <div class="poster-overlay"></div>'''
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
-        # Build year HTML
-        year_html = f'<div class="item-year">({year})</div>' if year else ''
+        # Build meta information
+        meta_parts = []
+        if year:
+            meta_parts.append(f'<span class="item-year">{year}</span>')
+
+        meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
 
         # Build overview HTML (truncate if too long)
         if overview and len(overview) > 300:
@@ -402,19 +703,19 @@ class SecureTemplateRenderer:
                     genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
 
             if genre_tags:
-                genres_html = f'<div>{"".join(genre_tags)}</div>'
+                genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
-        return f'''                        <div class="item">
-                            <div class="item-poster">
-                                {poster_html}
-                            </div>
-                            <div class="item-content">
-                                <div class="item-title">{title}</div>
-                                {year_html}
-                                {overview_html}
-                                {genres_html}
-                            </div>
-                        </div>'''
+        return f'''                            <div class="item">
+                                <div class="item-poster">
+                                    {poster_html}
+                                </div>
+                                <div class="item-content">
+                                    <div class="item-title">{title}</div>
+                                    {meta_html}
+                                    {overview_html}
+                                    {genres_html}
+                                </div>
+                            </div>'''
 
     def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
         """Render a single TV show item"""
