@@ -1,16 +1,14 @@
+version: '3.8'
+
 services:
-  jellyfin-newsletter:
-    container_name: jellyfin-newsletter
-    image: 'ghcr.io/seaweedbraincy/jellyfin-newsletter:v0.6.2'
-    environment:
-      USER_UID: 1000
-      USER_GID: 1000
-      TZ: 'America/Toronto'
+  emby-newsletter:
+    image: ghcr.io/j0n4e/emby-newsletter:latest
+    container_name: emby-newsletter
     volumes:
-      - './config:/app/config'
-    
-
-
-
-
-
+      - ./config:/app/config
+    environment:
+      - TZ=Europe/Paris  # Change this to your timezone
+      - PUID=1000        # Change this to your user ID
+      - PGID=1000        # Change this to your group ID
+    restart: unless-stopped
+    user: "1000:1000"    # Change this to your user:group IDs
