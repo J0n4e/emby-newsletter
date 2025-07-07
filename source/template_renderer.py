@@ -64,6 +64,9 @@ class SecureTemplateRenderer:
                 with open(template_path, 'r', encoding='utf-8') as f:
                     template_content = f.read()
 
+                # Clean up any duplicate content at the end
+                template_content = self._clean_template(template_content)
+
                 # Use simple string replacement for template variables
                 html_content = self._render_template_string(template_content, safe_context)
 
@@ -80,6 +83,19 @@ class SecureTemplateRenderer:
             # Fallback to built-in template on error
             safe_context = self._sanitize_context(context)
             return self._build_html_email(safe_context)
+
+    def _clean_template(self, template_content: str) -> str:
+        """Clean up template content and remove duplicates"""
+        # Find the proper end of the HTML
+        proper_end = template_content.find('</html>')
+        if proper_end != -1:
+            # Find the last occurrence of </html>
+            last_end = template_content.rfind('</html>')
+            if last_end != proper_end:
+                # Keep only content up to the first </html>
+                template_content = template_content[:proper_end + 7]
+
+        return template_content
 
     def _render_template_string(self, template_content: str, context: Dict[str, Any]) -> str:
         """Render template string with context using simple Jinja2-like syntax"""
@@ -312,6 +328,8 @@ class SecureTemplateRenderer:
                          process_season_loop, content, flags=re.DOTALL)
 
         return content
+
+    def _build_html_email(self, context: Dict[str, Any]) -> str:
         """Build HTML email using secure string construction"""
         # Escape all context values
         title = self._secure_escape(context.get('title', 'Emby Newsletter'))
