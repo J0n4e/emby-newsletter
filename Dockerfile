@@ -39,13 +39,3 @@ ENV PYTHONPATH=/app/source
 ENV PYTHONUNBUFFERED=1
 
 ENTRYPOINT ["./entrypoint.sh"]
-    && chown -R emby:emby /app /var/log
-
-# Switch to non-root user
-USER emby
-
-# Set environment variables
-ENV PYTHONPATH=/app/src
-ENV PYTHONUNBUFFERED=1
-
-ENTRYPOINT ["./entrypoint.sh"]
