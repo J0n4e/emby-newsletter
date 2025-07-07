@@ -15,7 +15,8 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY src/ ./src/
+COPY source/ ./source/
+COPY templates/ ./templates/
 COPY config/ ./config/
 COPY entrypoint.sh .
 COPY check_config.py .
@@ -28,6 +29,16 @@ RUN groupadd -g 1000 emby && useradd -u 1000 -g emby -m emby
 
 # Create necessary directories and set permissions
 RUN mkdir -p /var/log \
+    && chown -R emby:emby /app /var/log
+
+# Switch to non-root user
+USER emby
+
+# Set environment variables
+ENV PYTHONPATH=/app/source
+ENV PYTHONUNBUFFERED=1
+
+ENTRYPOINT ["./entrypoint.sh"]
     && chown -R emby:emby /app /var/log
 
 # Switch to non-root user

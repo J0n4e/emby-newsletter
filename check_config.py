@@ -10,10 +10,10 @@ import argparse
 import os
 from pathlib import Path
 
-# Add src directory to path for imports
-src_path = str(Path(__file__).parent / 'src')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
+# Add source directory to path for imports
+source_path = str(Path(__file__).parent / 'source')
+if source_path not in sys.path:
+    sys.path.insert(0, source_path)
 
 from configuration import ConfigurationManager
 from configuration_checker import ConfigurationChecker
@@ -104,7 +104,7 @@ Examples:
 
         if success:
             print("\n🎉 Configuration is ready to use!")
-            print("You can now run the newsletter with: python src/main.py")
+            print("You can now run the newsletter with: python source/main.py")
             return 0
         else:
             print("\n❌ Please fix the configuration errors above before running the newsletter.")
