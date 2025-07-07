@@ -12,6 +12,9 @@ from string import Template
 
 logger = logging.getLogger(__name__)
 
+# Set logging level to DEBUG to see the new debug messages
+logging.basicConfig(level=logging.DEBUG)
+
 
 class SecureTemplateRenderer:
     """Secure template renderer with XSS protection using string templates"""
@@ -43,10 +46,15 @@ class SecureTemplateRenderer:
             ('onerror', 'o_nerror'),
         ]
 
+        original_escaped = escaped  # Store original to check if modified
         for pattern, replacement in dangerous_patterns:
             escaped = escaped.replace(pattern.lower(), replacement)
             escaped = escaped.replace(pattern.upper(), replacement.upper())
             escaped = escaped.replace(pattern.capitalize(), replacement.capitalize())
+
+        if escaped != original_escaped:
+            logger.debug(
+                f"Secure escape modified string. Original (partial): '{original_escaped[:50]}...', Modified (partial): '{escaped[:50]}...'")
 
         return escaped
 
@@ -448,7 +456,7 @@ class SecureTemplateRenderer:
             html_content += '''
                         <div class="section">
                             <div class="section-header">
-                                <div class="section-icon">🎬</div>
+                                <div class="section-icon">汐</div>
                                 <h2>New Movies</h2>
                                 <div class="section-line"></div>
                             </div>'''
@@ -464,7 +472,7 @@ class SecureTemplateRenderer:
             html_content += '''
                         <div class="section">
                             <div class="section-header">
-                                <div class="section-icon">📺</div>
+                                <div class="section-icon">銅</div>
                                 <h2>New TV Episodes</h2>
                                 <div class="section-line"></div>
                             </div>'''
@@ -480,7 +488,7 @@ class SecureTemplateRenderer:
             html_content += '''
                         <div class="section">
                             <div class="no-items">
-                                <div class="no-items-icon">🎭</div>
+                                <div class="no-items-icon">鹿</div>
                                 <h3>No New Content</h3>
                                 <p>No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
                             </div>
@@ -493,10 +501,10 @@ class SecureTemplateRenderer:
                             <div class="footer-divider"></div>
                             <div class="footer-content">
                                 <p>
-                                    🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
+                                    鹿 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
                                 </p>
                                 <p>
-                                    📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
+                                    透 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
                                 </p>
                             </div>
                         </div>
@@ -523,7 +531,8 @@ class SecureTemplateRenderer:
 
         # Build poster HTML
         if poster_url:
-            poster_html = f'<img src="{poster_url}" alt="{title} poster">'
+            # Add data-original-url for debugging
+            poster_html = f'<img src="{poster_url}" alt="{title} poster" data-original-url="{poster_url}">'
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
@@ -586,27 +595,44 @@ class SecureTemplateRenderer:
 
         # Build poster HTML - improved logic for TV shows
         poster_url = ''
+        original_poster_url_debug = ''  # For debugging
+
+        logger.debug(f"Attempting to find poster for TV show: {title}")
+        logger.debug(
+            f"Raw show data for poster check: {show.get('tmdb_data')} | {show.get('tmdb_poster')} | {show.get('poster_url')} | {show.get('poster')}")
 
         # Try multiple sources for poster URL
         if isinstance(tmdb_data, dict) and tmdb_data.get('poster_path'):
             # TMDB poster path
             poster_path = tmdb_data['poster_path']
-            if poster_path.startswith('/'):
-                poster_url = f"https://image.tmdb.org/t/p/w500{self._secure_escape(poster_path)}"
-            else:
-                poster_url = f"https://image.tmdb.org/t/p/w500/{self._secure_escape(poster_path)}"
+            # Ensure poster_path starts with '/' for correct TMDB URL construction
+            if poster_path and not poster_path.startswith('/'):
+                poster_path = '/' + poster_path
+            original_poster_url_debug = f"https://image.tmdb.org/t/p/w500{poster_path}"
+            poster_url = self._secure_escape(original_poster_url_debug)
+            logger.debug(f"Using TMDB poster_path: {poster_path}, constructed URL: {poster_url}")
         elif show.get('tmdb_poster'):
             # Direct TMDB poster URL
-            poster_url = self._secure_escape(show['tmdb_poster'])
+            original_poster_url_debug = show['tmdb_poster']
+            poster_url = self._secure_escape(original_poster_url_debug)
+            logger.debug(f"Using direct tmdb_poster: {poster_url}")
         elif show.get('poster_url'):
             # Fallback to general poster URL
-            poster_url = self._secure_escape(show['poster_url'])
+            original_poster_url_debug = show['poster_url']
+            poster_url = self._secure_escape(original_poster_url_debug)
+            logger.debug(f"Using general poster_url: {poster_url}")
         elif show.get('poster'):
             # Another fallback
-            poster_url = self._secure_escape(show['poster'])
+            original_poster_url_debug = show['poster']
+            poster_url = self._secure_escape(original_poster_url_debug)
+            logger.debug(f"Using fallback poster: {poster_url}")
+
+        if not poster_url:
+            logger.debug(f"No valid poster URL found for TV show: {title}")
 
         if poster_url:
-            poster_html = f'<img src="{poster_url}" alt="{title} poster">'
+            # Add data-original-url for debugging in browser developer tools
+            poster_html = f'<img src="{poster_url}" alt="{title} poster" data-original-url="{original_poster_url_debug}">'
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
