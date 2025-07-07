@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: j0n4e/emby-newsletter
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
