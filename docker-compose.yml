@@ -9,13 +9,14 @@ services:
       - ./templates:/app/templates:ro
     environment:
       - TZ=Europe/Paris  # Change this to your timezone
-      - PUID=1000        # Change this to your user ID
-      - PGID=1000        # Change this to your group ID
+      # PUID=99 and PGID=100 are set in Unraid docker variables
     restart: unless-stopped
-    user: "1000:1000"    # Change this to your user:group IDs
+    user: "99:100"       # Standard Unraid user:group
     read_only: true
     security_opt:
       - no-new-privileges:true
     tmpfs:
       - /tmp
       - /var/log
+      - /var/run:rw,noexec,nosuid,size=100m  # For cron PID file
+      - /var/spool/cron:rw,noexec,nosuid,size=10m  # For cron jobs
