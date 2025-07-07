@@ -584,12 +584,26 @@ class SecureTemplateRenderer:
         if isinstance(tmdb_data, dict) and tmdb_data.get('overview'):
             overview = self._secure_escape(tmdb_data['overview'])
 
-        # Build poster HTML
+        # Build poster HTML - improved logic for TV shows
         poster_url = ''
+
+        # Try multiple sources for poster URL
         if isinstance(tmdb_data, dict) and tmdb_data.get('poster_path'):
-            poster_url = f"https://image.tmdb.org/t/p/w500{self._secure_escape(tmdb_data['poster_path'])}"
+            # TMDB poster path
+            poster_path = tmdb_data['poster_path']
+            if poster_path.startswith('/'):
+                poster_url = f"https://image.tmdb.org/t/p/w500{self._secure_escape(poster_path)}"
+            else:
+                poster_url = f"https://image.tmdb.org/t/p/w500/{self._secure_escape(poster_path)}"
+        elif show.get('tmdb_poster'):
+            # Direct TMDB poster URL
+            poster_url = self._secure_escape(show['tmdb_poster'])
         elif show.get('poster_url'):
+            # Fallback to general poster URL
             poster_url = self._secure_escape(show['poster_url'])
+        elif show.get('poster'):
+            # Another fallback
+            poster_url = self._secure_escape(show['poster'])
 
         if poster_url:
             poster_html = f'<img src="{poster_url}" alt="{title} poster">'
