@@ -24,40 +24,59 @@ class SecureTemplateRenderer:
         self.template_dir = template_dir
 
     def _secure_escape(self, value: Any) -> str:
-        """Escape HTML and dangerous content"""
+        """Escape HTML and dangerous content using a single-pass regex replacement."""
         if value is None:
             return ""
 
-        # Convert to string and escape
         str_value = str(value)
-
-        # HTML escape
         escaped = html.escape(str_value, quote=True)
 
-        # Additional security: escape potential script injections
-        dangerous_patterns = [
-            ('javascript:', 'j_avascript:'),
-            ('vbscript:', 'v_bscript:'),
-            ('data:', 'd_ata:'),
-            ('<script', '&lt;script'),
-            ('</script>', '&lt;/script&gt;'),
-            ('onclick', 'o_nclick'),
-            ('onload', 'o_nload'),
-            ('onerror', 'o_nerror'),
-        ]
+        # Define a dictionary for replacements
+        # Keys are the dangerous patterns, values are their replacements
+        dangerous_patterns_map = {
+            'javascript:': 'j_avascript:',
+            'vbscript:': 'v_bscript:',
+            'data:': 'd_ata:',
+            '<script': '&lt;script',
+            '</script>': '&lt;/script&gt;',
+            'onclick': 'o_nclick',
+            'onload': 'o_nload',
+            'onerror': 'o_nerror',
+        }
+
+        # Create a single regex pattern that matches any of the dangerous patterns.
+        # Use re.escape to handle any regex special characters in the patterns.
+        # Sort keys by length in descending order to ensure longer patterns are matched first,
+        # preventing partial matches if one pattern is a substring of another (e.g., 'script' vs '<script').
+        patterns_sorted_by_length = sorted(dangerous_patterns_map.keys(), key=len, reverse=True)
+
+        # Build the combined regex pattern using '|' (OR)
+        regex_pattern = '|'.join(re.escape(p) for p in patterns_sorted_by_length)
+
+        # Compile the regex for efficiency and case-insensitive matching
+        compiled_regex = re.compile(regex_pattern, re.IGNORECASE)
+
+        def replacer(match):
+            # This function is called for each match found by the compiled_regex
+            matched_text = match.group(0)  # The actual text that was matched (e.g., "JavaScript:")
+
+            # Find the original pattern (case-insensitive) that corresponds to the matched text
+            for pattern, replacement in dangerous_patterns_map.items():
+                if matched_text.lower() == pattern.lower():
+                    return replacement
+            return matched_text  # Should not happen if regex and map are consistent
 
         original_escaped = escaped  # Store original to check if modified
-        for pattern, replacement in dangerous_patterns:
-            # Check for patterns case-insensitively
-            escaped = re.sub(re.escape(pattern), replacement, escaped, flags=re.IGNORECASE)
+        modified_escaped = compiled_regex.sub(replacer, escaped)
 
-        if escaped != original_escaped:
-            logger.debug(f"Secure escape modified string. Original: '{original_escaped}', Modified: '{escaped}'")
+        if modified_escaped != original_escaped:
+            logger.debug(
+                f"Secure escape modified string. Original: '{original_escaped}', Modified: '{modified_escaped}'")
         elif "http://" in str_value or "https://" in str_value:
             # Log all URL escapes, even if no dangerous patterns found, to see exact transformation
-            logger.debug(f"URL passed through secure escape. Original: '{str_value}', Escaped: '{escaped}'")
+            logger.debug(f"URL passed through secure escape. Original: '{str_value}', Escaped: '{modified_escaped}'")
 
-        return escaped
+        return modified_escaped
 
     def render_email_template(self, context: Dict[str, Any]) -> str:
         """Render the email template with secure context"""
