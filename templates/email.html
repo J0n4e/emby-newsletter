@@ -12,18 +12,18 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 0;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
             min-height: 100vh;
         }
         .container {
-            background: linear-gradient(145deg, #1e1e1e 0%, #252525 100%);
+            background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%);
             margin: 0;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
             border-radius: 0;
             overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
             text-align: center;
             padding: 40px 30px;
             position: relative;
@@ -44,7 +44,7 @@
             margin: 0;
             font-size: 2.5em;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
             position: relative;
             z-index: 2;
         }
@@ -64,30 +64,31 @@
             border-bottom: none;
         }
         .section h2 {
-            color: #ff6b6b;
+            color: #ef4444;
             font-size: 1.8em;
             font-weight: 600;
             margin: 0 0 30px 0;
             padding-bottom: 15px;
-            border-bottom: 3px solid rgba(255, 107, 107, 0.3);
+            border-bottom: 3px solid rgba(239, 68, 68, 0.4);
             display: flex;
             align-items: center;
             gap: 15px;
         }
         .item {
-            background: linear-gradient(145deg, #2a2a2a 0%, #323232 100%);
+            background: linear-gradient(145deg, #1a1a1a 0%, #262626 100%);
             margin: 25px 0;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(239, 68, 68, 0.2);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: flex;
             flex-direction: row;
         }
         .item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 12px 35px rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.4);
         }
         .item-poster {
             flex-shrink: 0;
@@ -112,7 +113,7 @@
             right: 0;
             bottom: 0;
             width: 20px;
-            background: linear-gradient(90deg, transparent 0%, rgba(42, 42, 42, 0.8) 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(26, 26, 26, 0.8) 100%);
         }
         .item-content {
             flex: 1;
@@ -129,7 +130,7 @@
             line-height: 1.3;
         }
         .item-year {
-            color: #ffa500;
+            color: #fca5a5;
             font-size: 0.95em;
             font-weight: 500;
             margin-bottom: 15px;
@@ -151,24 +152,24 @@
             margin-top: auto;
         }
         .genre-tag {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             color: #ffffff;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.8em;
             font-weight: 500;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
         }
         .tv-season {
             margin: 20px 0;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(239, 68, 68, 0.1);
             border-radius: 10px;
             padding: 20px;
-            border-left: 4px solid #ffa500;
+            border-left: 4px solid #ef4444;
         }
         .tv-season h4 {
-            color: #ffa500;
+            color: #fca5a5;
             margin: 0 0 15px 0;
             font-size: 1.2em;
             font-weight: 600;
@@ -178,14 +179,14 @@
             padding: 15px;
             margin: 10px 0;
             border-radius: 8px;
-            border-left: 3px solid #4ecdc4;
+            border-left: 3px solid #dc2626;
             transition: background 0.2s ease;
         }
         .episode:hover {
             background: rgba(255, 255, 255, 0.12);
         }
         .episode strong {
-            color: #4ecdc4;
+            color: #fca5a5;
             font-weight: 600;
         }
         .episode-overview {
@@ -195,25 +196,25 @@
             line-height: 1.4;
         }
         .footer {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
             text-align: center;
             padding: 40px 30px;
             color: rgba(255, 255, 255, 0.7);
             font-size: 0.9em;
         }
         .footer a {
-            color: #ff6b6b;
+            color: #ef4444;
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s ease;
         }
         .footer a:hover {
-            color: #ffa500;
+            color: #fca5a5;
         }
         .footer-logo {
             font-size: 1.5em;
             font-weight: 700;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -224,9 +225,10 @@
             color: rgba(255, 255, 255, 0.6);
             font-style: italic;
             padding: 60px 20px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(239, 68, 68, 0.05);
             border-radius: 15px;
             margin: 20px 0;
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
         .no-items::before {
             content: '🎬';
@@ -237,8 +239,17 @@
         }
         .divider {
             height: 1px;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 107, 107, 0.5) 50%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(239, 68, 68, 0.5) 50%, transparent 100%);
             margin: 30px 0;
+        }
+        .accent-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 10px;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
         }
         @media (max-width: 600px) {
             body {
@@ -274,7 +285,7 @@
         /* Dark mode email client compatibility */
         @media (prefers-color-scheme: dark) {
             .container {
-                background: linear-gradient(145deg, #1e1e1e 0%, #252525 100%) !important;
+                background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%) !important;
             }
         }
     </style>
@@ -288,14 +299,14 @@
 
         {% if movies %}
         <div class="section">
-            <h2>🎬 New Movies</h2>
+            <h2>🎬 <span class="accent-dot"></span> New Movies</h2>
             {% for movie in movies %}
             <div class="item">
                 <div class="item-poster">
                     {% if movie.tmdb_poster or movie.poster_url %}
                     <img src="{{ (movie.tmdb_poster or movie.poster_url) | e }}" alt="{{ movie.title | e }} poster">
                     {% else %}
-                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333 0%, #555 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center;">No Poster<br>Available</div>
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #262626 0%, #404040 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center;">No Poster<br>Available</div>
                     {% endif %}
                 </div>
                 <div class="item-content">
@@ -323,7 +334,7 @@
 
         {% if tv_shows %}
         <div class="section">
-            <h2>📺 New TV Episodes</h2>
+            <h2>📺 <span class="accent-dot"></span> New TV Episodes</h2>
             {% for show in tv_shows %}
             <div class="item">
                 <div class="item-poster">
@@ -332,7 +343,7 @@
                     {% elif show.poster_url %}
                     <img src="{{ show.poster_url | e }}" alt="{{ show.title | e }} poster">
                     {% else %}
-                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333 0%, #555 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center;">No Poster<br>Available</div>
+                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #262626 0%, #404040 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center;">No Poster<br>Available</div>
                     {% endif %}
                 </div>
                 <div class="item-content">
@@ -341,6 +352,51 @@
                         {% if show.tmdb_data and show.tmdb_data.overview %}
                         <div class="item-overview">{{ show.tmdb_data.overview | e }}</div>
                         {% endif %}
+                    </div>
+
+                    {% for season_name, episodes in show.seasons.items() %}
+                    <div class="tv-season">
+                        <h4>{{ season_name | e }}</h4>
+                        {% for episode in episodes %}
+                        <div class="episode">
+                            <strong>Episode {{ episode.episode_number | e }}: {{ episode.name | e }}</strong>
+                            {% if episode.overview %}
+                            <div class="episode-overview">{{ episode.overview | e }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not movies and not tv_shows %}
+        <div class="section">
+            <div class="no-items">
+                <p>No new content has been added recently.</p>
+                <p>Check back soon for the latest movies and TV shows!</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <div class="footer-logo">{{ emby_owner_name | e }}</div>
+            <div class="divider"></div>
+            <p>
+                🎭 Enjoy your content on <a href="{{ emby_url | e }}">{{ emby_owner_name | e }}</a>
+            </p>
+            <p>
+                <small>
+                    📧 To unsubscribe, contact <a href="mailto:{{ unsubscribe_email | e }}">{{ unsubscribe_email | e }}</a>
+                </small>
+            </p>
+        </div>
+    </div>
+</body>
+</html> %}
                     </div>
 
                     {% for season_name, episodes in show.seasons.items() %}
