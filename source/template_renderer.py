@@ -56,15 +56,16 @@ class SecureTemplateRenderer:
             # Sanitize context data
             safe_context = self._sanitize_context(context)
 
-            # Generate HTML using secure string building
+            # Always use built-in template for simplicity and security
             html_content = self._build_html_email(safe_context)
-
             logger.debug("Email template rendered successfully")
             return html_content
 
         except Exception as e:
             logger.error(f"Error rendering email template: {e}")
-            raise
+            # Fallback to built-in template on error
+            safe_context = self._sanitize_context(context)
+            return self._build_html_email(safe_context)
 
     def _build_html_email(self, context: Dict[str, Any]) -> str:
         """Build HTML email using secure string construction"""
@@ -79,205 +80,438 @@ class SecureTemplateRenderer:
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
-        # Build HTML structure
-        html_parts = []
-
-        # HTML header
-        html_parts.append(f'''<!DOCTYPE html>
+        # Build the complete HTML email
+        html_content = f"""<!DOCTYPE html>
 <html lang="{language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>{title}</title>
     <style>
         body {{
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
+            color: rgb(229, 231, 235);
+            margin: 0;
+            padding: 0;
+            background: rgb(10, 10, 10);
         }}
+
+        .email-wrapper {{
+            background: rgb(10, 10, 10);
+            min-height: 100vh;
+            padding: 20px 0;
+        }}
+
         .container {{
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            max-width: 680px;
+            margin: 0 auto;
+            background: rgb(17, 24, 39);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         }}
+
         .header {{
+            background: linear-gradient(135deg, rgb(153, 27, 27) 0%, rgb(220, 38, 38) 50%, rgb(239, 68, 68) 100%);
+            padding: 48px 40px;
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 20px;
         }}
+
         .header h1 {{
-            color: #2c3e50;
+            color: rgb(255, 255, 255);
+            margin: 0 0 12px 0;
+            font-size: 2.75em;
+            font-weight: 700;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }}
+
+        .header .subtitle {{
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0;
+            font-size: 1.125em;
+            font-weight: 400;
+        }}
+
+        .section {{
+            padding: 48px 40px;
+        }}
+
+        .section-header {{
+            display: flex;
+            align-items: center;
+            margin-bottom: 32px;
+            gap: 16px;
+        }}
+
+        .section h2 {{
+            color: rgb(249, 250, 251);
+            font-size: 1.875em;
+            font-weight: 600;
             margin: 0;
         }}
-        .header p {{
-            color: #7f8c8d;
-            margin: 10px 0 0 0;
-        }}
-        .section {{
-            margin: 30px 0;
-        }}
-        .section h2 {{
-            color: #34495e;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-        }}
-        .item {{
-            display: flex;
-            margin: 20px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-        }}
-        .item-poster {{
-            flex-shrink: 0;
-            margin-right: 20px;
-        }}
-        .item-poster img {{
-            width: 100px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 5px;
-        }}
-        .item-content {{
-            flex: 1;
-        }}
-        .item-title {{
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }}
-        .item-year {{
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }}
-        .item-overview {{
-            margin-top: 10px;
-            color: #555;
-        }}
-        .item-genres {{
-            margin-top: 10px;
-        }}
-        .genre-tag {{
-            display: inline-block;
-            background: #3498db;
-            color: white;
-            padding: 2px 8px;
+
+        .section-icon {{
+            background: linear-gradient(135deg, rgb(220, 38, 38) 0%, rgb(239, 68, 68) 100%);
+            width: 48px;
+            height: 48px;
             border-radius: 12px;
-            font-size: 0.8em;
-            margin-right: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            box-shadow: 0 8px 16px rgba(220, 38, 38, 0.3);
         }}
-        .tv-season {{
-            margin-left: 20px;
-            margin-top: 10px;
+
+        .section-line {{
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, rgb(220, 38, 38) 0%, rgba(220, 38, 38, 0.2) 100%);
         }}
-        .tv-season h4 {{
-            color: #2c3e50;
-            margin-bottom: 10px;
+
+        .item {{
+            background: linear-gradient(145deg, rgb(31, 41, 55) 0%, rgb(55, 65, 81) 100%);
+            margin: 24px 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(220, 38, 38, 0.15);
+            display: table;
+            width: 100%;
+            table-layout: fixed;
         }}
-        .episode {{
-            background: white;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            border-left: 3px solid #27ae60;
+
+        .item-poster {{
+            display: table-cell;
+            width: 140px;
+            height: 210px;
+            vertical-align: top;
+            padding: 0;
         }}
-        .footer {{
+
+        .item-poster img {{
+            width: 140px;
+            height: 210px;
+            object-fit: cover;
+            display: block;
+        }}
+
+        .no-poster {{
+            width: 140px;
+            height: 210px;
+            background: linear-gradient(145deg, rgb(55, 65, 81) 0%, rgb(75, 85, 99) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgb(156, 163, 175);
+            font-size: 0.875em;
             text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
-            color: #7f8c8d;
-            font-size: 0.9em;
+            font-weight: 500;
         }}
+
+        .item-content {{
+            display: table-cell;
+            padding: 32px;
+            vertical-align: top;
+        }}
+
+        .item-title {{
+            font-size: 1.5em;
+            font-weight: 700;
+            color: rgb(249, 250, 251);
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }}
+
+        .item-meta {{
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }}
+
+        .item-year {{
+            background: rgba(220, 38, 38, 0.15);
+            color: rgb(252, 165, 165);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875em;
+            font-weight: 500;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }}
+
+        .item-overview {{
+            color: rgb(209, 213, 219);
+            font-size: 0.9375em;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            font-weight: 400;
+        }}
+
+        .genres {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: auto;
+        }}
+
+        .genre-tag {{
+            background: linear-gradient(135deg, rgb(220, 38, 38) 0%, rgb(239, 68, 68) 100%);
+            color: rgb(255, 255, 255);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8125em;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+        }}
+
+        .tv-seasons {{
+            margin-top: 24px;
+        }}
+
+        .tv-season {{
+            background: rgba(220, 38, 38, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 16px 0;
+            border-left: 4px solid rgb(220, 38, 38);
+        }}
+
+        .tv-season h4 {{
+            color: rgb(248, 113, 113);
+            margin: 0 0 16px 0;
+            font-size: 1.125em;
+            font-weight: 600;
+        }}
+
+        .episode {{
+            background: rgba(255, 255, 255, 0.04);
+            padding: 16px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border-left: 3px solid rgb(220, 38, 38);
+        }}
+
+        .episode-title {{
+            color: rgb(248, 113, 113);
+            font-weight: 600;
+            font-size: 0.9375em;
+            margin-bottom: 6px;
+        }}
+
+        .episode-overview {{
+            color: rgb(209, 213, 219);
+            font-size: 0.875em;
+            line-height: 1.5;
+            font-weight: 400;
+        }}
+
+        .footer {{
+            background: linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(30, 41, 59) 100%);
+            text-align: center;
+            padding: 48px 40px;
+        }}
+
+        .footer-logo {{
+            font-size: 1.5em;
+            font-weight: 700;
+            color: rgb(239, 68, 68);
+            margin-bottom: 16px;
+        }}
+
+        .footer-content {{
+            color: rgb(156, 163, 175);
+            font-size: 0.9375em;
+            line-height: 1.6;
+        }}
+
         .footer a {{
-            color: #3498db;
+            color: rgb(239, 68, 68);
             text-decoration: none;
+            font-weight: 500;
         }}
+
+        .footer-divider {{
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 24px 0;
+        }}
+
         .no-items {{
             text-align: center;
-            color: #7f8c8d;
-            font-style: italic;
-            padding: 20px;
+            color: rgb(156, 163, 175);
+            padding: 80px 40px;
+            background: rgba(220, 38, 38, 0.05);
+            border-radius: 16px;
+            margin: 24px 0;
+            border: 1px solid rgba(220, 38, 38, 0.15);
         }}
-        @media (max-width: 600px) {{
-            .item {{
-                flex-direction: column;
+
+        .no-items-icon {{
+            font-size: 4em;
+            margin-bottom: 24px;
+            opacity: 0.6;
+        }}
+
+        .no-items h3 {{
+            font-size: 1.5em;
+            font-weight: 600;
+            color: rgb(249, 250, 251);
+            margin: 0 0 8px 0;
+        }}
+
+        .no-items p {{
+            font-size: 1em;
+            margin: 0;
+            line-height: 1.6;
+        }}
+
+        @media only screen and (max-width: 640px) {{
+            .email-wrapper {{
+                padding: 10px;
             }}
+
+            .header {{
+                padding: 32px 24px;
+            }}
+
+            .header h1 {{
+                font-size: 2.25em;
+            }}
+
+            .section {{
+                padding: 32px 24px;
+            }}
+
+            .section h2 {{
+                font-size: 1.5em;
+            }}
+
+            .section-icon {{
+                width: 40px;
+                height: 40px;
+                font-size: 1.25em;
+            }}
+
+            .item {{
+                display: block;
+                margin: 20px 0;
+            }}
+
             .item-poster {{
-                margin-right: 0;
-                margin-bottom: 15px;
+                display: block;
+                width: 100%;
+                height: 240px;
                 text-align: center;
+            }}
+
+            .item-poster img {{
+                width: auto;
+                height: 240px;
+                max-width: 100%;
+            }}
+
+            .no-poster {{
+                width: 100%;
+                height: 240px;
+            }}
+
+            .item-content {{
+                display: block;
+                padding: 24px;
+            }}
+
+            .tv-season {{
+                padding: 20px;
+            }}
+
+            .footer {{
+                padding: 32px 24px;
             }}
         }}
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>{title}</h1>
-            <p>{subtitle}</p>
-        </div>''')
+    <div class="email-wrapper">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td>
+                    <div class="container">
+                        <div class="header">
+                            <h1>{title}</h1>
+                            <p class="subtitle">{subtitle}</p>
+                        </div>"""
 
         # Movies section
-        if movies:
-            html_parts.append('''
-        <div class="section">
-            <h2>🎬 New Movies</h2>''')
+        if movies and len(movies) > 0:
+            html_content += '''
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon">🎬</div>
+                                <h2>New Movies</h2>
+                                <div class="section-line"></div>
+                            </div>'''
 
             for movie in movies:
                 movie_html = self._render_movie_item(movie)
-                html_parts.append(movie_html)
+                html_content += movie_html
 
-            html_parts.append('        </div>')
+            html_content += '                        </div>'
 
         # TV Shows section
-        if tv_shows:
-            html_parts.append('''
-        <div class="section">
-            <h2>📺 New TV Episodes</h2>''')
+        if tv_shows and len(tv_shows) > 0:
+            html_content += '''
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon">📺</div>
+                                <h2>New TV Episodes</h2>
+                                <div class="section-line"></div>
+                            </div>'''
 
             for show in tv_shows:
                 show_html = self._render_tv_show_item(show)
-                html_parts.append(show_html)
+                html_content += show_html
 
-            html_parts.append('        </div>')
+            html_content += '                        </div>'
 
         # No content message
-        if not movies and not tv_shows:
-            html_parts.append('''
-        <div class="no-items">
-            <p>No new content has been added recently.</p>
-        </div>''')
+        if (not movies or len(movies) == 0) and (not tv_shows or len(tv_shows) == 0):
+            html_content += '''
+                        <div class="section">
+                            <div class="no-items">
+                                <div class="no-items-icon">🎭</div>
+                                <h3>No New Content</h3>
+                                <p>No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
+                            </div>
+                        </div>'''
 
         # Footer
-        html_parts.append(f'''
-        <div class="footer">
-            <p>
-                Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
-            </p>
-            <p>
-                <small>
-                    To unsubscribe, please contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
-                </small>
-            </p>
-        </div>
+        html_content += f'''
+                        <div class="footer">
+                            <div class="footer-logo">{emby_owner_name}</div>
+                            <div class="footer-divider"></div>
+                            <div class="footer-content">
+                                <p>
+                                    🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
+                                </p>
+                                <p>
+                                    📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
-</html>''')
+</html>'''
 
-        return '\n'.join(html_parts)
+        return html_content
 
     def _render_movie_item(self, movie: Dict[str, Any]) -> str:
         """Render a single movie item"""
-        # Handle case where movie might not be a proper dict
         if not isinstance(movie, dict):
             logger.warning(f"Movie item is not a dictionary: {type(movie)}")
             return ""
@@ -291,12 +525,18 @@ class SecureTemplateRenderer:
         if poster_url:
             poster_html = f'<img src="{poster_url}" alt="{title} poster">'
         else:
-            poster_html = '<div style="width: 100px; height: 150px; background: #ddd; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #999;">No Image</div>'
+            poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
-        # Build year HTML
-        year_html = f'<div class="item-year">({year})</div>' if year else ''
+        # Build meta information
+        meta_parts = []
+        if year:
+            meta_parts.append(f'<span class="item-year">{year}</span>')
 
-        # Build overview HTML
+        meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
+
+        # Build overview HTML (truncate if too long)
+        if overview and len(overview) > 300:
+            overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
 
         # Build genres HTML
@@ -316,23 +556,22 @@ class SecureTemplateRenderer:
                     genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
 
             if genre_tags:
-                genres_html = f'<div class="item-genres">{"".join(genre_tags)}</div>'
+                genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
-        return f'''            <div class="item">
-                <div class="item-poster">
-                    {poster_html}
-                </div>
-                <div class="item-content">
-                    <div class="item-title">{title}</div>
-                    {year_html}
-                    {overview_html}
-                    {genres_html}
-                </div>
-            </div>'''
+        return f'''                            <div class="item">
+                                <div class="item-poster">
+                                    {poster_html}
+                                </div>
+                                <div class="item-content">
+                                    <div class="item-title">{title}</div>
+                                    {meta_html}
+                                    {overview_html}
+                                    {genres_html}
+                                </div>
+                            </div>'''
 
     def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
         """Render a single TV show item"""
-        # Handle case where show might not be a proper dict
         if not isinstance(show, dict):
             logger.warning(f"TV show item is not a dictionary: {type(show)}")
             return ""
@@ -345,19 +584,35 @@ class SecureTemplateRenderer:
         if isinstance(tmdb_data, dict) and tmdb_data.get('overview'):
             overview = self._secure_escape(tmdb_data['overview'])
 
-        # Build poster HTML
+        # Build poster HTML - improved logic for TV shows
         poster_url = ''
+
+        # Try multiple sources for poster URL
         if isinstance(tmdb_data, dict) and tmdb_data.get('poster_path'):
-            poster_url = f"https://image.tmdb.org/t/p/w500{self._secure_escape(tmdb_data['poster_path'])}"
+            # TMDB poster path
+            poster_path = tmdb_data['poster_path']
+            if poster_path.startswith('/'):
+                poster_url = f"https://image.tmdb.org/t/p/w500{self._secure_escape(poster_path)}"
+            else:
+                poster_url = f"https://image.tmdb.org/t/p/w500/{self._secure_escape(poster_path)}"
+        elif show.get('tmdb_poster'):
+            # Direct TMDB poster URL
+            poster_url = self._secure_escape(show['tmdb_poster'])
         elif show.get('poster_url'):
+            # Fallback to general poster URL
             poster_url = self._secure_escape(show['poster_url'])
+        elif show.get('poster'):
+            # Another fallback
+            poster_url = self._secure_escape(show['poster'])
 
         if poster_url:
             poster_html = f'<img src="{poster_url}" alt="{title} poster">'
         else:
-            poster_html = '<div style="width: 100px; height: 150px; background: #ddd; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #999;">No Image</div>'
+            poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
-        # Build overview HTML
+        # Build overview HTML (truncate if too long)
+        if overview and len(overview) > 300:
+            overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
 
         # Build seasons HTML
@@ -376,27 +631,31 @@ class SecureTemplateRenderer:
                             episode_name = self._secure_escape(episode.get('name', 'Unknown'))
                             episode_overview = self._secure_escape(episode.get('overview', ''))
 
-                            episode_overview_html = f'<div style="margin-top: 5px; font-size: 0.9em; color: #666;">{episode_overview}</div>' if episode_overview else ''
+                            # Truncate episode overview
+                            if episode_overview and len(episode_overview) > 150:
+                                episode_overview = episode_overview[:150] + "..."
 
-                            season_parts.append(f'''<div class="episode">
-                                    <strong>Episode {episode_num}: {episode_name}</strong>
-                                    {episode_overview_html}
-                                </div>''')
+                            episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
 
-                season_parts.append('</div>')
+                            season_parts.append(f'''                                    <div class="episode">
+                                        <div class="episode-title">Episode {episode_num}: {episode_name}</div>
+                                        {episode_overview_html}
+                                    </div>''')
 
-            seasons_html = ''.join(season_parts)
+                season_parts.append('                                </div>')
 
-        return f'''            <div class="item">
-                <div class="item-poster">
-                    {poster_html}
-                </div>
-                <div class="item-content">
-                    <div class="item-title">{title}</div>
-                    {overview_html}
-                    {seasons_html}
-                </div>
-            </div>'''
+            seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>' if season_parts else ''
+
+        return f'''                            <div class="item">
+                                <div class="item-poster">
+                                    {poster_html}
+                                </div>
+                                <div class="item-content">
+                                    <div class="item-title">{title}</div>
+                                    {overview_html}
+                                    {seasons_html}
+                                </div>
+                            </div>'''
 
     def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize template context for security"""
