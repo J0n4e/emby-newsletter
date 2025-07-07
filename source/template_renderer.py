@@ -56,17 +56,262 @@ class SecureTemplateRenderer:
             # Sanitize context data
             safe_context = self._sanitize_context(context)
 
-            # Generate HTML using secure string building
-            html_content = self._build_html_email(safe_context)
+            # Load and render the HTML template file
+            template_path = os.path.join(self.template_dir, 'email.html')
 
-            logger.debug("Email template rendered successfully")
-            return html_content
+            if os.path.exists(template_path):
+                # Read the template file
+                with open(template_path, 'r', encoding='utf-8') as f:
+                    template_content = f.read()
+
+                # Use simple string replacement for template variables
+                html_content = self._render_template_string(template_content, safe_context)
+
+                logger.debug("Email template rendered successfully from file")
+                return html_content
+            else:
+                # Fallback to built-in template if file doesn't exist
+                logger.warning(f"Template file not found at {template_path}, using built-in template")
+                html_content = self._build_html_email(safe_context)
+                return html_content
 
         except Exception as e:
             logger.error(f"Error rendering email template: {e}")
-            raise
+            # Fallback to built-in template on error
+            safe_context = self._sanitize_context(context)
+            return self._build_html_email(safe_context)
 
-    def _build_html_email(self, context: Dict[str, Any]) -> str:
+    def _render_template_string(self, template_content: str, context: Dict[str, Any]) -> str:
+        """Render template string with context using simple Jinja2-like syntax"""
+        import re
+
+        # Simple template variable replacement
+        rendered = template_content
+
+        # Replace simple variables like {{ title | e }}
+        def replace_var(match):
+            var_expr = match.group(1).strip()
+
+            # Handle filters (like | e for escape)
+            if '|' in var_expr:
+                var_name = var_expr.split('|')[0].strip()
+                # Always escape for security
+                value = self._secure_escape(self._get_nested_value(context, var_name))
+            else:
+                var_name = var_expr.strip()
+                value = self._secure_escape(self._get_nested_value(context, var_name))
+
+            return str(value) if value is not None else ""
+
+        # Replace {{ variable }} patterns
+        rendered = re.sub(r'\{\{\s*([^}]+)\s*\}\}', replace_var, rendered)
+
+        # Handle if statements and loops (simplified)
+        rendered = self._process_template_logic(rendered, context)
+
+        return rendered
+
+    def _get_nested_value(self, data: Dict[str, Any], key_path: str) -> Any:
+        """Get nested value from dictionary using dot notation"""
+        keys = key_path.split('.')
+        value = data
+
+        for key in keys:
+            if isinstance(value, dict) and key in value:
+                value = value[key]
+            else:
+                return None
+
+        return value
+
+    def _process_template_logic(self, template: str, context: Dict[str, Any]) -> str:
+        """Process template logic (if statements, loops)"""
+        import re
+
+        # Process {% if movies %} blocks
+        def process_if_block(match):
+            condition = match.group(1).strip()
+            content = match.group(2)
+
+            # Simple condition evaluation
+            if condition in context and context[condition]:
+                return self._process_for_loops(content, context)
+            else:
+                return ""
+
+        # Handle {% if condition %}...{% endif %} blocks
+        template = re.sub(r'\{% if ([^%]+) %\}(.*?)\{% endif %\}', process_if_block, template, flags=re.DOTALL)
+
+        # Process {% if not movies and not tv_shows %} blocks
+        def process_if_not_block(match):
+            content = match.group(1)
+
+            # Check if both movies and tv_shows are empty
+            movies = context.get('movies', [])
+            tv_shows = context.get('tv_shows', [])
+
+            if (not movies or len(movies) == 0) and (not tv_shows or len(tv_shows) == 0):
+                return content
+            else:
+                return ""
+
+        # Handle {% if not movies and not tv_shows %}...{% endif %} blocks
+        template = re.sub(r'\{% if not movies and not tv_shows %\}(.*?)\{% endif %\}', process_if_not_block, template,
+                          flags=re.DOTALL)
+
+        # Process remaining for loops
+        template = self._process_for_loops(template, context)
+
+        return template
+
+    def _process_for_loops(self, template: str, context: Dict[str, Any]) -> str:
+        """Process for loops in template"""
+        import re
+
+        # Process {% for movie in movies %} blocks
+        def process_movie_loop(match):
+            content = match.group(1)
+            movies = context.get('movies', [])
+
+            result = ""
+            for movie in movies:
+                # Replace movie.field with actual values
+                movie_content = content
+                movie_content = re.sub(r'movie\.([a-zA-Z_]+)',
+                                       lambda m: str(self._secure_escape(movie.get(m.group(1), ''))), movie_content)
+
+                # Handle complex movie expressions
+                movie_content = self._process_movie_expressions(movie_content, movie)
+
+                result += movie_content
+
+            return result
+
+        # Process {% for show in tv_shows %} blocks
+        def process_show_loop(match):
+            content = match.group(1)
+            tv_shows = context.get('tv_shows', [])
+
+            result = ""
+            for show in tv_shows:
+                # Replace show.field with actual values
+                show_content = content
+                show_content = re.sub(r'show\.([a-zA-Z_]+)',
+                                      lambda m: str(self._secure_escape(show.get(m.group(1), ''))), show_content)
+
+                # Handle complex show expressions and nested loops
+                show_content = self._process_show_expressions(show_content, show)
+
+                result += show_content
+
+            return result
+
+        # Apply movie loop processing
+        template = re.sub(r'\{% for movie in movies %\}(.*?)\{% endfor %\}', process_movie_loop, template,
+                          flags=re.DOTALL)
+
+        # Apply TV show loop processing
+        template = re.sub(r'\{% for show in tv_shows %\}(.*?)\{% endfor %\}', process_show_loop, template,
+                          flags=re.DOTALL)
+
+        return template
+
+    def _process_movie_expressions(self, content: str, movie: Dict[str, Any]) -> str:
+        """Process complex movie expressions"""
+        import re
+
+        # Handle (movie.tmdb_poster or movie.poster_url)
+        def replace_poster_or(match):
+            tmdb_poster = movie.get('tmdb_poster', '')
+            poster_url = movie.get('poster_url', '')
+            return self._secure_escape(tmdb_poster or poster_url)
+
+        content = re.sub(r'\(movie\.tmdb_poster or movie\.poster_url\)', replace_poster_or, content)
+
+        # Handle (movie.tmdb_overview or movie.overview)
+        def replace_overview_or(match):
+            tmdb_overview = movie.get('tmdb_overview', '')
+            overview = movie.get('overview', '')
+            return self._secure_escape(tmdb_overview or overview)
+
+        content = re.sub(r'\(movie\.tmdb_overview or movie\.overview\)', replace_overview_or, content)
+
+        # Handle genre loops
+        def process_genre_loop(match):
+            loop_content = match.group(1)
+            genres = movie.get('tmdb_genres') or movie.get('genres', [])
+
+            result = ""
+            for genre in genres:
+                genre_content = loop_content
+                if isinstance(genre, dict):
+                    genre_name = self._secure_escape(genre.get('Name', ''))
+                else:
+                    genre_name = self._secure_escape(str(genre))
+
+                genre_content = re.sub(r'\(genre if genre is string else genre\.Name\)', genre_name, genre_content)
+                result += genre_content
+
+            return result
+
+        content = re.sub(r'\{% for genre in \(movie\.tmdb_genres or movie\.genres\) %\}(.*?)\{% endfor %\}',
+                         process_genre_loop, content, flags=re.DOTALL)
+
+        return content
+
+    def _process_show_expressions(self, content: str, show: Dict[str, Any]) -> str:
+        """Process complex TV show expressions"""
+        import re
+
+        # Handle show.tmdb_data expressions
+        tmdb_data = show.get('tmdb_data', {})
+
+        if isinstance(tmdb_data, dict):
+            content = re.sub(r'show\.tmdb_data\.poster_path', self._secure_escape(tmdb_data.get('poster_path', '')),
+                             content)
+            content = re.sub(r'show\.tmdb_data\.overview', self._secure_escape(tmdb_data.get('overview', '')), content)
+
+        # Handle season loops
+        def process_season_loop(match):
+            loop_content = match.group(1)
+            seasons = show.get('seasons', {})
+
+            result = ""
+            if isinstance(seasons, dict):
+                for season_name, episodes in seasons.items():
+                    season_content = loop_content
+                    season_content = re.sub(r'season_name', self._secure_escape(season_name), season_content)
+
+                    # Process episode loops within seasons
+                    def process_episode_loop(episode_match):
+                        episode_content = episode_match.group(1)
+                        episode_result = ""
+
+                        if isinstance(episodes, list):
+                            for episode in episodes:
+                                if isinstance(episode, dict):
+                                    ep_content = episode_content
+                                    ep_content = re.sub(r'episode\.episode_number',
+                                                        str(self._secure_escape(episode.get('episode_number', ''))),
+                                                        ep_content)
+                                    ep_content = re.sub(r'episode\.name', self._secure_escape(episode.get('name', '')),
+                                                        ep_content)
+                                    ep_content = re.sub(r'episode\.overview',
+                                                        self._secure_escape(episode.get('overview', '')), ep_content)
+                                    episode_result += ep_content
+
+                        return episode_result
+
+                    season_content = re.sub(r'\{% for episode in episodes %\}(.*?)\{% endfor %\}', process_episode_loop,
+                                            season_content, flags=re.DOTALL)
+                    result += season_content
+
+            return result
+
+        content = re.sub(r'\{% for season_name, episodes in show\.seasons\.items\(\) %\}(.*?)\{% endfor %\}',
+                         process_season_loop, content, flags=re.DOTALL)
+
+        return content
         """Build HTML email using secure string construction"""
         # Escape all context values
         title = self._secure_escape(context.get('title', 'Emby Newsletter'))
