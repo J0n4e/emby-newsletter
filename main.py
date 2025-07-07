@@ -50,7 +50,7 @@ class EmbyAPI:
                 'Recursive': 'true',
                 'SortBy': 'DateCreated',
                 'SortOrder': 'Descending',
-                'Fields': 'DateCreated,Path,ParentId,SeriesName,SeasonName,IndexNumber,ParentIndexNumber,Overview,Genres,ProductionYear,CommunityRating,OfficialRating',
+                'Fields': 'DateCreated,ParentId,SeriesName,SeasonName,IndexNumber,ParentIndexNumber,Overview,Genres,ProductionYear,CommunityRating,OfficialRating',
                 'MinDateLastSaved': since_date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
             }
 
@@ -559,12 +559,12 @@ class NewsletterGenerator:
             msg['To'] = ', '.join(recipients)
 
             # Add HTML content
-            html_part = MIMEText(html_content, 'html')
+            html_part = MIMEText(html_content, 'html', 'utf-8')
             msg.attach(html_part)
 
-            # Send email
+            # Send email with timeout
             context = ssl.create_default_context()
-            with smtplib.SMTP(email_config.smtp_server, email_config.smtp_port) as server:
+            with smtplib.SMTP(email_config.smtp_server, email_config.smtp_port, timeout=30) as server:
                 server.starttls(context=context)
                 server.login(email_config.smtp_username, email_config.smtp_password)
                 server.sendmail(email_config.smtp_sender_email, recipients, msg.as_string())
