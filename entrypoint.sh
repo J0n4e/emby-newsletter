@@ -67,8 +67,7 @@ try:
         sys.exit(0)
     cron_expr = config.get('scheduler', {}).get('cron', '0 8 1 * *')
     # Basic validation of cron expression
-    if isinstance(cron_expr, str) and re.match(r'^[0-9\*\-\,\/\s]+
-, cron_expr.strip()):
+    if isinstance(cron_expr, str) and re.match(r'^[0-9\*\-\,\/\s]+$', cron_expr.strip()):
         print(cron_expr.strip())
     else:
         print('0 8 1 * *')  # Default fallback
@@ -83,7 +82,7 @@ except Exception as e:
     # Validate cron expression format before using it
     if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
         # Create cron job with safe command
-        echo "$CRON_EXPRESSION cd /app && python3 src/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
+        echo "$CRON_EXPRESSION cd /app && python3 source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
@@ -97,5 +96,5 @@ except Exception as e:
     fi
 else
     echo "No scheduler configured. Running newsletter once..."
-    cd /app && exec python3 src/main.py
+    cd /app && exec python3 source/main.py
 fi
