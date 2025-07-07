@@ -214,7 +214,7 @@ Use this method if you want to run the script on a schedule using an external cr
    ```bash
    docker run --rm \
      -v ./config:/app/config \
-     j0n4e/emby-newsletter:latest
+     ghcr.io/j0n4e/emby-newsletter:latest
    ```
 
 > **Note:** It is recommended to use a static version instead of `latest`, and manually upgrade. [Last version](https://github.com/J0n4e/emby-newsletter/releases)
@@ -224,7 +224,7 @@ Use this method if you want to run the script on a schedule using an external cr
    # Unix :
    crontab -e
    # Add the following line to run the script every 1st of the month at 8am
-   0 8 1 * * root docker run --rm -v PATH_TO_CONFIG_FOLDER/config:/app/config/ j0n4e/emby-newsletter:latest
+   0 8 1 * * root docker run --rm -v PATH_TO_CONFIG_FOLDER/config:/app/config/ ghcr.io/j0n4e/emby-newsletter:latest
    ```
 
 ## Current limitations

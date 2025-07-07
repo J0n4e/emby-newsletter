@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   emby-newsletter:
-    image: j0n4e/emby-newsletter:latest
+    image: ghcr.io/j0n4e/emby-newsletter:latest
     container_name: emby-newsletter
     volumes:
       - ./config:/app/config:ro
