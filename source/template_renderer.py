@@ -135,24 +135,19 @@ class SecureTemplateRenderer:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <title>{title}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
         body {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: #e5e7eb;
             margin: 0;
             padding: 0;
             background: #0a0a0a;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }}
 
         .email-wrapper {{
-            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+            background: #0a0a0a;
             min-height: 100vh;
             padding: 20px 0;
         }}
@@ -163,32 +158,13 @@ class SecureTemplateRenderer:
             background: #111827;
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 
-                        0 0 0 1px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         }}
 
         .header {{
             background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
-            position: relative;
             padding: 48px 40px;
             text-align: center;
-            overflow: hidden;
-        }}
-
-        .header::before {{
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
-        }}
-
-        .header-content {{
-            position: relative;
-            z-index: 2;
         }}
 
         .header h1 {{
@@ -196,7 +172,6 @@ class SecureTemplateRenderer:
             margin: 0 0 12px 0;
             font-size: 2.75em;
             font-weight: 700;
-            letter-spacing: -0.025em;
             text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }}
 
@@ -205,22 +180,10 @@ class SecureTemplateRenderer:
             margin: 0;
             font-size: 1.125em;
             font-weight: 400;
-            letter-spacing: 0.015em;
-        }}
-
-        .divider {{
-            height: 1px;
-            background: linear-gradient(90deg, transparent 0%, #dc2626 50%, transparent 100%);
-            margin: 0;
         }}
 
         .section {{
             padding: 48px 40px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }}
-
-        .section:last-of-type {{
-            border-bottom: none;
         }}
 
         .section-header {{
@@ -235,7 +198,6 @@ class SecureTemplateRenderer:
             font-size: 1.875em;
             font-weight: 600;
             margin: 0;
-            letter-spacing: -0.025em;
         }}
 
         .section-icon {{
@@ -254,7 +216,6 @@ class SecureTemplateRenderer:
             flex: 1;
             height: 2px;
             background: linear-gradient(90deg, #dc2626 0%, rgba(220, 38, 38, 0.2) 100%);
-            border-radius: 1px;
         }}
 
         .item {{
@@ -262,19 +223,11 @@ class SecureTemplateRenderer:
             margin: 24px 0;
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4),
-                        0 0 0 1px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(220, 38, 38, 0.15);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
             display: table;
             width: 100%;
             table-layout: fixed;
-        }}
-
-        .item:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5),
-                        0 0 0 1px rgba(220, 38, 38, 0.3);
         }}
 
         .item-poster {{
@@ -283,7 +236,6 @@ class SecureTemplateRenderer:
             height: 210px;
             vertical-align: top;
             padding: 0;
-            position: relative;
         }}
 
         .item-poster img {{
@@ -306,15 +258,6 @@ class SecureTemplateRenderer:
             font-weight: 500;
         }}
 
-        .poster-overlay {{
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 20px;
-            background: linear-gradient(90deg, transparent 0%, rgba(31, 41, 55, 0.8) 100%);
-        }}
-
         .item-content {{
             display: table-cell;
             padding: 32px;
@@ -327,7 +270,6 @@ class SecureTemplateRenderer:
             color: #f9fafb;
             margin-bottom: 8px;
             line-height: 1.3;
-            letter-spacing: -0.025em;
         }}
 
         .item-meta {{
@@ -345,16 +287,6 @@ class SecureTemplateRenderer:
             font-size: 0.875em;
             font-weight: 500;
             border: 1px solid rgba(220, 38, 38, 0.3);
-        }}
-
-        .item-rating {{
-            background: rgba(59, 130, 246, 0.15);
-            color: #93c5fd;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            border: 1px solid rgba(59, 130, 246, 0.3);
         }}
 
         .item-overview {{
@@ -379,9 +311,7 @@ class SecureTemplateRenderer:
             border-radius: 20px;
             font-size: 0.8125em;
             font-weight: 500;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }}
 
         .tv-seasons {{
@@ -394,7 +324,6 @@ class SecureTemplateRenderer:
             padding: 24px;
             margin: 16px 0;
             border-left: 4px solid #dc2626;
-            border: 1px solid rgba(220, 38, 38, 0.2);
         }}
 
         .tv-season h4 {{
@@ -402,7 +331,6 @@ class SecureTemplateRenderer:
             margin: 0 0 16px 0;
             font-size: 1.125em;
             font-weight: 600;
-            letter-spacing: -0.025em;
         }}
 
         .episode {{
@@ -411,11 +339,6 @@ class SecureTemplateRenderer:
             margin: 8px 0;
             border-radius: 10px;
             border-left: 3px solid #dc2626;
-            transition: background 0.2s ease;
-        }}
-
-        .episode:hover {{
-            background: rgba(255, 255, 255, 0.08);
         }}
 
         .episode-title {{
@@ -436,18 +359,13 @@ class SecureTemplateRenderer:
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             text-align: center;
             padding: 48px 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }}
 
         .footer-logo {{
             font-size: 1.5em;
             font-weight: 700;
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #ef4444;
             margin-bottom: 16px;
-            letter-spacing: -0.025em;
         }}
 
         .footer-content {{
@@ -460,16 +378,11 @@ class SecureTemplateRenderer:
             color: #ef4444;
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s ease;
-        }}
-
-        .footer a:hover {{
-            color: #f87171;
         }}
 
         .footer-divider {{
             height: 1px;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+            background: rgba(255, 255, 255, 0.1);
             margin: 24px 0;
         }}
 
@@ -505,10 +418,6 @@ class SecureTemplateRenderer:
         @media only screen and (max-width: 640px) {{
             .email-wrapper {{
                 padding: 10px;
-            }}
-
-            .container {{
-                border-radius: 12px;
             }}
 
             .header {{
@@ -556,10 +465,6 @@ class SecureTemplateRenderer:
                 height: 240px;
             }}
 
-            .poster-overlay {{
-                display: none;
-            }}
-
             .item-content {{
                 display: block;
                 padding: 24px;
@@ -582,22 +487,71 @@ class SecureTemplateRenderer:
                 <td>
                     <div class="container">
                         <div class="header">
-                            <div class="header-content">
-                                <h1>{title}</h1>
-                                <p class="subtitle">{subtitle}</p>
-                            </div>
-                        </div>
-                        <div class="divider"></div>''')
+                            <h1>{title}</h1>
+                            <p class="subtitle">{subtitle}</p>
+                        </div>''')
+        email - wrapper
+        ">
+        < table
+        role = "presentation"
+        cellspacing = "0"
+        cellpadding = "0"
+        border = "0"
+        width = "100%" >
+        < tr >
+        < td >
+        < div
+
+        class ="container" >
+
+        < div
+
+        class ="header" >
+
+        < div
+
+        class ="header-content" >
+
+        < h1 > {title} < / h1 >
+        < p
+
+        class ="subtitle" > {subtitle} < / p >
+
+    < / div >
+
+< / div >
+< div
+
+
+class ="divider" > < / div > ''')
 
         # Movies section
         if movies and len(movies) > 0:
             html_parts.append('''
-                        <div class="section">
-                            <div class="section-header">
-                                <div class="section-icon">🎬</div>
-                                <h2>New Movies</h2>
-                                <div class="section-line"></div>
-                            </div>''')
+
+< div
+
+
+class ="section" >
+
+< div
+
+
+class ="section-header" >
+
+< div
+
+
+class ="section-icon" > 🎬 < / div >
+
+< h2 > New
+Movies < / h2 >
+< div
+
+
+class ="section-line" > < / div >
+
+< / div > ''')
 
             for movie in movies:
                 movie_html = self._render_movie_item(movie)
@@ -608,12 +562,30 @@ class SecureTemplateRenderer:
         # TV Shows section
         if tv_shows and len(tv_shows) > 0:
             html_parts.append('''
-                        <div class="section">
-                            <div class="section-header">
-                                <div class="section-icon">📺</div>
-                                <h2>New TV Episodes</h2>
-                                <div class="section-line"></div>
-                            </div>''')
+< div
+
+
+class ="section" >
+
+< div
+
+
+class ="section-header" >
+
+< div
+
+
+class ="section-icon" > 📺 < / div >
+
+< h2 > New
+TV
+Episodes < / h2 >
+< div
+
+
+class ="section-line" > < / div >
+
+< / div > ''')
 
             for show in tv_shows:
                 show_html = self._render_tv_show_item(show)
@@ -624,35 +596,80 @@ class SecureTemplateRenderer:
         # No content message
         if (not movies or len(movies) == 0) and (not tv_shows or len(tv_shows) == 0):
             html_parts.append('''
-                        <div class="section">
-                            <div class="no-items">
-                                <div class="no-items-icon">🎭</div>
-                                <h3>No New Content</h3>
-                                <p>No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
-                            </div>
-                        </div>''')
+< div
+
+
+class ="section" >
+
+< div
+
+
+class ="no-items" >
+
+< div
+
+
+class ="no-items-icon" > 🎭 < / div >
+
+< h3 > No
+New
+Content < / h3 >
+< p > No
+new
+content
+has
+been
+added
+recently. < br > Check
+back
+soon
+for the latest movies and TV shows! < / p >
+< / div >
+< / div > ''')
 
         # Footer
         html_parts.append(f'''
-                        <div class="footer">
-                            <div class="footer-logo">{emby_owner_name}</div>
-                            <div class="footer-divider"></div>
-                            <div class="footer-content">
-                                <p>
-                                    🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
-                                </p>
-                                <p>
-                                    📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-</body>
-</html>''')
+< div
+
+
+class ="footer" >
+
+< div
+
+
+class ="footer-logo" > {emby_owner_name} < / div >
+
+< div
+
+
+class ="footer-divider" > < / div >
+
+< div
+
+
+class ="footer-content" >
+
+< p >
+🎭 Enjoy
+your
+content
+on < a
+href = "{emby_url}" > {emby_owner_name} < / a >
+< / p >
+< p >
+📧 To
+unsubscribe, contact < a
+href = "mailto:{unsubscribe_email}" > {unsubscribe_email} < / a >
+< / p >
+< / div >
+< / div >
+< / div >
+< / td >
+< / tr >
+< / table >
+< / div >
+< / body >
+< / html > ''')
 
         return '\n'.join(html_parts)
 
@@ -669,8 +686,13 @@ class SecureTemplateRenderer:
 
         # Build poster HTML
         if poster_url:
-            poster_html = f'''<img src="{poster_url}" alt="{title} poster">
-                                <div class="poster-overlay"></div>'''
+            poster_html = f''' < img
+src = "{poster_url}"
+alt = "{title} poster" >
+< div
+
+
+class ="poster-overlay" > < / div > '''
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
@@ -705,17 +727,32 @@ class SecureTemplateRenderer:
             if genre_tags:
                 genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
-        return f'''                            <div class="item">
-                                <div class="item-poster">
-                                    {poster_html}
-                                </div>
-                                <div class="item-content">
-                                    <div class="item-title">{title}</div>
-                                    {meta_html}
-                                    {overview_html}
-                                    {genres_html}
-                                </div>
-                            </div>'''
+        return f''' < div class ="item" >
+
+< div
+
+
+class ="item-poster" >
+
+
+{poster_html}
+< / div >
+< div
+
+
+class ="item-content" >
+
+< div
+
+
+class ="item-title" > {title} < / div >
+
+
+{meta_html}
+{overview_html}
+{genres_html}
+< / div >
+< / div > '''
 
     def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
         """Render a single TV show item"""
@@ -770,25 +807,48 @@ class SecureTemplateRenderer:
 
                             episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
 
-                            season_parts.append(f'''                                <div class="episode">
-                                    <strong>Episode {episode_num}: {episode_name}</strong>
-                                    {episode_overview_html}
-                                </div>''')
+                            season_parts.append(f''' < div
+
+
+class ="episode" >
+
+< strong > Episode
+{episode_num}: {episode_name} < / strong >
+{episode_overview_html}
+< / div > ''')
 
                 season_parts.append('                            </div>')
 
             seasons_html = ''.join(season_parts)
 
-        return f'''                        <div class="item">
-                            <div class="item-poster">
-                                {poster_html}
-                            </div>
-                            <div class="item-content">
-                                <div class="item-title">{title}</div>
-                                {overview_html}
-                                {seasons_html}
-                            </div>
-                        </div>'''
+        return f''' < div
+
+
+class ="item" >
+
+< div
+
+
+class ="item-poster" >
+
+
+{poster_html}
+< / div >
+< div
+
+
+class ="item-content" >
+
+< div
+
+
+class ="item-title" > {title} < / div >
+
+
+{overview_html}
+{seasons_html}
+< / div >
+< / div > '''
 
     def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize template context for security"""
