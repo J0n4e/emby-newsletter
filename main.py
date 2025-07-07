@@ -296,11 +296,11 @@ class NewsletterGenerator:
         """Generate HTML newsletter content"""
         template_str = """
 <!DOCTYPE html>
-<html lang="{{ language }}">
+<html lang="{{ language | e }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
+    <title>{{ title | e }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -434,8 +434,8 @@ class NewsletterGenerator:
 <body>
     <div class="container">
         <div class="header">
-            <h1>{{ title }}</h1>
-            <p>{{ subtitle }}</p>
+            <h1>{{ title | e }}</h1>
+            <p>{{ subtitle | e }}</p>
         </div>
 
         {% if movies %}
@@ -445,23 +445,23 @@ class NewsletterGenerator:
             <div class="item">
                 <div class="item-poster">
                     {% if movie.tmdb_poster or movie.poster_url %}
-                    <img src="{{ movie.tmdb_poster or movie.poster_url }}" alt="{{ movie.title }} poster">
+                    <img src="{{ (movie.tmdb_poster or movie.poster_url) | e }}" alt="{{ movie.title | e }} poster">
                     {% else %}
                     <div style="width: 100px; height: 150px; background: #ddd; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #999;">No Image</div>
                     {% endif %}
                 </div>
                 <div class="item-content">
-                    <div class="item-title">{{ movie.title }}</div>
+                    <div class="item-title">{{ movie.title | e }}</div>
                     {% if movie.year %}
-                    <div class="item-year">({{ movie.year }})</div>
+                    <div class="item-year">({{ movie.year | e }})</div>
                     {% endif %}
                     {% if movie.tmdb_overview or movie.overview %}
-                    <div class="item-overview">{{ movie.tmdb_overview or movie.overview }}</div>
+                    <div class="item-overview">{{ (movie.tmdb_overview or movie.overview) | e }}</div>
                     {% endif %}
                     {% if movie.tmdb_genres or movie.genres %}
                     <div class="item-genres">
                         {% for genre in (movie.tmdb_genres or movie.genres) %}
-                        <span class="genre-tag">{{ genre if genre is string else genre.Name }}</span>
+                        <span class="genre-tag">{{ (genre if genre is string else genre.Name) | e }}</span>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -478,27 +478,27 @@ class NewsletterGenerator:
             <div class="item">
                 <div class="item-poster">
                     {% if show.tmdb_data and show.tmdb_data.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ show.tmdb_data.poster_path }}" alt="{{ show.title }} poster">
+                    <img src="https://image.tmdb.org/t/p/w500{{ show.tmdb_data.poster_path | e }}" alt="{{ show.title | e }} poster">
                     {% elif show.poster_url %}
-                    <img src="{{ show.poster_url }}" alt="{{ show.title }} poster">
+                    <img src="{{ show.poster_url | e }}" alt="{{ show.title | e }} poster">
                     {% else %}
                     <div style="width: 100px; height: 150px; background: #ddd; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #999;">No Image</div>
                     {% endif %}
                 </div>
                 <div class="item-content">
-                    <div class="item-title">{{ show.title }}</div>
+                    <div class="item-title">{{ show.title | e }}</div>
                     {% if show.tmdb_data and show.tmdb_data.overview %}
-                    <div class="item-overview">{{ show.tmdb_data.overview }}</div>
+                    <div class="item-overview">{{ show.tmdb_data.overview | e }}</div>
                     {% endif %}
 
                     {% for season_name, episodes in show.seasons.items() %}
                     <div class="tv-season">
-                        <h4>{{ season_name }}</h4>
+                        <h4>{{ season_name | e }}</h4>
                         {% for episode in episodes %}
                         <div class="episode">
-                            <strong>Episode {{ episode.episode_number }}: {{ episode.name }}</strong>
+                            <strong>Episode {{ episode.episode_number | e }}: {{ episode.name | e }}</strong>
                             {% if episode.overview %}
-                            <div style="margin-top: 5px; font-size: 0.9em; color: #666;">{{ episode.overview }}</div>
+                            <div style="margin-top: 5px; font-size: 0.9em; color: #666;">{{ episode.overview | e }}</div>
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -518,11 +518,11 @@ class NewsletterGenerator:
 
         <div class="footer">
             <p>
-                Enjoy your content on <a href="{{ emby_url }}">{{ emby_owner_name }}</a>
+                Enjoy your content on <a href="{{ emby_url | e }}">{{ emby_owner_name | e }}</a>
             </p>
             <p>
                 <small>
-                    To unsubscribe, please contact <a href="mailto:{{ unsubscribe_email }}">{{ unsubscribe_email }}</a>
+                    To unsubscribe, please contact <a href="mailto:{{ unsubscribe_email | e }}">{{ unsubscribe_email | e }}</a>
                 </small>
             </p>
         </div>
@@ -531,7 +531,11 @@ class NewsletterGenerator:
 </html>
         """
 
-        template = Template(template_str)
+        from jinja2 import Template, Environment
+
+        # Create a secure Jinja2 environment with auto-escaping enabled
+        env = Environment(autoescape=True)
+        template = env.from_string(template_str)
 
         return template.render(
             language=self.config.email_template.language,

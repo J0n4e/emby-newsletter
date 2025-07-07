@@ -5,10 +5,16 @@ services:
     image: ghcr.io/j0n4e/emby-newsletter:latest
     container_name: emby-newsletter
     volumes:
-      - ./config:/app/config
+      - ./config:/app/config:ro
     environment:
       - TZ=Europe/Paris  # Change this to your timezone
       - PUID=1000        # Change this to your user ID
       - PGID=1000        # Change this to your group ID
     restart: unless-stopped
     user: "1000:1000"    # Change this to your user:group IDs
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/log
