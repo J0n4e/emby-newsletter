@@ -9,6 +9,7 @@ import logging
 import requests
 import smtplib
 import ssl
+import re
 from typing import Dict, List, Tuple, Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -143,8 +144,27 @@ class ConfigurationChecker:
                 self.errors.append("No email recipients configured.")
                 return False
 
-            import re
+            # Email validation pattern
             email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+
+            for recipient in self.config.recipients:
+                if not email_pattern.match(recipient.strip()):
+                    self.warnings.append(f"Invalid email format: {recipient}")
+
+            return True
+
+        except smtplib.SMTPAuthenticationError:
+            self.errors.append("SMTP authentication failed. Check username and password.")
+            return False
+        except smtplib.SMTPConnectError:
+            self.errors.append("Cannot connect to SMTP server. Check server and port.")
+            return False
+        except smtplib.SMTPException as e:
+            self.errors.append(f"SMTP error: {e}")
+            return False
+        except Exception as e:
+            self.errors.append(f"Email configuration check failed: {e}")
+            return False
 
     def check_emby_folders(self) -> bool:
         """Check if configured Emby folders exist and are accessible"""
@@ -267,187 +287,6 @@ class ConfigurationChecker:
             print(f"\n❌ Configuration has {len(self.errors)} error(s) that must be fixed.")
 
         print("=" * 60 + "\n")
-
-
-def main():
-    """Main function for standalone configuration checking"""
-    try:
-        # Load configuration
-        config_manager = ConfigurationManager()
-        config = config_manager.load_config()
-
-        # Run checks
-        checker = ConfigurationChecker(config)
-        success = checker.check_all()
-
-        # Also check for recent items
-        movies, episodes = checker.check_recent_items()
-
-        if success:
-            print("✅ Configuration check completed successfully!")
-            sys.exit(0)
-        else:
-            print("❌ Configuration check failed! Please fix the errors above.")
-            sys.exit(1)
-
-    except Exception as e:
-        print(f"❌ Configuration check failed with error: {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    # Set up logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-
-    main()
-)
-
-for recipient in self.config.recipients:
-    if
-not email_pattern.match(recipient.strip()): \
-    self.warnings.append(f"Invalid email format: {recipient}")
-
-return True
-
-except smtplib.SMTPAuthenticationError:
-self.errors.append("SMTP authentication failed. Check username and password.")
-return False
-except smtplib.SMTPConnectError:
-self.errors.append("Cannot connect to SMTP server. Check server and port.")
-return False
-except smtplib.SMTPException as e:
-self.errors.append(f"SMTP error: {e}")
-return False
-except Exception as e:
-self.errors.append(f"Email configuration check failed: {e}")
-return False
-
-
-def check_emby_folders(self) -> bool:
-    """Check if configured Emby folders exist and are accessible"""
-    logger.info("Checking Emby folder configuration...")
-
-    try:
-        # Get library folders from Emby
-        url = f"{self.config.emby.url}/emby/Library/VirtualFolders"
-        headers = {
-            'X-Emby-Token': self.config.emby.api_token,
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.get(url, headers=headers, timeout=30)
-
-        if not response.ok:
-            self.warnings.append("Cannot access Emby library folders. Folder filtering may not work.")
-            return False
-
-        virtual_folders = response.json()
-        available_folders = []
-
-        for folder in virtual_folders:
-            for location in folder.get('Locations', []):
-                folder_name = location.split('/')[-1].strip('/')
-                if folder_name:
-                    available_folders.append(folder_name)
-
-        # Check configured movie folders
-        for folder in self.config.emby.watched_film_folders:
-            if folder and folder not in available_folders:
-                self.warnings.append(f"Movie folder '{folder}' not found in Emby libraries.")
-
-        # Check configured TV folders
-        for folder in self.config.emby.watched_tv_folders:
-            if folder and folder not in available_folders:
-                self.warnings.append(f"TV folder '{folder}' not found in Emby libraries.")
-
-        if available_folders:
-            logger.info(f"Available Emby folders: {', '.join(available_folders)}")
-        else:
-            self.warnings.append("No Emby library folders found.")
-
-        return True
-
-    except Exception as e:
-        self.warnings.append(f"Could not check Emby folders: {e}")
-        return False
-
-
-def check_recent_items(self) -> Tuple[int, int]:
-    """Check how many recent items are available"""
-    logger.info("Checking for recent items...")
-
-    try:
-        from datetime import datetime, timedelta
-
-        # Calculate the date from observed_period_days ago
-        since_date = datetime.now() - timedelta(days=self.config.emby.observed_period_days)
-
-        url = f"{self.config.emby.url}/emby/Items"
-        headers = {
-            'X-Emby-Token': self.config.emby.api_token,
-            'Content-Type': 'application/json'
-        }
-
-        params = {
-            'IncludeItemTypes': 'Movie,Episode',
-            'Recursive': 'true',
-            'SortBy': 'DateCreated',
-            'SortOrder': 'Descending',
-            'Fields': 'DateCreated',
-            'MinDateLastSaved': since_date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
-        }
-
-        response = requests.get(url, headers=headers, params=params, timeout=30)
-
-        if response.ok:
-            data = response.json()
-            items = data.get('Items', [])
-
-            movies = len([item for item in items if item.get('Type') == 'Movie'])
-            episodes = len([item for item in items if item.get('Type') == 'Episode'])
-
-            logger.info(f"Found {movies} recent movies and {episodes} recent episodes")
-
-            if movies == 0 and episodes == 0:
-                self.warnings.append(f"No recent items found in the last {self.config.emby.observed_period_days} days.")
-
-            return movies, episodes
-        else:
-            self.warnings.append("Could not retrieve recent items from Emby.")
-            return 0, 0
-
-    except Exception as e:
-        self.warnings.append(f"Could not check recent items: {e}")
-        return 0, 0
-
-
-def _report_results(self) -> None:
-    """Report check results"""
-    print("\n" + "=" * 60)
-    print("CONFIGURATION CHECK RESULTS")
-    print("=" * 60)
-
-    if self.errors:
-        print("\n❌ ERRORS (must be fixed):")
-        for error in self.errors:
-            print(f"   • {error}")
-
-    if self.warnings:
-        print("\n⚠️  WARNINGS (recommended to address):")
-        for warning in self.warnings:
-            print(f"   • {warning}")
-
-    if not self.errors and not self.warnings:
-        print("\n✅ All checks passed! Configuration looks good.")
-    elif not self.errors:
-        print("\n✅ Configuration is valid, but there are warnings to consider.")
-    else:
-        print(f"\n❌ Configuration has {len(self.errors)} error(s) that must be fixed.")
-
-    print("=" * 60 + "\n")
 
 
 def main():
