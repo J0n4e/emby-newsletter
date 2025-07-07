@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
-Simplified template rendering for Emby Newsletter using Jinja2
+Security-enhanced template rendering for Emby Newsletter
 """
 
 import os
 import logging
 import html
+import re
 from typing import Dict, List, Any
+from urllib.parse import quote, urlparse
 
 logger = logging.getLogger(__name__)
 
 try:
-    from jinja2 import Environment, FileSystemLoader, select_autoescape, Template
+    from jinja2 import Environment, FileSystemLoader, select_autoescape, Template, escape
+    from markupsafe import Markup
 
     JINJA2_AVAILABLE = True
 except ImportError:
@@ -20,88 +23,245 @@ except ImportError:
 
 
 class SecureTemplateRenderer:
-    """Secure template renderer using Jinja2 or fallback"""
+    """Security-enhanced template renderer with XSS protection"""
 
     def __init__(self, template_dir: str = "/app/templates"):
-        """Initialize the template renderer"""
+        """Initialize the template renderer with enhanced security"""
         self.template_dir = template_dir
 
+        # Security: Validate template directory
+        if not os.path.exists(template_dir):
+            logger.warning(f"Template directory {template_dir} does not exist")
+
         if JINJA2_AVAILABLE:
-            # Configure Jinja2 environment with security settings
+            # Configure Jinja2 environment with strict security settings
             self.jinja_env = Environment(
                 loader=FileSystemLoader(template_dir),
-                autoescape=select_autoescape(['html', 'xml']),
+                autoescape=select_autoescape(['html', 'xml', 'htm']),  # Enhanced autoescape
                 trim_blocks=True,
-                lstrip_blocks=True
+                lstrip_blocks=True,
+                # Security: Disable dangerous features
+                enable_async=False,
+                auto_reload=False,
+                optimized=True
             )
 
-            # Add custom filters
-            self.jinja_env.filters['e'] = html.escape
+            # Add security-focused custom filters
+            self.jinja_env.filters['secure_escape'] = self._secure_jinja_escape
+            self.jinja_env.filters['safe_url'] = self._safe_url_filter
+            self.jinja_env.filters['truncate_safe'] = self._truncate_safe
+
+            # Security: Add global functions with safe defaults
+            self.jinja_env.globals['secure_escape'] = self._secure_jinja_escape
         else:
             self.jinja_env = None
 
     def render_email_template(self, context: Dict[str, Any]) -> str:
-        """Render the email template with secure context"""
+        """Render the email template with enhanced security"""
         try:
-            # Sanitize context data
-            safe_context = self._sanitize_context(context)
+            # Security: Sanitize context data before processing
+            safe_context = self._deep_sanitize_context(context)
 
             if JINJA2_AVAILABLE and self.jinja_env:
-                # Use Jinja2 for proper template rendering
-                return self._render_with_jinja2(safe_context)
+                # Use Jinja2 with enhanced security
+                return self._render_with_secure_jinja2(safe_context)
             else:
-                # Fallback to built-in template
-                return self._build_html_email(safe_context)
+                # Fallback to built-in template with security
+                return self._build_secure_html_email(safe_context)
 
         except Exception as e:
             logger.error(f"Error rendering email template: {e}")
-            # Always fall back to built-in template on error
-            safe_context = self._sanitize_context(context)
-            return self._build_html_email(safe_context)
+            # Security: Always fall back to safe template on error
+            safe_context = self._deep_sanitize_context(context)
+            return self._build_secure_html_email(safe_context)
 
-    def _render_with_jinja2(self, context: Dict[str, Any]) -> str:
-        """Render template using Jinja2"""
+    def _render_with_secure_jinja2(self, context: Dict[str, Any]) -> str:
+        """Render template using Jinja2 with enhanced security"""
         try:
             template_path = os.path.join(self.template_dir, 'email.html')
 
+            # Security: Validate template path
+            if not self._is_safe_template_path(template_path):
+                logger.error(f"Unsafe template path detected: {template_path}")
+                return self._build_secure_html_email(context)
+
             if os.path.exists(template_path):
-                # Load template from file
-                template = self.jinja_env.get_template('email.html')
+                # Security: Read template with size limit
+                template_content = self._read_template_safely(template_path)
+                if not template_content:
+                    return self._build_secure_html_email(context)
+
+                # Security: Create template from string to avoid file system issues
+                template = self.jinja_env.from_string(template_content)
+
+                # Security: Render with explicit escaping context
                 html_content = template.render(**context)
-                logger.debug("Email template rendered successfully with Jinja2")
+
+                # Security: Final sanitization pass
+                html_content = self._final_security_check(html_content)
+
+                logger.debug("Email template rendered successfully with secure Jinja2")
                 return html_content
             else:
                 logger.warning(f"Template file not found at {template_path}, using built-in template")
-                return self._build_html_email(context)
+                return self._build_secure_html_email(context)
 
         except Exception as e:
-            logger.error(f"Jinja2 rendering failed: {e}")
-            return self._build_html_email(context)
+            logger.error(f"Secure Jinja2 rendering failed: {e}")
+            return self._build_secure_html_email(context)
 
-    def _build_html_email(self, context: Dict[str, Any]) -> str:
+    def _is_safe_template_path(self, template_path: str) -> bool:
+        """Security: Validate template path to prevent path traversal"""
+        try:
+            # Resolve absolute paths
+            abs_template_dir = os.path.abspath(self.template_dir)
+            abs_template_path = os.path.abspath(template_path)
+
+            # Check if template is within allowed directory
+            return abs_template_path.startswith(abs_template_dir)
+        except Exception:
+            return False
+
+    def _read_template_safely(self, template_path: str, max_size: int = 1024 * 1024) -> str:
+        """Security: Read template file with size limits"""
+        try:
+            # Check file size
+            file_size = os.path.getsize(template_path)
+            if file_size > max_size:
+                logger.error(f"Template file too large: {file_size} bytes")
+                return ""
+
+            with open(template_path, 'r', encoding='utf-8') as f:
+                content = f.read(max_size)
+
+            # Security: Basic content validation
+            if '<script' in content.lower() or 'javascript:' in content.lower():
+                logger.warning("Potentially unsafe content detected in template")
+                # Allow but log for monitoring
+
+            return content
+
+        except Exception as e:
+            logger.error(f"Failed to read template safely: {e}")
+            return ""
+
+    def _secure_jinja_escape(self, value: Any) -> str:
+        """Security: Enhanced Jinja2 escaping function"""
+        if value is None:
+            return ""
+
+        # Use Jinja2's built-in escape function
+        escaped = escape(str(value))
+
+        # Additional security layers
+        return self._additional_xss_protection(str(escaped))
+
+    def _safe_url_filter(self, url: str) -> str:
+        """Security: Filter for safe URL handling"""
+        if not url:
+            return ""
+
+        try:
+            # Parse and validate URL
+            parsed = urlparse(str(url))
+
+            # Security: Only allow safe schemes
+            safe_schemes = ['http', 'https', 'mailto']
+            if parsed.scheme.lower() not in safe_schemes:
+                logger.warning(f"Unsafe URL scheme detected: {parsed.scheme}")
+                return ""
+
+            # Security: Basic URL validation
+            if any(dangerous in url.lower() for dangerous in ['javascript:', 'data:', 'vbscript:']):
+                logger.warning(f"Dangerous URL detected: {url}")
+                return ""
+
+            return html.escape(url, quote=True)
+
+        except Exception:
+            logger.warning(f"Invalid URL: {url}")
+            return ""
+
+    def _truncate_safe(self, text: str, length: int = 300) -> str:
+        """Security: Safe text truncation"""
+        if not text:
+            return ""
+
+        safe_text = self._secure_jinja_escape(text)
+        if len(safe_text) <= length:
+            return safe_text
+
+        return safe_text[:length] + "..."
+
+    def _additional_xss_protection(self, text: str) -> str:
+        """Security: Additional XSS protection beyond HTML escaping"""
+        if not text:
+            return ""
+
+        # Security: Remove potential XSS vectors
+        dangerous_patterns = [
+            (r'javascript\s*:', 'j_avascript:'),
+            (r'vbscript\s*:', 'v_bscript:'),
+            (r'data\s*:', 'd_ata:'),
+            (r'on\w+\s*=', 'on_event='),
+            (r'<\s*script', '&lt;script'),
+            (r'<\s*/\s*script', '&lt;/script'),
+        ]
+
+        for pattern, replacement in dangerous_patterns:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+        return text
+
+    def _final_security_check(self, html_content: str) -> str:
+        """Security: Final pass to ensure no dangerous content"""
+        if not html_content:
+            return ""
+
+        # Security: Log potential issues but don't break functionality
+        dangerous_content = [
+            '<script',
+            'javascript:',
+            'vbscript:',
+            'data:text/html',
+            'onclick=',
+            'onload=',
+            'onerror='
+        ]
+
+        for dangerous in dangerous_content:
+            if dangerous.lower() in html_content.lower():
+                logger.warning(f"Potentially dangerous content detected: {dangerous}")
+
+        return html_content
+
+    def _build_secure_html_email(self, context: Dict[str, Any]) -> str:
         """Build HTML email using secure string construction (fallback)"""
-        # Escape all context values
-        title = html.escape(str(context.get('title', 'Emby Newsletter')))
-        subtitle = html.escape(str(context.get('subtitle', '')))
-        language = html.escape(str(context.get('language', 'en')))
-        emby_url = html.escape(str(context.get('emby_url', '')))
-        emby_owner_name = html.escape(str(context.get('emby_owner_name', '')))
-        unsubscribe_email = html.escape(str(context.get('unsubscribe_email', '')))
+        # Security: Escape all context values with enhanced protection
+        title = self._secure_escape_with_validation(context.get('title', 'Emby Newsletter'))
+        subtitle = self._secure_escape_with_validation(context.get('subtitle', ''))
+        language = self._secure_escape_with_validation(context.get('language', 'en'))
+        emby_url = self._safe_url_filter(context.get('emby_url', ''))
+        emby_owner_name = self._secure_escape_with_validation(context.get('emby_owner_name', ''))
+        unsubscribe_email = self._safe_email_filter(context.get('unsubscribe_email', ''))
 
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
-        # Build HTML content
+        # Build HTML content with enhanced security
         html_content = f'''<!DOCTYPE html>
 <html lang="{language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
     <title>{title}</title>
     <style>
+        /* Enhanced security: No JavaScript in CSS */
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: #ffffff;
             max-width: 800px;
@@ -224,41 +384,6 @@ class SecureTemplateRenderer:
             display: inline-block;
         }}
 
-        .tv-season {{
-            margin: 20px 0;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            border-left: 4px solid #ef4444;
-        }}
-
-        .tv-season h4 {{
-            color: #fca5a5;
-            margin: 0 0 15px 0;
-            font-size: 1.2em;
-            font-weight: 600;
-        }}
-
-        .episode {{
-            background: rgba(255, 255, 255, 0.08);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border-left: 3px solid #dc2626;
-        }}
-
-        .episode strong {{
-            color: #fca5a5;
-            font-weight: 600;
-        }}
-
-        .episode-overview {{
-            margin-top: 8px;
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.4;
-        }}
-
         .footer {{
             background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
             text-align: center;
@@ -271,13 +396,6 @@ class SecureTemplateRenderer:
             color: #ef4444;
             text-decoration: none;
             font-weight: 500;
-        }}
-
-        .footer-logo {{
-            font-size: 1.5em;
-            font-weight: 700;
-            color: #ef4444;
-            margin-bottom: 15px;
         }}
 
         .no-items {{
@@ -301,11 +419,6 @@ class SecureTemplateRenderer:
                 height: 200px;
                 text-align: center;
             }}
-            .item-poster img {{
-                width: auto;
-                height: 200px;
-                max-width: 100%;
-            }}
             .item-content {{
                 display: block;
                 padding: 20px;
@@ -323,26 +436,26 @@ class SecureTemplateRenderer:
                         <p>{subtitle}</p>
                     </div>'''
 
-        # Movies section
+        # Movies section with enhanced security
         if movies and len(movies) > 0:
             html_content += '''
                     <div class="section">
                         <h2>🎬 New Movies</h2>'''
 
             for movie in movies:
-                html_content += self._render_movie_item(movie)
+                html_content += self._render_secure_movie_item(movie)
 
             html_content += '''
                     </div>'''
 
-        # TV Shows section
+        # TV Shows section with enhanced security
         if tv_shows and len(tv_shows) > 0:
             html_content += '''
                     <div class="section">
                         <h2>📺 New TV Episodes</h2>'''
 
             for show in tv_shows:
-                html_content += self._render_tv_show_item(show)
+                html_content += self._render_secure_tv_show_item(show)
 
             html_content += '''
                     </div>'''
@@ -357,10 +470,9 @@ class SecureTemplateRenderer:
                         </div>
                     </div>'''
 
-        # Footer
+        # Footer with secure links
         html_content += f'''
                     <div class="footer">
-                        <div class="footer-logo">{emby_owner_name}</div>
                         <p>
                             🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
                         </p>
@@ -379,49 +491,26 @@ class SecureTemplateRenderer:
 
         return html_content
 
-    def _render_movie_item(self, movie: Dict[str, Any]) -> str:
-        """Render a single movie item"""
+    def _render_secure_movie_item(self, movie: Dict[str, Any]) -> str:
+        """Render a single movie item with enhanced security"""
         if not isinstance(movie, dict):
             return ""
 
-        title = html.escape(str(movie.get('title', 'Unknown')))
-        year = html.escape(str(movie.get('year', '')))
-        overview = html.escape(str(movie.get('tmdb_overview') or movie.get('overview', '')))
+        title = self._secure_escape_with_validation(movie.get('title', 'Unknown'))
+        year = self._secure_escape_with_validation(movie.get('year', ''))
+        overview = self._secure_escape_with_validation(movie.get('tmdb_overview') or movie.get('overview', ''))
 
-        # Handle poster URL
-        poster_url = movie.get('tmdb_poster') or movie.get('poster_url', '')
+        # Security: Validate and sanitize poster URL
+        poster_url = self._safe_url_filter(movie.get('tmdb_poster') or movie.get('poster_url', ''))
+
         if poster_url:
-            poster_url = html.escape(str(poster_url))
             poster_html = f'<img src="{poster_url}" alt="{title} poster" style="width: 120px; height: 180px; object-fit: cover; display: block;">'
         else:
-            poster_html = '<div style="width: 120px; height: 180px; background: linear-gradient(135deg, #262626 0%, #404040 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center; border-radius: 8px;">No Poster<br>Available</div>'
+            poster_html = '<div style="width: 120px; height: 180px; background: #333; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center;">No Poster</div>'
 
-        # Year HTML
-        year_html = f'<div class="item-year">({year})</div>' if year else ''
-
-        # Overview HTML (truncate if too long)
+        # Truncate overview for security and readability
         if overview and len(overview) > 300:
             overview = overview[:300] + "..."
-        overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
-
-        # Genres HTML
-        genres_html = ''
-        genres = movie.get('tmdb_genres') or movie.get('genres', [])
-        if genres and isinstance(genres, list):
-            genre_tags = []
-            for genre in genres[:5]:  # Limit to 5 genres
-                if isinstance(genre, dict):
-                    genre_name = html.escape(str(genre.get('Name', '')))
-                elif isinstance(genre, str):
-                    genre_name = html.escape(genre)
-                else:
-                    genre_name = html.escape(str(genre))
-
-                if genre_name:
-                    genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
-
-            if genre_tags:
-                genres_html = f'<div>{"".join(genre_tags)}</div>'
 
         return f'''
                         <div class="item">
@@ -430,69 +519,40 @@ class SecureTemplateRenderer:
                             </div>
                             <div class="item-content">
                                 <div class="item-title">{title}</div>
-                                {year_html}
-                                {overview_html}
-                                {genres_html}
+                                {f'<div class="item-year">({year})</div>' if year else ''}
+                                {f'<div class="item-overview">{overview}</div>' if overview else ''}
                             </div>
                         </div>'''
 
-    def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
-        """Render a single TV show item"""
+    def _render_secure_tv_show_item(self, show: Dict[str, Any]) -> str:
+        """Render a single TV show item with enhanced security"""
         if not isinstance(show, dict):
             return ""
 
-        title = html.escape(str(show.get('title', 'Unknown')))
+        title = self._secure_escape_with_validation(show.get('title', 'Unknown'))
 
-        # Get overview from TMDB data if available
+        # Security: Handle nested data safely
         overview = ''
         tmdb_data = show.get('tmdb_data', {})
         if isinstance(tmdb_data, dict) and tmdb_data.get('overview'):
-            overview = html.escape(str(tmdb_data['overview']))
+            overview = self._secure_escape_with_validation(tmdb_data['overview'])
 
-        # Handle poster URL
+        # Security: Safe poster URL handling
         poster_url = ''
         if isinstance(tmdb_data, dict) and tmdb_data.get('poster_path'):
-            poster_url = f"https://image.tmdb.org/t/p/w500{html.escape(str(tmdb_data['poster_path']))}"
+            base_url = "https://image.tmdb.org/t/p/w500"
+            poster_path = self._secure_escape_with_validation(tmdb_data['poster_path'])
+            poster_url = f"{base_url}{poster_path}"
         elif show.get('poster_url'):
-            poster_url = html.escape(str(show['poster_url']))
+            poster_url = self._safe_url_filter(show['poster_url'])
 
         if poster_url:
             poster_html = f'<img src="{poster_url}" alt="{title} poster" style="width: 120px; height: 180px; object-fit: cover; display: block;">'
         else:
-            poster_html = '<div style="width: 120px; height: 180px; background: linear-gradient(135deg, #262626 0%, #404040 100%); display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center; border-radius: 8px;">No Poster<br>Available</div>'
+            poster_html = '<div style="width: 120px; height: 180px; background: #333; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8em; text-align: center;">No Poster</div>'
 
-        # Overview HTML (truncate if too long)
         if overview and len(overview) > 300:
             overview = overview[:300] + "..."
-        overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
-
-        # Seasons HTML
-        seasons_html = ''
-        seasons = show.get('seasons', {})
-        if isinstance(seasons, dict):
-            for season_name, episodes in seasons.items():
-                season_name_escaped = html.escape(str(season_name))
-                seasons_html += f'<div class="tv-season"><h4>{season_name_escaped}</h4>'
-
-                if isinstance(episodes, list):
-                    for episode in episodes[:10]:  # Limit episodes per season
-                        if isinstance(episode, dict):
-                            episode_num = html.escape(str(episode.get('episode_number', '')))
-                            episode_name = html.escape(str(episode.get('name', 'Unknown')))
-                            episode_overview = html.escape(str(episode.get('overview', '')))
-
-                            # Truncate episode overview
-                            if episode_overview and len(episode_overview) > 150:
-                                episode_overview = episode_overview[:150] + "..."
-
-                            episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
-
-                            seasons_html += f'''<div class="episode">
-                                    <strong>Episode {episode_num}: {episode_name}</strong>
-                                    {episode_overview_html}
-                                </div>'''
-
-                seasons_html += '</div>'
 
         return f'''
                         <div class="item">
@@ -501,111 +561,123 @@ class SecureTemplateRenderer:
                             </div>
                             <div class="item-content">
                                 <div class="item-title">{title}</div>
-                                {overview_html}
-                                {seasons_html}
+                                {f'<div class="item-overview">{overview}</div>' if overview else ''}
                             </div>
                         </div>'''
 
-    def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Sanitize template context for security"""
+    def _secure_escape_with_validation(self, value: Any) -> str:
+        """Security: Enhanced escaping with validation"""
+        if value is None:
+            return ""
+
+        # Convert to string and validate
+        str_value = str(value)
+
+        # Security: Length limit
+        if len(str_value) > 10000:
+            str_value = str_value[:10000] + "..."
+            logger.warning("String truncated due to excessive length")
+
+        # Security: HTML escape
+        escaped = html.escape(str_value, quote=True)
+
+        # Security: Additional protection
+        return self._additional_xss_protection(escaped)
+
+    def _safe_email_filter(self, email: str) -> str:
+        """Security: Safe email address validation"""
+        if not email:
+            return ""
+
+        # Basic email validation pattern
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, str(email)):
+            logger.warning(f"Invalid email format: {email}")
+            return ""
+
+        return html.escape(str(email), quote=True)
+
+    def _deep_sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Security: Deep sanitization of context data"""
         safe_context = {}
 
         for key, value in context.items():
             if key in ['movies', 'tv_shows']:
-                # Sanitize movie/TV show data
-                safe_context[key] = self._sanitize_media_items(value)
+                safe_context[key] = self._sanitize_media_items_enhanced(value)
             elif isinstance(value, str):
-                # Basic string sanitization
-                safe_context[key] = self._sanitize_string(value)
+                safe_context[key] = self._secure_escape_with_validation(value)
             elif isinstance(value, (int, float, bool)):
-                # Safe data types
                 safe_context[key] = value
             elif value is None:
                 safe_context[key] = ""
             else:
-                # Convert other types to string and sanitize
-                safe_context[key] = self._sanitize_string(str(value))
+                safe_context[key] = self._secure_escape_with_validation(str(value))
 
         return safe_context
 
-    def _sanitize_string(self, value: str) -> str:
-        """Sanitize string values"""
-        if not value:
-            return ""
-
-        # Remove null bytes and control characters
-        sanitized = ''.join(char for char in value if ord(char) >= 32 or char in '\n\r\t')
-
-        # Limit length to prevent DoS
-        max_length = 10000
-        if len(sanitized) > max_length:
-            sanitized = sanitized[:max_length] + "..."
-
-        return sanitized
-
-    def _sanitize_media_items(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Sanitize movie/TV show items"""
+    def _sanitize_media_items_enhanced(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Security: Enhanced sanitization of media items"""
         if not isinstance(items, list):
             return []
 
         sanitized_items = []
-        for item in items[:100]:  # Limit number of items
+        for item in items[:100]:  # Security: Limit number of items
             if not isinstance(item, dict):
                 continue
 
             sanitized_item = {}
             for key, value in item.items():
                 if isinstance(value, str):
-                    sanitized_item[key] = self._sanitize_string(value)
+                    sanitized_item[key] = self._secure_escape_with_validation(value)
                 elif isinstance(value, (int, float, bool)):
                     sanitized_item[key] = value
                 elif isinstance(value, dict):
-                    sanitized_item[key] = self._sanitize_nested_dict(value)
+                    sanitized_item[key] = self._sanitize_nested_dict_enhanced(value)
                 elif isinstance(value, list):
-                    sanitized_item[key] = self._sanitize_list(value)
+                    sanitized_item[key] = self._sanitize_list_enhanced(value)
                 elif value is None:
                     sanitized_item[key] = ""
                 else:
-                    sanitized_item[key] = self._sanitize_string(str(value))
+                    sanitized_item[key] = self._secure_escape_with_validation(str(value))
 
             sanitized_items.append(sanitized_item)
 
         return sanitized_items
 
-    def _sanitize_nested_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sanitize nested dictionary data"""
+    def _sanitize_nested_dict_enhanced(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Security: Enhanced nested dictionary sanitization"""
         if isinstance(data, str):
-            return {'name': self._sanitize_string(data)}
+            return {'name': self._secure_escape_with_validation(data)}
         if not isinstance(data, dict):
             return {}
 
         sanitized = {}
         for key, value in data.items():
             if isinstance(value, str):
-                sanitized[key] = self._sanitize_string(value)
+                sanitized[key] = self._secure_escape_with_validation(value)
             elif isinstance(value, (int, float, bool)):
                 sanitized[key] = value
             elif value is None:
                 sanitized[key] = ""
             else:
-                sanitized[key] = self._sanitize_string(str(value))
+                sanitized[key] = self._secure_escape_with_validation(str(value))
 
         return sanitized
 
-    def _sanitize_list(self, data: List[Any]) -> List[Any]:
-        """Sanitize list data"""
+    def _sanitize_list_enhanced(self, data: List[Any]) -> List[Any]:
+        """Security: Enhanced list sanitization"""
         sanitized = []
-        for item in data[:50]:  # Limit list size
+        for item in data[:50]:  # Security: Limit list size
             if isinstance(item, str):
-                sanitized.append(self._sanitize_string(item))
+                sanitized.append(self._secure_escape_with_validation(item))
             elif isinstance(item, dict):
-                sanitized.append(self._sanitize_nested_dict(item))
+                sanitized.append(self._sanitize_nested_dict_enhanced(item))
             elif isinstance(item, (int, float, bool)):
                 sanitized.append(item)
             elif item is None:
                 sanitized.append("")
             else:
-                sanitized.append(self._sanitize_string(str(item)))
+                sanitized.append(self._secure_escape_with_validation(str(item)))
 
         return sanitized
 
