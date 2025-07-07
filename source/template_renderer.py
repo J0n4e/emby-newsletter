@@ -129,7 +129,7 @@ class SecureTemplateRenderer:
         html_parts = []
 
         # HTML header with professional dark theme and red accents
-        html_parts.append(f'''<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>
 <html lang="{language}">
 <head>
     <meta charset="UTF-8">
@@ -140,14 +140,14 @@ class SecureTemplateRenderer:
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #e5e7eb;
+            color: rgb(229, 231, 235);
             margin: 0;
             padding: 0;
-            background: #0a0a0a;
+            background: rgb(10, 10, 10);
         }}
 
         .email-wrapper {{
-            background: #0a0a0a;
+            background: rgb(10, 10, 10);
             min-height: 100vh;
             padding: 20px 0;
         }}
@@ -155,20 +155,20 @@ class SecureTemplateRenderer:
         .container {{
             max-width: 680px;
             margin: 0 auto;
-            background: #111827;
+            background: rgb(17, 24, 39);
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         }}
 
         .header {{
-            background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+            background: linear-gradient(135deg, rgb(153, 27, 27) 0%, rgb(220, 38, 38) 50%, rgb(239, 68, 68) 100%);
             padding: 48px 40px;
             text-align: center;
         }}
 
         .header h1 {{
-            color: #ffffff;
+            color: rgb(255, 255, 255);
             margin: 0 0 12px 0;
             font-size: 2.75em;
             font-weight: 700;
@@ -194,14 +194,14 @@ class SecureTemplateRenderer:
         }}
 
         .section h2 {{
-            color: #f9fafb;
+            color: rgb(249, 250, 251);
             font-size: 1.875em;
             font-weight: 600;
             margin: 0;
         }}
 
         .section-icon {{
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            background: linear-gradient(135deg, rgb(220, 38, 38) 0%, rgb(239, 68, 68) 100%);
             width: 48px;
             height: 48px;
             border-radius: 12px;
@@ -215,11 +215,11 @@ class SecureTemplateRenderer:
         .section-line {{
             flex: 1;
             height: 2px;
-            background: linear-gradient(90deg, #dc2626 0%, rgba(220, 38, 38, 0.2) 100%);
+            background: linear-gradient(90deg, rgb(220, 38, 38) 0%, rgba(220, 38, 38, 0.2) 100%);
         }}
 
         .item {{
-            background: linear-gradient(145deg, #1f2937 0%, #374151 100%);
+            background: linear-gradient(145deg, rgb(31, 41, 55) 0%, rgb(55, 65, 81) 100%);
             margin: 24px 0;
             border-radius: 16px;
             overflow: hidden;
@@ -248,11 +248,11 @@ class SecureTemplateRenderer:
         .no-poster {{
             width: 140px;
             height: 210px;
-            background: linear-gradient(145deg, #374151 0%, #4b5563 100%);
+            background: linear-gradient(145deg, rgb(55, 65, 81) 0%, rgb(75, 85, 99) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #9ca3af;
+            color: rgb(156, 163, 175);
             font-size: 0.875em;
             text-align: center;
             font-weight: 500;
@@ -267,7 +267,7 @@ class SecureTemplateRenderer:
         .item-title {{
             font-size: 1.5em;
             font-weight: 700;
-            color: #f9fafb;
+            color: rgb(249, 250, 251);
             margin-bottom: 8px;
             line-height: 1.3;
         }}
@@ -281,7 +281,7 @@ class SecureTemplateRenderer:
 
         .item-year {{
             background: rgba(220, 38, 38, 0.15);
-            color: #fca5a5;
+            color: rgb(252, 165, 165);
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.875em;
@@ -290,7 +290,7 @@ class SecureTemplateRenderer:
         }}
 
         .item-overview {{
-            color: #d1d5db;
+            color: rgb(209, 213, 219);
             font-size: 0.9375em;
             line-height: 1.6;
             margin-bottom: 24px;
@@ -305,8 +305,8 @@ class SecureTemplateRenderer:
         }}
 
         .genre-tag {{
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            color: #ffffff;
+            background: linear-gradient(135deg, rgb(220, 38, 38) 0%, rgb(239, 68, 68) 100%);
+            color: rgb(255, 255, 255);
             padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.8125em;
@@ -323,11 +323,11 @@ class SecureTemplateRenderer:
             border-radius: 12px;
             padding: 24px;
             margin: 16px 0;
-            border-left: 4px solid #dc2626;
+            border-left: 4px solid rgb(220, 38, 38);
         }}
 
         .tv-season h4 {{
-            color: #f87171;
+            color: rgb(248, 113, 113);
             margin: 0 0 16px 0;
             font-size: 1.125em;
             font-weight: 600;
@@ -338,25 +338,25 @@ class SecureTemplateRenderer:
             padding: 16px 20px;
             margin: 8px 0;
             border-radius: 10px;
-            border-left: 3px solid #dc2626;
+            border-left: 3px solid rgb(220, 38, 38);
         }}
 
         .episode-title {{
-            color: #f87171;
+            color: rgb(248, 113, 113);
             font-weight: 600;
             font-size: 0.9375em;
             margin-bottom: 6px;
         }}
 
         .episode-overview {{
-            color: #d1d5db;
+            color: rgb(209, 213, 219);
             font-size: 0.875em;
             line-height: 1.5;
             font-weight: 400;
         }}
 
         .footer {{
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, rgb(15, 23, 42) 0%, rgb(30, 41, 59) 100%);
             text-align: center;
             padding: 48px 40px;
         }}
@@ -364,18 +364,18 @@ class SecureTemplateRenderer:
         .footer-logo {{
             font-size: 1.5em;
             font-weight: 700;
-            color: #ef4444;
+            color: rgb(239, 68, 68);
             margin-bottom: 16px;
         }}
 
         .footer-content {{
-            color: #9ca3af;
+            color: rgb(156, 163, 175);
             font-size: 0.9375em;
             line-height: 1.6;
         }}
 
         .footer a {{
-            color: #ef4444;
+            color: rgb(239, 68, 68);
             text-decoration: none;
             font-weight: 500;
         }}
@@ -388,7 +388,7 @@ class SecureTemplateRenderer:
 
         .no-items {{
             text-align: center;
-            color: #9ca3af;
+            color: rgb(156, 163, 175);
             padding: 80px 40px;
             background: rgba(220, 38, 38, 0.05);
             border-radius: 16px;
@@ -405,7 +405,7 @@ class SecureTemplateRenderer:
         .no-items h3 {{
             font-size: 1.5em;
             font-weight: 600;
-            color: #f9fafb;
+            color: rgb(249, 250, 251);
             margin: 0 0 8px 0;
         }}
 
@@ -489,7 +489,9 @@ class SecureTemplateRenderer:
                         <div class="header">
                             <h1>{title}</h1>
                             <p class="subtitle">{subtitle}</p>
-                        </div>''')
+                        </div>"""
+
+        html_parts = [html_content]
         email - wrapper
         ">
         < table
