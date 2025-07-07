@@ -342,33 +342,6 @@ class NewsletterGenerator:
 
         except Exception as e:
             logger.error(f"Error sending newsletter: {e}")
-            return False_template
-            ']['
-            subject
-            ']
-
-            # Create message
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = sender_email
-            msg['To'] = ', '.join(recipients)
-
-            # Add HTML content
-            html_part = MIMEText(html_content, 'html')
-            msg.attach(html_part)
-
-            # Send email
-            context = ssl.create_default_context()
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls(context=context)
-                server.login(smtp_username, smtp_password)
-                server.sendmail(sender_email, recipients, msg.as_string())
-
-            logger.info(f"Newsletter sent successfully to {len(recipients)} recipients")
-            return True
-
-        except Exception as e:
-            logger.error(f"Error sending newsletter: {e}")
             return False
 
 
