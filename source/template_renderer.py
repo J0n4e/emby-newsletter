@@ -1,48 +1,4 @@
-# Build poster HTML
-if poster_url:
-    poster_html = f'''<img src="{poster_url}" alt="{title} poster">
-                                <div class="poster-overlay"></div>'''
-else:
-    poster_html = '<div class="no-poster">No Poster<br>Available</div>'
-
-# Build meta information
-meta_parts = []
-if year:
-    meta_parts.append(f'<span class="item-year">{year}</span>')
-
-meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
-
-# Build overview HTML (truncate if too long)
-if overview and len(overview) > 300:
-    overview = overview[:300] + "..."
-overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
-
-# Build genres HTML
-genres_html = ''
-genres = movie.get('tmdb_genres') or movie.get('genres', [])
-if genres and isinstance(genres, list):
-    genre_tags = []
-    for genre in genres[:5]:  # Limit to 5 genres
-        if isinstance(genre, dict):
-            genre_name = self._secure_escape(genre.get('Name', ''))
-        elif isinstance(genre, str):
-            genre_name = self._secure_escape(genre)
-        else:
-            genre_name = self._secure_escape(str(genre))
-
-        if genre_name:
-            genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
-
-    if genre_tags:
-        genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
-
-return f'''                            <div class="item">
-                                <div class="item-poster">
-                                    {poster_html}
-                                </div>
-                                <div class="item-content">
-                                    <div class="item-title">{title}</div>
-                                    {meta_html# !/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Secure template rendering for Emby Newsletter using string templates
 """
@@ -54,8 +10,7 @@ import re
 from typing import Dict, List, Any
 from string import Template
 
-logger =
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class SecureTemplateRenderer:
@@ -125,10 +80,7 @@ class SecureTemplateRenderer:
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
-        # Build HTML structure
-        html_parts = []
-
-        # HTML header with professional dark theme and red accents
+        # Build the complete HTML email
         html_content = f"""<!DOCTYPE html>
 <html lang="{language}">
 <head>
@@ -491,189 +443,72 @@ class SecureTemplateRenderer:
                             <p class="subtitle">{subtitle}</p>
                         </div>"""
 
-        html_parts = [html_content]
-        email - wrapper
-        ">
-        < table
-        role = "presentation"
-        cellspacing = "0"
-        cellpadding = "0"
-        border = "0"
-        width = "100%" >
-        < tr >
-        < td >
-        < div
-
-        class ="container" >
-
-        < div
-
-        class ="header" >
-
-        < div
-
-        class ="header-content" >
-
-        < h1 > {title} < / h1 >
-        < p
-
-        class ="subtitle" > {subtitle} < / p >
-
-    < / div >
-
-< / div >
-< div
-
-
-class ="divider" > < / div > ''')
-
         # Movies section
         if movies and len(movies) > 0:
-            html_parts.append('''
-
-< div
-
-
-class ="section" >
-
-< div
-
-
-class ="section-header" >
-
-< div
-
-
-class ="section-icon" > 🎬 < / div >
-
-< h2 > New
-Movies < / h2 >
-< div
-
-
-class ="section-line" > < / div >
-
-< / div > ''')
+            html_content += '''
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon">🎬</div>
+                                <h2>New Movies</h2>
+                                <div class="section-line"></div>
+                            </div>'''
 
             for movie in movies:
                 movie_html = self._render_movie_item(movie)
-                html_parts.append(movie_html)
+                html_content += movie_html
 
-            html_parts.append('                        </div>')
+            html_content += '                        </div>'
 
         # TV Shows section
         if tv_shows and len(tv_shows) > 0:
-            html_parts.append('''
-< div
-
-
-class ="section" >
-
-< div
-
-
-class ="section-header" >
-
-< div
-
-
-class ="section-icon" > 📺 < / div >
-
-< h2 > New
-TV
-Episodes < / h2 >
-< div
-
-
-class ="section-line" > < / div >
-
-< / div > ''')
+            html_content += '''
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon">📺</div>
+                                <h2>New TV Episodes</h2>
+                                <div class="section-line"></div>
+                            </div>'''
 
             for show in tv_shows:
                 show_html = self._render_tv_show_item(show)
-                html_parts.append(show_html)
+                html_content += show_html
 
-            html_parts.append('                        </div>')
+            html_content += '                        </div>'
 
         # No content message
         if (not movies or len(movies) == 0) and (not tv_shows or len(tv_shows) == 0):
-            html_parts.append('''
-< div
-
-
-class ="section" >
-
-< div
-
-
-class ="no-items" >
-
-< div
-
-
-class ="no-items-icon" > 🎭 < / div >
-
-< h3 > No
-New
-Content < / h3 >
-< p > No
-new
-content
-has
-been
-added
-recently. < br > Check
-back
-soon
-for the latest movies and TV shows! < / p >
-< / div >
-< / div > ''')
+            html_content += '''
+                        <div class="section">
+                            <div class="no-items">
+                                <div class="no-items-icon">🎭</div>
+                                <h3>No New Content</h3>
+                                <p>No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
+                            </div>
+                        </div>'''
 
         # Footer
-        html_parts.append(f'''
-< div
+        html_content += f'''
+                        <div class="footer">
+                            <div class="footer-logo">{emby_owner_name}</div>
+                            <div class="footer-divider"></div>
+                            <div class="footer-content">
+                                <p>
+                                    🎭 Enjoy your content on <a href="{emby_url}">{emby_owner_name}</a>
+                                </p>
+                                <p>
+                                    📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>'''
 
-
-class ="footer" >
-
-< div
-
-
-class ="footer-logo" > {emby_owner_name} < / div >
-
-< div
-
-
-class ="footer-divider" > < / div >
-
-< div
-
-
-class ="footer-content" >
-
-< p >
-🎭 Enjoy
-your
-content
-on < a
-href = "{emby_url}" > {emby_owner_name} < / a >
-< / p >
-< p >
-📧 To
-unsubscribe, contact < a
-href = "mailto:{unsubscribe_email}" > {unsubscribe_email} < / a >
-< / p >
-< / div >
-< / div >
-< / div >
-< / td >
-< / tr >
-< / table >
-< / div >
-< / body >
-< / html > ''')
-
-        return '\n'.join(html_parts)
+        return html_content
 
     def _render_movie_item(self, movie: Dict[str, Any]) -> str:
         """Render a single movie item"""
@@ -688,13 +523,7 @@ href = "mailto:{unsubscribe_email}" > {unsubscribe_email} < / a >
 
         # Build poster HTML
         if poster_url:
-            poster_html = f''' < img
-src = "{poster_url}"
-alt = "{title} poster" >
-< div
-
-
-class ="poster-overlay" > < / div > '''
+            poster_html = f'<img src="{poster_url}" alt="{title} poster">'
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
@@ -729,32 +558,17 @@ class ="poster-overlay" > < / div > '''
             if genre_tags:
                 genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
-        return f''' < div class ="item" >
-
-< div
-
-
-class ="item-poster" >
-
-
-{poster_html}
-< / div >
-< div
-
-
-class ="item-content" >
-
-< div
-
-
-class ="item-title" > {title} < / div >
-
-
-{meta_html}
-{overview_html}
-{genres_html}
-< / div >
-< / div > '''
+        return f'''                            <div class="item">
+                                <div class="item-poster">
+                                    {poster_html}
+                                </div>
+                                <div class="item-content">
+                                    <div class="item-title">{title}</div>
+                                    {meta_html}
+                                    {overview_html}
+                                    {genres_html}
+                                </div>
+                            </div>'''
 
     def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
         """Render a single TV show item"""
@@ -809,48 +623,25 @@ class ="item-title" > {title} < / div >
 
                             episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
 
-                            season_parts.append(f''' < div
+                            season_parts.append(f'''                                    <div class="episode">
+                                        <div class="episode-title">Episode {episode_num}: {episode_name}</div>
+                                        {episode_overview_html}
+                                    </div>''')
 
+                season_parts.append('                                </div>')
 
-class ="episode" >
+            seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>' if season_parts else ''
 
-< strong > Episode
-{episode_num}: {episode_name} < / strong >
-{episode_overview_html}
-< / div > ''')
-
-                season_parts.append('                            </div>')
-
-            seasons_html = ''.join(season_parts)
-
-        return f''' < div
-
-
-class ="item" >
-
-< div
-
-
-class ="item-poster" >
-
-
-{poster_html}
-< / div >
-< div
-
-
-class ="item-content" >
-
-< div
-
-
-class ="item-title" > {title} < / div >
-
-
-{overview_html}
-{seasons_html}
-< / div >
-< / div > '''
+        return f'''                            <div class="item">
+                                <div class="item-poster">
+                                    {poster_html}
+                                </div>
+                                <div class="item-content">
+                                    <div class="item-title">{title}</div>
+                                    {overview_html}
+                                    {seasons_html}
+                                </div>
+                            </div>'''
 
     def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize template context for security"""
