@@ -11,10 +11,13 @@ services:
       - TZ=Europe/Paris
       # PUID and PGID will be automatically inherited from Unraid variables
     restart: unless-stopped
-    # Remove user restriction to allow cron to run as root
-    # user: "99:100"
-    read_only: false  # Allow writes for cron
+    user: "0:0"          # Run as root for cron access
+    read_only: true      # Keep read-only for security
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp
+      - /tmp:rw,noexec,nosuid,size=100m
+      - /var/log:rw,noexec,nosuid,size=50m
+      - /var/run:rw,noexec,nosuid,size=50m
+      - /var/spool:rw,noexec,nosuid,size=10m
+      - /root:rw,noexec,nosuid,size=10m
