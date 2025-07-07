@@ -48,13 +48,14 @@ class SecureTemplateRenderer:
 
         original_escaped = escaped  # Store original to check if modified
         for pattern, replacement in dangerous_patterns:
-            escaped = escaped.replace(pattern.lower(), replacement)
-            escaped = escaped.replace(pattern.upper(), replacement.upper())
-            escaped = escaped.replace(pattern.capitalize(), replacement.capitalize())
+            # Check for patterns case-insensitively
+            escaped = re.sub(re.escape(pattern), replacement, escaped, flags=re.IGNORECASE)
 
         if escaped != original_escaped:
-            logger.debug(
-                f"Secure escape modified string. Original (partial): '{original_escaped[:50]}...', Modified (partial): '{escaped[:50]}...'")
+            logger.debug(f"Secure escape modified string. Original: '{original_escaped}', Modified: '{escaped}'")
+        elif "http://" in str_value or "https://" in str_value:
+            # Log all URL escapes, even if no dangerous patterns found, to see exact transformation
+            logger.debug(f"URL passed through secure escape. Original: '{str_value}', Escaped: '{escaped}'")
 
         return escaped
 
@@ -527,12 +528,15 @@ class SecureTemplateRenderer:
         title = self._secure_escape(movie.get('title', 'Unknown'))
         year = self._secure_escape(movie.get('year', ''))
         overview = self._secure_escape(movie.get('tmdb_overview') or movie.get('overview', ''))
-        poster_url = self._secure_escape(movie.get('tmdb_poster') or movie.get('poster_url', ''))
+
+        # Original poster_url before any escaping, for debugging
+        original_poster_url_debug = movie.get('tmdb_poster') or movie.get('poster_url', '')
+        poster_url = self._secure_escape(original_poster_url_debug)
 
         # Build poster HTML
         if poster_url:
             # Add data-original-url for debugging
-            poster_html = f'<img src="{poster_url}" alt="{title} poster" data-original-url="{poster_url}">'
+            poster_html = f'<img src="{poster_url}" alt="{title} poster" data-original-url="{original_poster_url_debug}">'
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
@@ -599,7 +603,7 @@ class SecureTemplateRenderer:
 
         logger.debug(f"Attempting to find poster for TV show: {title}")
         logger.debug(
-            f"Raw show data for poster check: {show.get('tmdb_data')} | {show.get('tmdb_poster')} | {show.get('poster_url')} | {show.get('poster')}")
+            f"Raw show data for poster check: tmdb_data={show.get('tmdb_data')}, tmdb_poster={show.get('tmdb_poster')}, poster_url={show.get('poster_url')}, poster={show.get('poster')}")
 
         # Try multiple sources for poster URL
         if isinstance(tmdb_data, dict) and tmdb_data.get('poster_path'):
@@ -610,22 +614,23 @@ class SecureTemplateRenderer:
                 poster_path = '/' + poster_path
             original_poster_url_debug = f"https://image.tmdb.org/t/p/w500{poster_path}"
             poster_url = self._secure_escape(original_poster_url_debug)
-            logger.debug(f"Using TMDB poster_path: {poster_path}, constructed URL: {poster_url}")
+            logger.debug(f"Using TMDB poster_path. Original: '{original_poster_url_debug}', Escaped: '{poster_url}'")
         elif show.get('tmdb_poster'):
             # Direct TMDB poster URL
             original_poster_url_debug = show['tmdb_poster']
             poster_url = self._secure_escape(original_poster_url_debug)
-            logger.debug(f"Using direct tmdb_poster: {poster_url}")
+            logger.debug(f"Using direct tmdb_poster. Original: '{original_poster_url_debug}', Escaped: '{poster_url}'")
         elif show.get('poster_url'):
             # Fallback to general poster URL
             original_poster_url_debug = show['poster_url']
             poster_url = self._secure_escape(original_poster_url_debug)
-            logger.debug(f"Using general poster_url: {poster_url}")
+            logger.debug(f"Using general poster_url. Original: '{original_poster_url_debug}', Escaped: '{poster_url}'")
         elif show.get('poster'):
-            # Another fallback
+            # Another fallback (this is likely what the original email_template.py used)
             original_poster_url_debug = show['poster']
             poster_url = self._secure_escape(original_poster_url_debug)
-            logger.debug(f"Using fallback poster: {poster_url}")
+            logger.debug(
+                f"Using fallback 'poster' key. Original: '{original_poster_url_debug}', Escaped: '{poster_url}'")
 
         if not poster_url:
             logger.debug(f"No valid poster URL found for TV show: {title}")
