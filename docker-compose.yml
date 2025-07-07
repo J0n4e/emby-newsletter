@@ -8,8 +8,8 @@ services:
       - ./config:/app/config:ro
       - ./templates:/app/templates:ro
     environment:
-      - TZ=Europe/Paris  # Change this to your timezone
-      # PUID=99 and PGID=100 are set in Unraid docker variables
+      - TZ=Europe/Paris
+      # PUID and PGID will be automatically inherited from Unraid variables
     restart: unless-stopped
     user: "99:100"       # Standard Unraid user:group
     read_only: true
