@@ -144,7 +144,7 @@ class ConfigurationChecker:
                 return False
 
             import re
-            email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+            email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
     def check_emby_folders(self) -> bool:
         """Check if configured Emby folders exist and are accessible"""
