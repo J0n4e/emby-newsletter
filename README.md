@@ -4,11 +4,9 @@ A newsletter for Emby to notify your users of your latest additions. Emby Newsle
 
 It is fully customizable and can be run on a schedule using a cron job or a task scheduler.
 
-![Emby Newsletter](https://github.com/J0n4e/emby-newsletter/raw/main/assets/newsletter-example.jpg)
-
 ## What it looks like
 
-You can see examples of the newsletter in the [assets](https://github.com/J0n4e/emby-newsletter/tree/main/assets) folder.
+![Emby Newsletter](https://github.com/J0n4e/emby-newsletter/raw/main/assets/newsletter-example.jpg)
 
 ## Features
 
@@ -241,7 +239,7 @@ This newsletter application is built with security in mind:
 
 ## Acknowledgments
 
-This project was inspired by and builds upon the excellent work of [SeaweedbrainCY](https://github.com/SeaweedbrainCY) and their [jellyfin-newsletter](https://github.com/SeaweedbrainCY/jellyfin-newsletter) project. 
+This project was inspired by and builds upon the excellent work of [SeaweedbrainCY](https://github.com/SeaweedbrainCY) and his [jellyfin-newsletter](https://github.com/SeaweedbrainCY/jellyfin-newsletter) project. 
 
 **Special thanks to SeaweedbrainCY for:**
 - Providing the original concept and inspiration
