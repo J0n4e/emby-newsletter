@@ -80,10 +80,15 @@ class SecureTemplateRenderer:
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
-        # Calculate statistics
-        total_movies = len(movies) if movies else 0
-        total_tv_shows = len(tv_shows) if tv_shows else 0
-        total_content = total_movies + total_tv_shows
+        # Calculate statistics for this email update
+        new_movies = len(movies) if movies else 0
+        new_tv_shows = len(tv_shows) if tv_shows else 0
+        new_content = new_movies + new_tv_shows
+
+        # Get total server statistics (should be passed in context)
+        total_movies_server = context.get('total_movies_server', 0)
+        total_tv_shows_server = context.get('total_tv_shows_server', 0)
+        total_content_server = total_movies_server + total_tv_shows_server
 
         # Build the complete HTML email
         html_content = f"""<!DOCTYPE html>
@@ -148,13 +153,15 @@ class SecureTemplateRenderer:
         .stats-container {{
             display: flex;
             justify-content: center;
-            gap: 48px;
+            gap: 32px;
             flex-wrap: wrap;
         }}
 
         .stat-item {{
             text-align: center;
-            min-width: 120px;
+            min-width: 100px;
+            flex: 1;
+            max-width: 140px;
         }}
 
         .stat-number {{
@@ -424,7 +431,12 @@ class SecureTemplateRenderer:
             }}
 
             .stats-container {{
-                gap: 32px;
+                gap: 24px;
+            }}
+
+            .stat-item {{
+                min-width: 80px;
+                max-width: 120px;
             }}
 
             .stat-number {{
@@ -494,23 +506,33 @@ class SecureTemplateRenderer:
                             <p class="subtitle">{subtitle}</p>
                         </div>"""
 
-        # Add statistics section if there's content
-        if total_content > 0:
+        # Add statistics section if there's content or server totals
+        if new_content > 0 or total_content_server > 0:
             html_content += f'''
                         <div class="stats-section">
                             <div class="stats-container">
                                 <div class="stat-item">
-                                    <div class="stat-number">{total_content}</div>
-                                    <div class="stat-label">Total Items</div>
+                                    <div class="stat-number">{total_content_server}</div>
+                                    <div class="stat-label">Total on Server</div>
                                 </div>
                                 <div class="stat-item">
-                                    <div class="stat-number">{total_movies}</div>
+                                    <div class="stat-number">{total_movies_server}</div>
                                     <div class="stat-label">Movies</div>
                                 </div>
                                 <div class="stat-item">
-                                    <div class="stat-number">{total_tv_shows}</div>
+                                    <div class="stat-number">{total_tv_shows_server}</div>
                                     <div class="stat-label">TV Shows</div>
-                                </div>
+                                </div>'''
+
+            # Only show "new this update" section if there's new content
+            if new_content > 0:
+                html_content += f'''
+                                <div class="stat-item">
+                                    <div class="stat-number">{new_content}</div>
+                                    <div class="stat-label">New This Update</div>
+                                </div>'''
+
+            html_content += '''
                             </div>
                         </div>'''
 
@@ -852,6 +874,29 @@ def apply_statistics_to_template(template: str, total_movies: int, total_tv_show
     template = re.sub(r"\${series_count}", str(total_tv_shows), template)
     template = re.sub(r"\${movies_count}", str(total_movies), template)
     template = re.sub(r"\${total_count}", str(total_movies + total_tv_shows), template)
+
+    return template
+
+
+def apply_server_statistics_to_template(template: str, total_movies_server: int, total_tv_shows_server: int,
+                                        new_movies: int = 0, new_tv_shows: int = 0) -> str:
+    """
+    Apply server-wide statistics to a template using regex substitution.
+    This includes both total server counts and new items in this update.
+    """
+    # Server totals
+    template = re.sub(r"\${total_movies_server}", str(total_movies_server), template)
+    template = re.sub(r"\${total_tv_shows_server}", str(total_tv_shows_server), template)
+    template = re.sub(r"\${total_content_server}", str(total_movies_server + total_tv_shows_server), template)
+
+    # New items in this update
+    template = re.sub(r"\${new_movies}", str(new_movies), template)
+    template = re.sub(r"\${new_tv_shows}", str(new_tv_shows), template)
+    template = re.sub(r"\${new_content}", str(new_movies + new_tv_shows), template)
+
+    # Legacy support (maps to server totals)
+    template = re.sub(r"\${series_count}", str(total_tv_shows_server), template)
+    template = re.sub(r"\${movies_count}", str(total_movies_server), template)
 
     return template
 
