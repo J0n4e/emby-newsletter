@@ -12,7 +12,7 @@ You can see examples of the newsletter in the [assets](https://github.com/J0n4e/
 
 ## Features
 
-- Retrieve the last added movies and TV shows from your Emby/Jellyfin server
+- Retrieve the last added movies and TV shows from your Emby server
 - Send a newsletter to your users with the last added items
 - Professional dark theme with red accents
 - Retrieve the movie details from TMDB, including poster
@@ -27,7 +27,7 @@ You can see examples of the newsletter in the [assets](https://github.com/J0n4e/
 ## Requirements
 
 - Docker
-- Emby/Jellyfin API key - [How to generate an API key](#how-to-generate-an-embyjellyfin-api-key)
+- Emby API key - [How to generate an Emby API key](#how-to-generate-an-emby-api-key)
 - A TMDB API key (free) - [How to generate a TMDB API key](#how-to-generate-a-tmdb-api-key)
 - A SMTP server
 
@@ -35,17 +35,23 @@ You can see examples of the newsletter in the [assets](https://github.com/J0n4e/
 
 ### Option 1: Unraid (Recommended for Unraid Users)
 
-For Unraid users, you can install this as a Docker container through the Community Applications:
+For Unraid users, you can install this as a Docker container using the provided template:
 
-1. **Search for "emby-newsletter"** in Unraid Apps
-2. **Click Install** and configure your settings
-3. **Or use this template URL**: `https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/unraid-template.xml`
+1. **Download the Unraid template**: [emby-newsletter.xml](https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/assets/emby-newsletter.xml)
+2. **Add to Unraid**:
+   - Go to **Docker** tab in Unraid
+   - Click **Add Container**
+   - In **Template**, select **Load Template** and upload the XML file
+   - **Or** paste this URL in Template Repository: `https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/assets/emby-newsletter.xml`
+3. **Configure your settings** in the template fields
+4. **Click Apply** to install and start the container
 
 The Unraid template includes:
-- Pre-configured security settings
-- Easy timezone and scheduling setup
-- Optional pre-filling of API keys
+- Pre-configured security settings with read-only filesystem
 - Built-in cron support with proper permissions
+- Easy timezone and scheduling configuration
+- Optional pre-filling of API keys and settings
+- Secure tmpfs mounts for optimal performance
 
 ### Option 2: Docker Compose (Recommended for other systems)
 
@@ -96,15 +102,15 @@ scheduler:
   #cron: "0 8 1 * *"
 
 emby:
-  # Your Emby/Jellyfin server URL (include http:// or https://)
+  # Your Emby server URL (include http:// or https://)
   url: "http://YOUR_SERVER_IP:PORT"
   
-  # Your Emby/Jellyfin API token
+  # Your Emby API token
   # How to get: Dashboard > Advanced > API Keys > Create new key
   api_token: "YOUR_API_TOKEN_HERE"
   
   # List of movie folders to watch for new content
-  # Use the folder name as it appears in Emby/Jellyfin
+  # Use the folder name as it appears in Emby
   # Example: if your path is /media/movies, use "movies"
   watched_film_folders:
     - "movies"
@@ -139,7 +145,7 @@ email_template:
   # Subtitle text
   subtitle: "Recently added movies and TV shows"
   
-  # URL to your Emby/Jellyfin server (for "Visit Server" button)
+  # URL to your Emby server (for "Visit Server" button)
   emby_url: "http://YOUR_SERVER_IP:PORT"
   
   # Contact email for unsubscribe requests
@@ -263,9 +269,8 @@ If you encounter any issues, please let me know by opening an issue.
 
 ## How to
 
-### How to generate an Emby/Jellyfin API key
+### How to generate an Emby API key
 
-#### For Emby:
 1. Go to your Emby dashboard
 2. Scroll to advanced section and click on API keys
 3. Click on the `+` button to create a new API key
@@ -273,13 +278,7 @@ If you encounter any issues, please let me know by opening an issue.
 5. Copy the generated API key
 6. Paste it in the `config.yml` file under `emby.api_token`
 
-#### For Jellyfin:
-1. Go to your Jellyfin dashboard
-2. Go to Dashboard > Advanced > API Keys
-3. Click on the `+` button to create a new API key
-4. Enter a name for the key and click save
-5. Copy the generated API key
-6. Paste it in the `config.yml` file under `emby.api_token`
+> **Note:** This project primarily focuses on Emby servers. While it may work with Jellyfin, it has been specifically designed and tested with Emby.
 
 ### How to generate a TMDB API key
 
