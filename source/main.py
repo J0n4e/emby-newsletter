@@ -16,7 +16,7 @@ import ssl
 
 # Import our configuration management and template renderer
 from configuration import ConfigurationManager
-from template_renderer import template_renderer
+from template_renderer import render_email_with_server_stats
 
 # Configure logging
 logging.basicConfig(
@@ -306,7 +306,8 @@ class NewsletterGenerator:
                 'unsubscribe_email': self.config.email_template.unsubscribe_email
             }
 
-            return template_renderer.render_email_template(context)
+            # Use the new function that automatically fetches server statistics
+            return render_email_with_server_stats(context, config_path="/app/config/config.yml")
 
         except Exception as e:
             logger.error(f"Error generating HTML template: {e}")
