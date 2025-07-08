@@ -1011,18 +1011,21 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
     # Try to get server statistics from config
     emby_url = config.get('emby', {}).get('url') or config.get('emby_url')
-    api_key = config.get('emby', {}).get('api_key') or config.get('api_key')
+    api_key = (config.get('emby', {}).get('api_token') or
+               config.get('emby', {}).get('api_key') or
+               config.get('api_key') or
+               config.get('api_token'))
 
     # Alternative config structure support
     if not emby_url or not api_key:
         # Try different config structures
         if 'server' in config:
             emby_url = emby_url or config['server'].get('url')
-            api_key = api_key or config['server'].get('api_key')
+            api_key = api_key or config['server'].get('api_key') or config['server'].get('api_token')
 
         # Try flat structure
         emby_url = emby_url or config.get('server_url')
-        api_key = api_key or config.get('server_api_key')
+        api_key = api_key or config.get('server_api_key') or config.get('server_api_token')
 
     if emby_url and api_key:
         try:
