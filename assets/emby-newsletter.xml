@@ -25,7 +25,7 @@ Features:&#xD;
   <Category>MediaApp:Other</Category>
   <WebUI/>
   <TemplateURL>https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/unraid-template.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/J0n4e/emby-newsletter/refs/heads/main/assets/emby_newsletter.jpg</Icon>
+  <Icon>https://raw.githubusercontent.com/J0n4e/emby-newsletter/refs/heads/main/assets/emby_newsletter.png</Icon>
   <ExtraParams>--read-only --tmpfs /tmp --tmpfs /var/log --tmpfs /var/run --tmpfs /var/spool --user 0:0</ExtraParams>
   <PostArgs/>
   <CPUset/>
