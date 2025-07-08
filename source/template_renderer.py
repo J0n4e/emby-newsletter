@@ -155,38 +155,44 @@ class SecureTemplateRenderer:
 
         .stats-section {{
             background: rgba(220, 38, 38, 0.1);
-            padding: 32px 40px;
+            padding: 40px 40px;
             border-bottom: 1px solid rgba(220, 38, 38, 0.2);
         }}
 
         .stats-container {{
             display: flex;
             justify-content: center;
-            gap: 32px;
+            gap: 48px;
             flex-wrap: wrap;
+            max-width: 900px;
+            margin: 0 auto;
         }}
 
         .stat-item {{
             text-align: center;
-            min-width: 100px;
+            min-width: 140px;
             flex: 1;
-            max-width: 140px;
+            max-width: 200px;
+            padding: 16px 12px;
         }}
 
         .stat-number {{
-            font-size: 2.5em;
+            font-size: 3em;
             font-weight: 700;
             color: rgb(248, 113, 113);
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             text-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
+            line-height: 1;
         }}
 
         .stat-label {{
             color: rgb(209, 213, 219);
-            font-size: 1em;
-            font-weight: 500;
+            font-size: 0.95em;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            line-height: 1.3;
+            word-spacing: 0.2em;
         }}
 
         .section {{
@@ -436,20 +442,27 @@ class SecureTemplateRenderer:
             }}
 
             .stats-section {{
-                padding: 24px 20px;
+                padding: 32px 20px;
             }}
 
             .stats-container {{
-                gap: 24px;
+                gap: 32px;
+                max-width: 100%;
             }}
 
             .stat-item {{
-                min-width: 80px;
-                max-width: 120px;
+                min-width: 120px;
+                max-width: 160px;
+                padding: 12px 8px;
             }}
 
             .stat-number {{
-                font-size: 2em;
+                font-size: 2.2em;
+            }}
+
+            .stat-label {{
+                font-size: 0.85em;
+                letter-spacing: 0.6px;
             }}
 
             .section {{
