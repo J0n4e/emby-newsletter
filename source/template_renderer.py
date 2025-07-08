@@ -86,9 +86,17 @@ class SecureTemplateRenderer:
         new_content = new_movies + new_tv_shows
 
         # Get total server statistics (should be passed in context)
-        total_movies_server = context.get('total_movies_server', 0)
-        total_tv_shows_server = context.get('total_tv_shows_server', 0)
-        total_content_server = total_movies_server + total_tv_shows_server
+        total_movies_server = context.get('total_movies_server', None)
+        total_tv_shows_server = context.get('total_tv_shows_server', None)
+
+        # Determine if we have server statistics
+        has_server_stats = (total_movies_server is not None and total_tv_shows_server is not None
+                            and total_movies_server > 0 and total_tv_shows_server > 0)
+
+        if has_server_stats:
+            total_content_server = total_movies_server + total_tv_shows_server
+        else:
+            total_content_server = 0
 
         # Build the complete HTML email
         html_content = f"""<!DOCTYPE html>
@@ -506,30 +514,51 @@ class SecureTemplateRenderer:
                             <p class="subtitle">{subtitle}</p>
                         </div>"""
 
-        # Add statistics section if there's content or server totals
-        if new_content > 0 or total_content_server > 0:
-            html_content += f'''
+        # Add statistics section - intelligent display based on available data
+        show_stats = new_content > 0 or has_server_stats
+
+        if show_stats:
+            html_content += '''
                         <div class="stats-section">
-                            <div class="stats-container">
+                            <div class="stats-container">'''
+
+            if has_server_stats:
+                # Show server totals when available
+                html_content += f'''
                                 <div class="stat-item">
                                     <div class="stat-number">{total_content_server}</div>
                                     <div class="stat-label">Total on Server</div>
                                 </div>
                                 <div class="stat-item">
                                     <div class="stat-number">{total_movies_server}</div>
-                                    <div class="stat-label">Movies</div>
+                                    <div class="stat-label">Movies on Server</div>
                                 </div>
                                 <div class="stat-item">
                                     <div class="stat-number">{total_tv_shows_server}</div>
-                                    <div class="stat-label">TV Shows</div>
+                                    <div class="stat-label">TV Shows on Server</div>
                                 </div>'''
 
-            # Only show "new this update" section if there's new content
-            if new_content > 0:
-                html_content += f'''
+                # Only show "new this update" if there's new content AND server stats
+                if new_content > 0:
+                    html_content += f'''
                                 <div class="stat-item">
                                     <div class="stat-number">{new_content}</div>
                                     <div class="stat-label">New This Update</div>
+                                </div>'''
+            else:
+                # Fallback: Show only new items when server stats aren't available
+                html_content += f'''
+                                <div class="stat-item">
+                                    <div class="stat-number">{new_content}</div>
+                                    <div class="stat-label">New Items</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{new_movies}</div>
+                                    <div class="stat-label">New Movies</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{new_tv_shows}</div>
+                                    <div class="stat-label">New TV Shows</div>
                                 </div>'''
 
             html_content += '''
@@ -864,7 +893,90 @@ class SecureTemplateRenderer:
         return sanitized
 
 
-# Statistics functionality for template substitution approach
+# Helper function to get server statistics (Option 1 implementation example)
+def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
+    """
+    Example function to fetch total server statistics from Emby API.
+    You should implement this according to your Emby setup.
+
+    Args:
+        emby_url: Your Emby server URL
+        api_key: Your Emby API key
+
+    Returns:
+        Dictionary with total_movies_server and total_tv_shows_server
+    """
+    try:
+        # This is a placeholder - implement according to your Emby API calls
+        # Example API calls (you'll need to adjust these):
+
+        # For movies: GET /Items?IncludeItemTypes=Movie&Recursive=true&api_key=YOUR_KEY
+        # For TV shows: GET /Items?IncludeItemTypes=Series&Recursive=true&api_key=YOUR_KEY
+
+        # Example implementation:
+        import requests
+
+        headers = {'X-Emby-Token': api_key}
+
+        # Get total movies
+        movies_response = requests.get(
+            f"{emby_url}/Items",
+            params={
+                'IncludeItemTypes': 'Movie',
+                'Recursive': 'true',
+                'Fields': 'ItemCounts'
+            },
+            headers=headers
+        )
+
+        # Get total TV shows
+        series_response = requests.get(
+            f"{emby_url}/Items",
+            params={
+                'IncludeItemTypes': 'Series',
+                'Recursive': 'true',
+                'Fields': 'ItemCounts'
+            },
+            headers=headers
+        )
+
+        total_movies = movies_response.json().get('TotalRecordCount', 0)
+        total_series = series_response.json().get('TotalRecordCount', 0)
+
+        return {
+            'total_movies_server': total_movies,
+            'total_tv_shows_server': total_series
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching server statistics: {e}")
+        return {
+            'total_movies_server': 0,
+            'total_tv_shows_server': 0
+        }
+
+
+def render_email_with_server_stats(context: Dict[str, Any], emby_url: str = None, api_key: str = None) -> str:
+    """
+    Convenience function that automatically fetches server statistics and renders the email.
+
+    Usage:
+        html = render_email_with_server_stats(context, emby_url="http://your-emby:8096", api_key="your_api_key")
+    """
+    renderer = SecureTemplateRenderer()
+
+    # Try to get server statistics if URL and API key are provided
+    if emby_url and api_key:
+        try:
+            server_stats = get_emby_server_statistics(emby_url, api_key)
+            context.update(server_stats)
+            logger.info(f"Retrieved server stats: {server_stats}")
+        except Exception as e:
+            logger.warning(f"Could not fetch server statistics, using fallback: {e}")
+
+    return renderer.render_email_template(context)
+
+
 def apply_statistics_to_template(template: str, total_movies: int, total_tv_shows: int) -> str:
     """
     Apply statistics to a template using regex substitution.
