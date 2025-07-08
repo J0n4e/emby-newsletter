@@ -38,11 +38,11 @@ You can see examples of the newsletter in the [assets](https://github.com/J0n4e/
 For Unraid users, you can install this as a Docker container using the provided template:
 
 1. **Download the Unraid template**: [emby-newsletter.xml](https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/assets/emby-newsletter.xml)
-2. **Add to Unraid**:
+2. **Install the template**:
+   - Save the template file to `/boot/config/plugins/dockerMan/templates-user/` on your Unraid server
    - Go to **Docker** tab in Unraid
-   - Click **Add Container**
-   - In **Template**, select **Load Template** and upload the XML file
-   - **Or** paste this URL in Template Repository: `https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/assets/emby-newsletter.xml`
+   - Click **Add Container** 
+   - The template will appear in your local templates list
 3. **Configure your settings** in the template fields
 4. **Click Apply** to install and start the container
 
