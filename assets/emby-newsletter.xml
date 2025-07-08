@@ -19,13 +19,13 @@ Features:&#xD;
 - Group TV shows by seasons with episode details&#xD;
 - Fully customizable and responsive email template&#xD;
 - Scheduled sending via built-in cron&#xD;
-- Support for English and French&#xD;
+- English language support&#xD;
 - Configure the list of recipients&#xD;
 - Configure specific folders to watch for new items</Overview>
   <Category>MediaApp:Other</Category>
   <WebUI/>
-  <TemplateURL>https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/unraid-template.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/J0n4e/emby-newsletter/refs/heads/main/assets/emby_newsletter.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/assets/emby-newsletter.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/J0n4e/emby-newsletter/main/assets/emby_newsletter.png</Icon>
   <ExtraParams>--read-only --tmpfs /tmp --tmpfs /var/log --tmpfs /var/run --tmpfs /var/spool --user 0:0</ExtraParams>
   <PostArgs/>
   <CPUset/>
