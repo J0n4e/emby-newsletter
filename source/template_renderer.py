@@ -80,6 +80,11 @@ class SecureTemplateRenderer:
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
+        # Calculate statistics
+        total_movies = len(movies) if movies else 0
+        total_tv_shows = len(tv_shows) if tv_shows else 0
+        total_content = total_movies + total_tv_shows
+
         # Build the complete HTML email
         html_content = f"""<!DOCTYPE html>
 <html lang="{language}">
@@ -132,6 +137,40 @@ class SecureTemplateRenderer:
             margin: 0;
             font-size: 1.125em;
             font-weight: 400;
+        }}
+
+        .stats-section {{
+            background: rgba(220, 38, 38, 0.1);
+            padding: 32px 40px;
+            border-bottom: 1px solid rgba(220, 38, 38, 0.2);
+        }}
+
+        .stats-container {{
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }}
+
+        .stat-item {{
+            text-align: center;
+            min-width: 120px;
+        }}
+
+        .stat-number {{
+            font-size: 2.5em;
+            font-weight: 700;
+            color: rgb(248, 113, 113);
+            margin-bottom: 8px;
+            text-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
+        }}
+
+        .stat-label {{
+            color: rgb(209, 213, 219);
+            font-size: 1em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }}
 
         .section {{
@@ -380,6 +419,18 @@ class SecureTemplateRenderer:
                 font-size: 2.25em;
             }}
 
+            .stats-section {{
+                padding: 24px 20px;
+            }}
+
+            .stats-container {{
+                gap: 32px;
+            }}
+
+            .stat-number {{
+                font-size: 2em;
+            }}
+
             .section {{
                 padding: 32px 24px;
             }}
@@ -442,6 +493,26 @@ class SecureTemplateRenderer:
                             <h1>{title}</h1>
                             <p class="subtitle">{subtitle}</p>
                         </div>"""
+
+        # Add statistics section if there's content
+        if total_content > 0:
+            html_content += f'''
+                        <div class="stats-section">
+                            <div class="stats-container">
+                                <div class="stat-item">
+                                    <div class="stat-number">{total_content}</div>
+                                    <div class="stat-label">Total Items</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{total_movies}</div>
+                                    <div class="stat-label">Movies</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">{total_tv_shows}</div>
+                                    <div class="stat-label">TV Shows</div>
+                                </div>
+                            </div>
+                        </div>'''
 
         # Movies section
         if movies and len(movies) > 0:
@@ -769,6 +840,20 @@ class SecureTemplateRenderer:
                 sanitized.append(self._sanitize_string(str(item)))
 
         return sanitized
+
+
+# Statistics functionality for template substitution approach
+def apply_statistics_to_template(template: str, total_movies: int, total_tv_shows: int) -> str:
+    """
+    Apply statistics to a template using regex substitution.
+    This function can be used if you have a different template system that uses ${} placeholders.
+    """
+    # Statistics section - replace placeholders with actual counts
+    template = re.sub(r"\${series_count}", str(total_tv_shows), template)
+    template = re.sub(r"\${movies_count}", str(total_movies), template)
+    template = re.sub(r"\${total_count}", str(total_movies + total_tv_shows), template)
+
+    return template
 
 
 # Global template renderer instance
