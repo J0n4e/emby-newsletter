@@ -939,44 +939,60 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
 
         headers = {'X-Emby-Token': api_key}
 
-        # Get total movies
-        movies_response = requests.get(
-            f"{emby_url}/emby/Items",
-            params={
-                'IncludeItemTypes': 'Movie',
-                'Recursive': 'true',
-                'Fields': 'ItemCounts'
-            },
-            headers=headers,
-            timeout=10
-        )
-
-        # Get total TV shows
-        series_response = requests.get(
-            f"{emby_url}/emby/Items",
-            params={
-                'IncludeItemTypes': 'Series',
-                'Recursive': 'true',
-                'Fields': 'ItemCounts'
-            },
-            headers=headers,
-            timeout=10
-        )
+        # Try different API endpoints - Emby/Jellyfin can vary
+        api_endpoints = [
+            f"{emby_url}/emby/Items",  # Standard Emby
+            f"{emby_url}/Items",  # Alternative
+            f"{emby_url}/api/Items"  # Another alternative
+        ]
 
         total_movies = 0
         total_series = 0
 
-        if movies_response.status_code == 200:
-            total_movies = movies_response.json().get('TotalRecordCount', 0)
-            logger.debug(f"Retrieved {total_movies} movies from server")
-        else:
-            logger.warning(f"Failed to get movies: {movies_response.status_code}")
+        for endpoint in api_endpoints:
+            try:
+                logger.debug(f"Trying endpoint: {endpoint}")
 
-        if series_response.status_code == 200:
-            total_series = series_response.json().get('TotalRecordCount', 0)
-            logger.debug(f"Retrieved {total_series} TV shows from server")
-        else:
-            logger.warning(f"Failed to get TV shows: {series_response.status_code}")
+                # Get total movies
+                movies_response = requests.get(
+                    endpoint,
+                    params={
+                        'IncludeItemTypes': 'Movie',
+                        'Recursive': 'true',
+                        'Fields': 'ItemCounts'
+                    },
+                    headers=headers,
+                    timeout=10
+                )
+
+                # Get total TV shows
+                series_response = requests.get(
+                    endpoint,
+                    params={
+                        'IncludeItemTypes': 'Series',
+                        'Recursive': 'true',
+                        'Fields': 'ItemCounts'
+                    },
+                    headers=headers,
+                    timeout=10
+                )
+
+                if movies_response.status_code == 200 and series_response.status_code == 200:
+                    total_movies = movies_response.json().get('TotalRecordCount', 0)
+                    total_series = series_response.json().get('TotalRecordCount', 0)
+                    logger.info(f"Success with endpoint: {endpoint}")
+                    logger.debug(f"Retrieved {total_movies} movies and {total_series} TV shows from server")
+                    break
+                else:
+                    logger.debug(
+                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, series={series_response.status_code}")
+
+            except requests.exceptions.RequestException as e:
+                logger.debug(f"Request failed for endpoint {endpoint}: {e}")
+                continue
+
+        if total_movies == 0 and total_series == 0:
+            logger.warning("All API endpoints failed or returned zero results")
 
         return {
             'total_movies_server': total_movies,
@@ -1030,6 +1046,7 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
     if emby_url and api_key:
         try:
             logger.info(f"Fetching server statistics from: {emby_url}")
+            logger.debug(f"Using API token: {api_key[:10]}...")  # Only show first 10 chars for security
             server_stats = get_emby_server_statistics(emby_url, api_key)
             context.update(server_stats)
             logger.info(f"Retrieved server stats: {server_stats}")
@@ -1037,6 +1054,7 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
             logger.warning(f"Could not fetch server statistics, using fallback: {e}")
     else:
         logger.warning("Emby URL or API key not found in config, using fallback display")
+        logger.debug(f"Config loaded: emby_url='{emby_url}', api_key={'present' if api_key else 'missing'}")
         if not emby_url:
             logger.debug("Missing emby_url in config")
         if not api_key:
