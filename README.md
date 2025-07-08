@@ -20,7 +20,7 @@ You can see examples of the newsletter in the [assets](https://github.com/J0n4e/
 - Fully customizable and responsive email template
 - Built-in cron scheduler with security-compliant setup
 - Easy to maintain, extend, setup and run
-- Support for English and French
+- English language support
 - Configure the list of recipients
 - Configure specific folders to watch for new items
 
@@ -133,7 +133,7 @@ tmdb:
   api_key: "YOUR_TMDB_API_READ_ACCESS_TOKEN"
 
 email_template:
-  # Language for the email template ("en" or "fr")
+  # Language for the email template
   language: "en"
   
   # Email subject line
@@ -233,7 +233,7 @@ This newsletter application is built with security in mind:
 
 ## Current limitations
 
-- Only supports English and French languages for the email template
+- Email template language is currently set to English
 - Only supports TLS for the SMTP server
 - Only supports movies and TV shows for now
 - Not available as an Emby plugin yet
