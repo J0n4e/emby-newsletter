@@ -7,6 +7,7 @@ import os
 import logging
 import html
 import re
+import yaml
 from typing import Dict, List, Any
 from string import Template
 
@@ -893,11 +894,35 @@ class SecureTemplateRenderer:
         return sanitized
 
 
+def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
+    """
+    Load configuration from YAML file.
+
+    Args:
+        config_path: Path to the config.yml file
+
+    Returns:
+        Configuration dictionary
+    """
+    try:
+        with open(config_path, 'r', encoding='utf-8') as file:
+            config = yaml.safe_load(file)
+            return config or {}
+    except FileNotFoundError:
+        logger.error(f"Config file not found: {config_path}")
+        return {}
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing config file: {e}")
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading config: {e}")
+        return {}
+
+
 # Helper function to get server statistics (Option 1 implementation example)
 def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
     """
-    Example function to fetch total server statistics from Emby API.
-    You should implement this according to your Emby setup.
+    Fetch total server statistics from Emby API.
 
     Args:
         emby_url: Your Emby server URL
@@ -907,61 +932,122 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
         Dictionary with total_movies_server and total_tv_shows_server
     """
     try:
-        # This is a placeholder - implement according to your Emby API calls
-        # Example API calls (you'll need to adjust these):
-
-        # For movies: GET /Items?IncludeItemTypes=Movie&Recursive=true&api_key=YOUR_KEY
-        # For TV shows: GET /Items?IncludeItemTypes=Series&Recursive=true&api_key=YOUR_KEY
-
-        # Example implementation:
         import requests
+
+        # Clean up the URL (remove trailing slash if present)
+        emby_url = emby_url.rstrip('/')
 
         headers = {'X-Emby-Token': api_key}
 
         # Get total movies
         movies_response = requests.get(
-            f"{emby_url}/Items",
+            f"{emby_url}/emby/Items",
             params={
                 'IncludeItemTypes': 'Movie',
                 'Recursive': 'true',
                 'Fields': 'ItemCounts'
             },
-            headers=headers
+            headers=headers,
+            timeout=10
         )
 
         # Get total TV shows
         series_response = requests.get(
-            f"{emby_url}/Items",
+            f"{emby_url}/emby/Items",
             params={
                 'IncludeItemTypes': 'Series',
                 'Recursive': 'true',
                 'Fields': 'ItemCounts'
             },
-            headers=headers
+            headers=headers,
+            timeout=10
         )
 
-        total_movies = movies_response.json().get('TotalRecordCount', 0)
-        total_series = series_response.json().get('TotalRecordCount', 0)
+        total_movies = 0
+        total_series = 0
+
+        if movies_response.status_code == 200:
+            total_movies = movies_response.json().get('TotalRecordCount', 0)
+            logger.debug(f"Retrieved {total_movies} movies from server")
+        else:
+            logger.warning(f"Failed to get movies: {movies_response.status_code}")
+
+        if series_response.status_code == 200:
+            total_series = series_response.json().get('TotalRecordCount', 0)
+            logger.debug(f"Retrieved {total_series} TV shows from server")
+        else:
+            logger.warning(f"Failed to get TV shows: {series_response.status_code}")
 
         return {
             'total_movies_server': total_movies,
             'total_tv_shows_server': total_series
         }
 
+    except ImportError:
+        logger.error("requests library not available for API calls")
+        return {'total_movies_server': 0, 'total_tv_shows_server': 0}
     except Exception as e:
         logger.error(f"Error fetching server statistics: {e}")
-        return {
-            'total_movies_server': 0,
-            'total_tv_shows_server': 0
-        }
+        return {'total_movies_server': 0, 'total_tv_shows_server': 0}
 
 
-def render_email_with_server_stats(context: Dict[str, Any], emby_url: str = None, api_key: str = None) -> str:
+def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
-    Convenience function that automatically fetches server statistics and renders the email.
+    Convenience function that automatically fetches server statistics from config.yml and renders the email.
+
+    Args:
+        context: Template context data
+        config_path: Path to the config.yml file (default: "config.yml")
 
     Usage:
-        html = render_email_with_server_stats(context, emby_url="http://your-emby:8096", api_key="your_api_key")
+        html = render_email_with_server_stats(context)
+        # or with custom config path:
+        html = render_email_with_server_stats(context, config_path="/path/to/config.yml")
+    """
+    renderer = SecureTemplateRenderer()
+
+    # Load configuration
+    config = load_config(config_path)
+
+    # Try to get server statistics from config
+    emby_url = config.get('emby', {}).get('url') or config.get('emby_url')
+    api_key = config.get('emby', {}).get('api_key') or config.get('api_key')
+
+    # Alternative config structure support
+    if not emby_url or not api_key:
+        # Try different config structures
+        if 'server' in config:
+            emby_url = emby_url or config['server'].get('url')
+            api_key = api_key or config['server'].get('api_key')
+
+        # Try flat structure
+        emby_url = emby_url or config.get('server_url')
+        api_key = api_key or config.get('server_api_key')
+
+    if emby_url and api_key:
+        try:
+            logger.info(f"Fetching server statistics from: {emby_url}")
+            server_stats = get_emby_server_statistics(emby_url, api_key)
+            context.update(server_stats)
+            logger.info(f"Retrieved server stats: {server_stats}")
+        except Exception as e:
+            logger.warning(f"Could not fetch server statistics, using fallback: {e}")
+    else:
+        logger.warning("Emby URL or API key not found in config, using fallback display")
+        if not emby_url:
+            logger.debug("Missing emby_url in config")
+        if not api_key:
+            logger.debug("Missing api_key in config")
+
+    return renderer.render_email_template(context)
+
+
+def render_email_with_manual_stats(context: Dict[str, Any], emby_url: str = None, api_key: str = None) -> str:
+    """
+    Convenience function with manual URL and API key (legacy support).
+
+    Usage:
+        html = render_email_with_manual_stats(context, emby_url="http://your-emby:8096", api_key="your_api_key")
     """
     renderer = SecureTemplateRenderer()
 
