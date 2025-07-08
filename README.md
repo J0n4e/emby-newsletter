@@ -1,6 +1,6 @@
 # Emby Newsletter
 
-A newsletter for Emby/Jellyfin to notify your users of your latest additions. Emby Newsletter connects to the Emby/Jellyfin API to retrieve recently added items and send them to your users.
+A newsletter for Emby to notify your users of your latest additions. Emby Newsletter connects to the Emby API to retrieve recently added items and send them to your users.
 
 It is fully customizable and can be run on a schedule using a cron job or a task scheduler.
 
@@ -236,7 +236,7 @@ This newsletter application is built with security in mind:
 - Only supports English and French languages for the email template
 - Only supports TLS for the SMTP server
 - Only supports movies and TV shows for now
-- Not available as an Emby/Jellyfin plugin yet
+- Not available as an Emby plugin yet
 - Must be run manually or scheduled
 
 ## Acknowledgments
