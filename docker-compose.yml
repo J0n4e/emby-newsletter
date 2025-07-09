@@ -20,4 +20,5 @@ services:
       - /var/log:rw,noexec,nosuid,size=50m
       - /var/run:rw,noexec,nosuid,size=50m
       - /var/spool:rw,noexec,nosuid,size=10m
+      - /var/spool/cron:rw,noexec,nosuid,size=5m     # Add this line - cron needs write access
       - /root:rw,noexec,nosuid,size=10m
