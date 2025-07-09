@@ -7,18 +7,13 @@ services:
     volumes:
       - ./config:/app/config:ro
       - ./templates:/app/templates:ro
-    environment:
-      - TZ=Europe/Paris
-      # PUID and PGID will be automatically inherited from Unraid variables
+      - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
-    user: "0:0"          # Run as root for cron access
-    read_only: true      # Keep read-only for security
-    security_opt:
-      - no-new-privileges:true
+    user: "0:0"
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=100m
-      - /var/log:rw,noexec,nosuid,size=50m
+      - /var/log:rw,nosuid,size=50m
       - /var/run:rw,noexec,nosuid,size=50m
-      - /var/spool:rw,noexec,nosuid,size=10m
-      - /var/spool/cron:rw,noexec,nosuid,size=5m     # Add this line - cron needs write access
+      - /var/spool:rw,nosuid,size=20m
+      - /var/spool/cron:rw,nosuid,size=10m
       - /root:rw,noexec,nosuid,size=10m
