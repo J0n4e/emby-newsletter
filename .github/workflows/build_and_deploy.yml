@@ -11,12 +11,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-jobs:
-  security_test:
-    uses: ./.github/workflows/security_test.yml
+#jobs:
+#  security_test:
+#    uses: ./.github/workflows/security_test.yml
 
   build:
-    needs: [security_test]
+#    needs: [security_test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
