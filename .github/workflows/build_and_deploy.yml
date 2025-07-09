@@ -11,9 +11,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-#jobs:#
-#  security_test:
-#    uses: ./.github/workflows/security_test.yml
+jobs:
+  bulnd_and_deploy:
+    uses: ./.github/workflows/build_and_deploy.yml
 
   build:
 #    needs: [security_test]
