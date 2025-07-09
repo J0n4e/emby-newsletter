@@ -3,14 +3,15 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including procps for ps command
+# Install system dependencies including cron and procps
 RUN apt-get update && apt-get install -y \
     cron \
     procps \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean \
-    && which cron || echo "ERROR: cron not installed!" \
-    && ls -la /usr/sbin/cron* || echo "No cron executables found"
+    && apt-get clean
+
+# Verify cron installation
+RUN which cron && cron --version || echo "Cron installation verification failed"
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .

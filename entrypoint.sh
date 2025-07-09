@@ -126,10 +126,10 @@ except Exception as e:
 
         echo "Starting cron daemon..."
 
-        # Check if cron is installed and install if missing
+        # Verify cron is available
         if ! command -v cron >/dev/null 2>&1; then
-            echo "Cron not found, installing..."
-            apt-get update && apt-get install -y cron
+            echo "❌ ERROR: Cron not installed in image! Please rebuild with cron package."
+            exit 1
         fi
 
         # Start cron daemon in background
