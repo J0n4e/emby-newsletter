@@ -34,9 +34,6 @@ RUN mkdir -p /var/log /var/spool/cron/crontabs \
     && chmod 0755 /var/spool/cron/crontabs \
     && chown -R emby:emby /app /var/log
 
-# Important: Don't switch to non-root user since cron needs root permissions
-# USER emby  # <-- REMOVE THIS LINE
-
 # Set environment variables
 ENV PYTHONPATH=/app/source
 ENV PYTHONUNBUFFERED=1
