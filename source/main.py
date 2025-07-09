@@ -6,6 +6,8 @@ Emby Newsletter - A newsletter for Emby to notify users of latest additions
 import sys
 import os
 import logging
+import subprocess
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import requests
@@ -17,6 +19,221 @@ import ssl
 # Import our configuration management and template renderer
 from configuration import ConfigurationManager
 from template_renderer import render_email_with_server_stats
+
+
+def log_timezone_debug():
+    """Log comprehensive timezone and time information for debugging"""
+
+    print("=" * 80)
+    print("EMBY NEWSLETTER - TIMEZONE AND TIME DEBUG INFORMATION")
+    print("=" * 80)
+
+    # System time information
+    print("📅 SYSTEM TIME INFO:")
+    print(f"   Current UTC time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"   Current local time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"   System timezone names: {time.tzname}")
+    print(f"   Timezone offset from UTC: {time.timezone} seconds ({time.timezone / 3600:.1f} hours)")
+    print(f"   Daylight saving time active: {'Yes' if time.daylight else 'No'}")
+    if time.daylight:
+        print(f"   DST timezone offset: {time.altzone} seconds ({time.altzone / 3600:.1f} hours)")
+    print()
+
+    # Environment variables
+    print("🌍 ENVIRONMENT VARIABLES:")
+    print(f"   TZ: {os.environ.get('TZ', 'Not set')}")
+    print(f"   LANG: {os.environ.get('LANG', 'Not set')}")
+    print(f"   LC_TIME: {os.environ.get('LC_TIME', 'Not set')}")
+    print(f"   PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")
+    print()
+
+    # System timezone files and configuration
+    print("📁 SYSTEM TIMEZONE FILES:")
+    try:
+        with open('/etc/timezone', 'r') as f:
+            timezone_content = f.read().strip()
+            print(f"   /etc/timezone: {timezone_content}")
+    except FileNotFoundError:
+        print("   /etc/timezone: File not found")
+    except Exception as e:
+        print(f"   /etc/timezone: Error reading - {e}")
+
+    try:
+        if os.path.islink('/etc/localtime'):
+            link_target = os.readlink('/etc/localtime')
+            print(f"   /etc/localtime: Symlink to {link_target}")
+            # Extract timezone from symlink path
+            if '/zoneinfo/' in link_target:
+                tz_from_link = link_target.split('/zoneinfo/')[-1]
+                print(f"   Timezone from symlink: {tz_from_link}")
+        else:
+            print("   /etc/localtime: Regular file (not a symlink)")
+    except Exception as e:
+        print(f"   /etc/localtime: Error checking - {e}")
+
+    print()
+
+    # Python timezone detection
+    print("🐍 PYTHON TIMEZONE INFO:")
+    try:
+        # Try different methods to detect timezone
+        import time
+        import datetime
+
+        # Method 1: time.tzname
+        print(f"   time.tzname: {time.tzname}")
+
+        # Method 2: datetime timezone
+        now = datetime.now()
+        print(f"   datetime.now(): {now}")
+
+        # Method 3: Check if zoneinfo is available (Python 3.9+)
+        try:
+            from zoneinfo import ZoneInfo
+            if 'TZ' in os.environ:
+                tz = ZoneInfo(os.environ['TZ'])
+                now_with_tz = datetime.now(tz)
+                print(f"   datetime with TZ env: {now_with_tz}")
+                print(f"   ZoneInfo timezone: {tz}")
+        except ImportError:
+            print("   zoneinfo module not available (Python < 3.9)")
+        except Exception as e:
+            print(f"   zoneinfo error: {e}")
+
+        # Method 4: Try pytz if available
+        try:
+            import pytz
+            if 'TZ' in os.environ:
+                tz_pytz = pytz.timezone(os.environ['TZ'])
+                now_pytz = datetime.now(tz_pytz)
+                print(f"   pytz datetime: {now_pytz}")
+                print(f"   pytz timezone: {tz_pytz}")
+        except ImportError:
+            print("   pytz module not available")
+        except Exception as e:
+            print(f"   pytz error: {e}")
+
+    except Exception as e:
+        print(f"   Python timezone detection error: {e}")
+
+    print()
+
+    # System date commands
+    print("🕐 SYSTEM DATE COMMANDS:")
+    try:
+        result = subprocess.run(['date'], capture_output=True, text=True, timeout=5)
+        print(f"   'date' command: {result.stdout.strip()}")
+    except Exception as e:
+        print(f"   'date' command error: {e}")
+
+    try:
+        result = subprocess.run(['date', '-u'], capture_output=True, text=True, timeout=5)
+        print(f"   'date -u' command: {result.stdout.strip()}")
+    except Exception as e:
+        print(f"   'date -u' command error: {e}")
+
+    try:
+        result = subprocess.run(['date', '+%Z %z'], capture_output=True, text=True, timeout=5)
+        print(f"   timezone info: {result.stdout.strip()}")
+    except Exception as e:
+        print(f"   timezone info error: {e}")
+
+    print()
+
+    # Process and container information
+    print("🐳 CONTAINER INFO:")
+    print(f"   Working directory: {os.getcwd()}")
+    print(f"   User ID: {os.getuid()}")
+    print(f"   Group ID: {os.getgid()}")
+    print(f"   Process ID: {os.getpid()}")
+    print()
+
+    # Cron daemon status
+    print("⏰ CRON DAEMON STATUS:")
+    try:
+        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
+        lines = result.stdout.split('\n')
+        cron_processes = [line for line in lines if any(
+            word in line.lower() for word in ['cron', 'crond']) and 'grep' not in line and line.strip()]
+
+        if cron_processes:
+            print("   Cron processes found:")
+            for process in cron_processes:
+                print(f"     {process.strip()}")
+        else:
+            print("   ❌ No cron processes found")
+    except Exception as e:
+        print(f"   Process check error: {e}")
+
+    # Check crontab entries
+    try:
+        result = subprocess.run(['crontab', '-l'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 and result.stdout.strip():
+            print("   Current crontab entries:")
+            for line in result.stdout.strip().split('\n'):
+                if line.strip() and not line.strip().startswith('#'):
+                    print(f"     {line.strip()}")
+        else:
+            print("   ❌ No crontab entries found")
+    except Exception as e:
+        print(f"   Crontab check error: {e}")
+
+    # Check for cron logs
+    cron_log_files = ['/var/log/cron.log', '/var/log/cron', '/var/log/emby-newsletter.log']
+    print("   Checking for cron log files:")
+    for log_file in cron_log_files:
+        if os.path.exists(log_file):
+            try:
+                stat_info = os.stat(log_file)
+                print(f"     ✅ {log_file} (size: {stat_info.st_size} bytes)")
+                # Show last few lines if file is not too large
+                if stat_info.st_size < 10000:  # Less than 10KB
+                    try:
+                        with open(log_file, 'r') as f:
+                            lines = f.readlines()
+                            if lines:
+                                print(f"        Last few lines:")
+                                for line in lines[-3:]:
+                                    print(f"          {line.strip()}")
+                    except Exception as read_e:
+                        print(f"        Error reading file: {read_e}")
+            except Exception as stat_e:
+                print(f"     ❌ {log_file} (error: {stat_e})")
+        else:
+            print(f"     ❌ {log_file} (not found)")
+
+    print()
+
+    # Expected vs actual time comparison
+    print("🎯 TIME COMPARISON:")
+    if 'TZ' in os.environ:
+        try:
+            expected_tz = os.environ['TZ']
+            print(f"   Expected timezone: {expected_tz}")
+
+            # Try to show what time it should be in that timezone
+            result = subprocess.run(['date'], capture_output=True, text=True, timeout=5)
+            current_time = result.stdout.strip()
+            print(f"   Current container time: {current_time}")
+
+            # Show what time it should be in expected timezone
+            try:
+                result = subprocess.run(['env', f'TZ={expected_tz}', 'date'], capture_output=True, text=True, timeout=5)
+                expected_time = result.stdout.strip()
+                print(f"   Expected time in {expected_tz}: {expected_time}")
+            except Exception:
+                print(f"   Could not calculate expected time for {expected_tz}")
+
+        except Exception as e:
+            print(f"   Time comparison error: {e}")
+    else:
+        print("   ❌ TZ environment variable not set")
+
+    print("=" * 80)
+    print("END TIMEZONE DEBUG - Starting newsletter execution...")
+    print("=" * 80)
+    print()
+
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +260,7 @@ class EmbyAPI:
         try:
             # Calculate the date from days ago
             since_date = datetime.now() - timedelta(days=days)
+            logger.info(f"Fetching items added since: {since_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
             # Get all items added since the specified date
             params = {
@@ -65,7 +283,9 @@ class EmbyAPI:
             response.raise_for_status()
 
             data = response.json()
-            return data.get('Items', [])
+            items = data.get('Items', [])
+            logger.info(f"Found {len(items)} recent items")
+            return items
 
         except Exception as e:
             logger.error(f"Error fetching recent items from Emby: {e}")
@@ -182,10 +402,16 @@ class NewsletterGenerator:
     def generate_newsletter(self) -> Optional[str]:
         """Generate newsletter content"""
         try:
+            logger.info("Starting newsletter generation...")
+
             # Get recent items
             days = self.config.emby.observed_period_days
             movie_folders = self.config.emby.watched_film_folders
             tv_folders = self.config.emby.watched_tv_folders
+
+            logger.info(f"Looking for content added in the last {days} days")
+            logger.info(f"Movie folders: {movie_folders}")
+            logger.info(f"TV folders: {tv_folders}")
 
             # Get movies and TV shows separately
             recent_movies = []
@@ -194,10 +420,12 @@ class NewsletterGenerator:
             if movie_folders and movie_folders[0]:  # Check if not empty
                 movie_items = self.emby_api.get_recent_items(days, movie_folders)
                 recent_movies = [item for item in movie_items if item.get('Type') == 'Movie']
+                logger.info(f"Found {len(recent_movies)} recent movies")
 
             if tv_folders and tv_folders[0]:  # Check if not empty
                 tv_items = self.emby_api.get_recent_items(days, tv_folders)
                 recent_tv_shows = [item for item in tv_items if item.get('Type') == 'Episode']
+                logger.info(f"Found {len(recent_tv_shows)} recent TV episodes")
 
             # Process items and enhance with TMDB data
             processed_movies = self._process_movies(recent_movies)
@@ -206,6 +434,7 @@ class NewsletterGenerator:
             # Generate HTML content
             html_content = self._generate_html(processed_movies, processed_tv_shows)
 
+            logger.info("Newsletter generation completed successfully")
             return html_content
 
         except Exception as e:
@@ -316,10 +545,15 @@ class NewsletterGenerator:
     def send_newsletter(self, html_content: str) -> bool:
         """Send newsletter via email"""
         try:
+            logger.info("Starting email send process...")
+
             # Email configuration
             email_config = self.config.email
             recipients = self.config.recipients
             subject = self.config.email_template.subject
+
+            logger.info(f"Sending to {len(recipients)} recipients: {recipients}")
+            logger.info(f"Using SMTP server: {email_config.smtp_server}:{email_config.smtp_port}")
 
             # Create message
             msg = MIMEMultipart('alternative')
@@ -338,18 +572,21 @@ class NewsletterGenerator:
                 server.login(email_config.smtp_username, email_config.smtp_password)
                 server.sendmail(email_config.smtp_sender_email, recipients, msg.as_string())
 
-            logger.info(f"Newsletter sent successfully to {len(recipients)} recipients")
+            logger.info(f"✅ Newsletter sent successfully to {len(recipients)} recipients")
             return True
 
         except Exception as e:
-            logger.error(f"Error sending newsletter: {e}")
+            logger.error(f"❌ Error sending newsletter: {e}")
             return False
 
 
 def main():
     """Main function"""
     try:
-        logger.info("Starting Emby Newsletter")
+        # Run timezone debugging first
+        log_timezone_debug()
+
+        logger.info("🚀 Starting Emby Newsletter")
 
         # Load configuration
         config_manager = ConfigurationManager()
@@ -362,16 +599,25 @@ def main():
         if html_content:
             success = generator.send_newsletter(html_content)
             if success:
-                logger.info("Newsletter generation and sending completed successfully")
+                logger.info("✅ Newsletter generation and sending completed successfully")
+                print("=" * 80)
+                print("🎉 NEWSLETTER COMPLETED SUCCESSFULLY!")
+                print(f"📧 Sent at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                print("=" * 80)
             else:
-                logger.error("Failed to send newsletter")
+                logger.error("❌ Failed to send newsletter")
                 sys.exit(1)
         else:
-            logger.error("Failed to generate newsletter")
+            logger.error("❌ Failed to generate newsletter")
             sys.exit(1)
 
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"💥 Unexpected error: {e}")
+        print("=" * 80)
+        print("❌ NEWSLETTER FAILED!")
+        print(f"💥 Error: {e}")
+        print(f"🕐 Failed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 80)
         sys.exit(1)
 
 
