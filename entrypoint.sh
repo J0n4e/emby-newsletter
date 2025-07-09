@@ -13,7 +13,7 @@ fi
 
 # Test configuration first
 echo "Testing configuration..."
-cd /app && python3 check_config.py -c /app/config/config.yml --no-connectivity
+cd /app && python check_config.py -c /app/config/config.yml --no-connectivity
 
 if [ $? -ne 0 ]; then
     echo "Configuration validation failed. Please check your config file."
@@ -21,7 +21,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Read the scheduler configuration using safe Python script
-SCHEDULER_ENABLED=$(python3 -c "
+SCHEDULER_ENABLED=$(python -c "
 import yaml
 import sys
 import os
@@ -50,7 +50,7 @@ if [ "$SCHEDULER_ENABLED" = "true" ]; then
     echo "Setting up scheduled newsletter..."
 
     # Extract cron expression from config using safe Python script
-    CRON_EXPRESSION=$(python3 -c "
+    CRON_EXPRESSION=$(python -c "
 import yaml
 import sys
 import re
@@ -66,9 +66,14 @@ try:
         print('0 8 1 * *')
         sys.exit(0)
     cron_expr = config.get('scheduler', {}).get('cron', '0 8 1 * *')
-    # Basic validation of cron expression
-    if isinstance(cron_expr, str) and re.match(r'^[0-9\*\-\,\/\s]+$', cron_expr.strip()):
-        print(cron_expr.strip())
+    # Basic validation and cleanup of cron expression
+    if isinstance(cron_expr, str):
+        # Clean up the expression and ensure it has exactly 5 fields
+        fields = cron_expr.strip().split()
+        if len(fields) == 5:
+            print(' '.join(fields))
+        else:
+            print('0 8 1 * *')  # Default fallback
     else:
         print('0 8 1 * *')  # Default fallback
 except Exception as e:
@@ -76,16 +81,21 @@ except Exception as e:
     print(f'Error reading cron config: {e}', file=sys.stderr)
 ")
 
+    # Debug the cron expression
+    echo "DEBUG: Raw cron expression: '$CRON_EXPRESSION'"
+    echo "DEBUG: Number of fields: $(echo "$CRON_EXPRESSION" | wc -w)"
+
     # Create necessary directories with proper permissions
     mkdir -p /var/log
     mkdir -p /var/spool/cron/crontabs
     chmod 0755 /var/spool/cron
     chmod 0755 /var/spool/cron/crontabs
 
-    # Validate cron expression format before using it
-    if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
-        # Create cron job with safe command
-        echo "$CRON_EXPRESSION cd /app && python3 source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
+    # Validate that we have exactly 5 fields in cron expression
+    FIELD_COUNT=$(echo "$CRON_EXPRESSION" | wc -w)
+    if [ "$FIELD_COUNT" -eq 5 ]; then
+        # Create cron job with correct python command
+        echo "$CRON_EXPRESSION cd /app && python source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
@@ -129,10 +139,10 @@ except Exception as e:
             fi
         done
     else
-        echo "Error: Invalid cron expression format: $CRON_EXPRESSION"
+        echo "Error: Invalid cron expression - expected 5 fields, got $FIELD_COUNT: '$CRON_EXPRESSION'"
         exit 1
     fi
 else
     echo "No scheduler configured. Running newsletter once..."
-    cd /app && exec python3 source/main.py
+    cd /app && exec python source/main.py
 fi
