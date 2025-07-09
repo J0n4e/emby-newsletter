@@ -66,14 +66,9 @@ try:
         print('0 8 1 * *')
         sys.exit(0)
     cron_expr = config.get('scheduler', {}).get('cron', '0 8 1 * *')
-    # Basic validation and cleanup of cron expression
-    if isinstance(cron_expr, str):
-        # Clean up the expression and ensure it has exactly 5 fields
-        fields = cron_expr.strip().split()
-        if len(fields) == 5:
-            print(' '.join(fields))
-        else:
-            print('0 8 1 * *')  # Default fallback
+    # Basic validation of cron expression
+    if isinstance(cron_expr, str) and re.match(r'^[0-9\*\-\,\/\s]+$', cron_expr.strip()):
+        print(cron_expr.strip())
     else:
         print('0 8 1 * *')  # Default fallback
 except Exception as e:
@@ -81,23 +76,22 @@ except Exception as e:
     print(f'Error reading cron config: {e}', file=sys.stderr)
 ")
 
-    # Debug the cron expression
-    echo "DEBUG: Raw cron expression: '$CRON_EXPRESSION'"
-    echo "DEBUG: Number of fields: $(echo "$CRON_EXPRESSION" | wc -w)"
-
     # Create necessary directories with proper permissions
     mkdir -p /var/log
     mkdir -p /var/spool/cron/crontabs
     chmod 0755 /var/spool/cron
     chmod 0755 /var/spool/cron/crontabs
 
-    # Validate that we have exactly 5 fields in cron expression
-    FIELD_COUNT=$(echo "$CRON_EXPRESSION" | wc -w)
-    if [ "$FIELD_COUNT" -eq 5 ]; then
-        # Create cron job with correct python command
-        echo "$CRON_EXPRESSION cd /app && python source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
+    # Find the correct Python executable path
+    PYTHON_PATH=$(which python || echo "/usr/local/bin/python")
+
+    # Validate cron expression format before using it
+    if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
+        # Create cron job with full path to Python and proper environment
+        echo "$CRON_EXPRESSION PATH=/usr/local/bin:/usr/bin:/bin PYTHONPATH=/app/source cd /app && $PYTHON_PATH source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
+        echo "Using Python at: $PYTHON_PATH"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
 
         # Verify crontab was created
@@ -139,7 +133,7 @@ except Exception as e:
             fi
         done
     else
-        echo "Error: Invalid cron expression - expected 5 fields, got $FIELD_COUNT: '$CRON_EXPRESSION'"
+        echo "Error: Invalid cron expression format: $CRON_EXPRESSION"
         exit 1
     fi
 else
