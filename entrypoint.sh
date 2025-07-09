@@ -13,7 +13,7 @@ fi
 
 # Test configuration first
 echo "Testing configuration..."
-cd /app && python check_config.py -c /app/config/config.yml --no-connectivity
+cd /app && python3 check_config.py -c /app/config/config.yml --no-connectivity
 
 if [ $? -ne 0 ]; then
     echo "Configuration validation failed. Please check your config file."
@@ -21,7 +21,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Read the scheduler configuration using safe Python script
-SCHEDULER_ENABLED=$(python -c "
+SCHEDULER_ENABLED=$(python3 -c "
 import yaml
 import sys
 import os
@@ -50,7 +50,7 @@ if [ "$SCHEDULER_ENABLED" = "true" ]; then
     echo "Setting up scheduled newsletter..."
 
     # Extract cron expression from config using safe Python script
-    CRON_EXPRESSION=$(python -c "
+    CRON_EXPRESSION=$(python3 -c "
 import yaml
 import sys
 import re
@@ -82,16 +82,12 @@ except Exception as e:
     chmod 0755 /var/spool/cron
     chmod 0755 /var/spool/cron/crontabs
 
-    # Find the correct Python executable path
-    PYTHON_PATH=$(which python || echo "/usr/local/bin/python")
-
     # Validate cron expression format before using it
     if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
-        # Create cron job with full path to Python and proper environment
-        echo "$CRON_EXPRESSION PATH=/usr/local/bin:/usr/bin:/bin PYTHONPATH=/app/source cd /app && $PYTHON_PATH source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
+        # Create cron job with safe command
+        echo "$CRON_EXPRESSION cd /app && python3 source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
-        echo "Using Python at: $PYTHON_PATH"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
 
         # Verify crontab was created
@@ -138,5 +134,5 @@ except Exception as e:
     fi
 else
     echo "No scheduler configured. Running newsletter once..."
-    cd /app && exec python source/main.py
+    cd /app && exec python3 source/main.py
 fi
