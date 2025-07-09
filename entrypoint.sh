@@ -3,29 +3,6 @@
 # Security: Set strict bash options
 set -euo pipefail
 
-# Function to find Python executable
-find_python() {
-    # Try different possible Python executables
-    for cmd in python python3 python3.11 /usr/local/bin/python /usr/local/bin/python3 /usr/bin/python /usr/bin/python3; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-            echo "$cmd"
-            return 0
-        fi
-    done
-
-    # If nothing found, show debug info and exit
-    echo "ERROR: No Python executable found!" >&2
-    echo "Available executables in PATH:" >&2
-    ls -la /usr/local/bin/python* 2>/dev/null || echo "No python in /usr/local/bin" >&2
-    ls -la /usr/bin/python* 2>/dev/null || echo "No python in /usr/bin" >&2
-    echo "PATH: $PATH" >&2
-    exit 1
-}
-
-# Find Python executable
-PYTHON_CMD=$(find_python)
-echo "Using Python: $PYTHON_CMD ($($PYTHON_CMD --version))"
-
 # Check if config file exists
 if [ ! -f "/app/config/config.yml" ]; then
     echo "Error: Config file not found at /app/config/config.yml"
@@ -36,7 +13,7 @@ fi
 
 # Test configuration first
 echo "Testing configuration..."
-cd /app && $PYTHON_CMD check_config.py -c /app/config/config.yml --no-connectivity
+cd /app && python check_config.py -c /app/config/config.yml --no-connectivity
 
 if [ $? -ne 0 ]; then
     echo "Configuration validation failed. Please check your config file."
@@ -44,7 +21,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Read the scheduler configuration using safe Python script
-SCHEDULER_ENABLED=$($PYTHON_CMD -c "
+SCHEDULER_ENABLED=$(python -c "
 import yaml
 import sys
 import os
@@ -73,7 +50,7 @@ if [ "$SCHEDULER_ENABLED" = "true" ]; then
     echo "Setting up scheduled newsletter..."
 
     # Extract cron expression from config using safe Python script
-    CRON_EXPRESSION=$($PYTHON_CMD -c "
+    CRON_EXPRESSION=$(python -c "
 import yaml
 import sys
 import re
@@ -105,13 +82,16 @@ except Exception as e:
     chmod 0755 /var/spool/cron
     chmod 0755 /var/spool/cron/crontabs
 
+    # Find the correct Python executable path
+    PYTHON_PATH=$(which python || echo "/usr/local/bin/python")
+
     # Validate cron expression format before using it
     if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
-        # Create cron job with the detected Python command and proper environment
-        echo "$CRON_EXPRESSION PATH=/usr/local/bin:/usr/bin:/bin PYTHONPATH=/app/source cd /app && $PYTHON_CMD source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
+        # Create cron job with full path to Python and proper environment
+        echo "$CRON_EXPRESSION PATH=/usr/local/bin:/usr/bin:/bin PYTHONPATH=/app/source cd /app && $PYTHON_PATH source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
-        echo "Using Python command: $PYTHON_CMD"
+        echo "Using Python at: $PYTHON_PATH"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
 
         # Verify crontab was created
@@ -125,12 +105,6 @@ except Exception as e:
         fi
 
         echo "Starting cron daemon..."
-
-        # Verify cron is available
-        if ! command -v cron >/dev/null 2>&1; then
-            echo "❌ ERROR: Cron not installed in image! Please rebuild with cron package."
-            exit 1
-        fi
 
         # Start cron daemon in background
         cron
@@ -164,5 +138,5 @@ except Exception as e:
     fi
 else
     echo "No scheduler configured. Running newsletter once..."
-    cd /app && exec $PYTHON_CMD source/main.py
+    cd /app && exec python source/main.py
 fi
