@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  mediaserver-newsletter:
+  emby-newsletter:
     container_name: emby-newsletter
     image: 'ghcr.io/j0n4e/emby-newsletter:latest'
     environment:
