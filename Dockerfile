@@ -3,9 +3,10 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including procps for ps command
 RUN apt-get update && apt-get install -y \
     cron \
+    procps \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -28,11 +29,13 @@ RUN chmod +x entrypoint.sh
 RUN groupadd -g 1000 emby && useradd -u 1000 -g emby -m emby
 
 # Create necessary directories and set permissions
-RUN mkdir -p /var/log \
+RUN mkdir -p /var/log /var/spool/cron/crontabs \
+    && chmod 0755 /var/spool/cron \
+    && chmod 0755 /var/spool/cron/crontabs \
     && chown -R emby:emby /app /var/log
 
-# Switch to non-root user
-USER emby
+# Important: Don't switch to non-root user since cron needs root permissions
+# USER emby  # <-- REMOVE THIS LINE
 
 # Set environment variables
 ENV PYTHONPATH=/app/source

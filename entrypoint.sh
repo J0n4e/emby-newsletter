@@ -76,8 +76,11 @@ except Exception as e:
     print(f'Error reading cron config: {e}', file=sys.stderr)
 ")
 
-    # Create log directory
+    # Create necessary directories with proper permissions
     mkdir -p /var/log
+    mkdir -p /var/spool/cron/crontabs
+    chmod 0755 /var/spool/cron
+    chmod 0755 /var/spool/cron/crontabs
 
     # Validate cron expression format before using it
     if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
@@ -86,12 +89,47 @@ except Exception as e:
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
+
+        # Verify crontab was created
+        echo "Verifying crontab installation..."
+        if crontab -l > /dev/null 2>&1; then
+            echo "✅ Crontab installed successfully:"
+            crontab -l
+        else
+            echo "❌ Failed to install crontab"
+            exit 1
+        fi
+
         echo "Starting cron daemon..."
 
-        # Start cron in foreground
-        exec cron -f
+        # Start cron daemon in background
+        cron
+
+        # Verify cron is running
+        if pgrep cron > /dev/null; then
+            echo "✅ Cron daemon started successfully"
+        else
+            echo "❌ Failed to start cron daemon"
+            exit 1
+        fi
+
+        # Keep container running by following the log files
+        echo "Container running with cron scheduler..."
+        echo "Following log files..."
+        touch /var/log/emby-newsletter.log
+        tail -f /var/log/emby-newsletter.log &
+
+        # Keep the container alive
+        while true; do
+            sleep 60
+            # Check if cron is still running
+            if ! pgrep cron > /dev/null; then
+                echo "❌ Cron daemon died, restarting..."
+                cron
+            fi
+        done
     else
-        echo "Error: Invalid cron expression format"
+        echo "Error: Invalid cron expression format: $CRON_EXPRESSION"
         exit 1
     fi
 else
