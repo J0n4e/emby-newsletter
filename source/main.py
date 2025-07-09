@@ -30,8 +30,10 @@ def log_timezone_debug():
 
     # System time information
     print("📅 SYSTEM TIME INFO:")
-    print(f"   Current UTC time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    print(f"   Current local time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    now_utc = datetime.utcnow()
+    now_local = datetime.now()
+    print(f"   Current UTC time: {now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"   Current local time: {now_local.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"   System timezone names: {time.tzname}")
     print(f"   Timezone offset from UTC: {time.timezone} seconds ({time.timezone / 3600:.1f} hours)")
     print(f"   Daylight saving time active: {'Yes' if time.daylight else 'No'}")
@@ -76,16 +78,11 @@ def log_timezone_debug():
     # Python timezone detection
     print("🐍 PYTHON TIMEZONE INFO:")
     try:
-        # Try different methods to detect timezone
-        import time
-        import datetime
-
         # Method 1: time.tzname
         print(f"   time.tzname: {time.tzname}")
 
         # Method 2: datetime timezone
-        now = datetime.now()
-        print(f"   datetime.now(): {now}")
+        print(f"   datetime.now(): {now_local}")
 
         # Method 3: Check if zoneinfo is available (Python 3.9+)
         try:
