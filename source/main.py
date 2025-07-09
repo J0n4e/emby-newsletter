@@ -21,213 +21,119 @@ from configuration import ConfigurationManager
 from template_renderer import render_email_with_server_stats
 
 
-def log_timezone_debug():
-    """Log comprehensive timezone and time information for debugging"""
-
+def simple_timezone_debug():
+    """Simple timezone debugging without import conflicts"""
     print("=" * 80)
-    print("EMBY NEWSLETTER - TIMEZONE AND TIME DEBUG INFORMATION")
+    print("EMBY NEWSLETTER - TIMEZONE DEBUG")
     print("=" * 80)
 
-    # System time information
-    print("📅 SYSTEM TIME INFO:")
-    now_utc = datetime.utcnow()
+    # Basic time info
     now_local = datetime.now()
-    print(f"   Current UTC time: {now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    print(f"   Current local time: {now_local.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"   System timezone names: {time.tzname}")
-    print(f"   Timezone offset from UTC: {time.timezone} seconds ({time.timezone / 3600:.1f} hours)")
-    print(f"   Daylight saving time active: {'Yes' if time.daylight else 'No'}")
-    if time.daylight:
-        print(f"   DST timezone offset: {time.altzone} seconds ({time.altzone / 3600:.1f} hours)")
+    now_utc = datetime.utcnow()
+
+    print(f"📅 CURRENT TIME INFO:")
+    print(f"   Local time: {now_local.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"   UTC time: {now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"   Time difference: {(now_local - now_utc).total_seconds() / 3600:.1f} hours from UTC")
     print()
 
     # Environment variables
-    print("🌍 ENVIRONMENT VARIABLES:")
-    print(f"   TZ: {os.environ.get('TZ', 'Not set')}")
+    print(f"🌍 ENVIRONMENT:")
+    print(f"   TZ variable: {os.environ.get('TZ', 'Not set')}")
     print(f"   LANG: {os.environ.get('LANG', 'Not set')}")
-    print(f"   LC_TIME: {os.environ.get('LC_TIME', 'Not set')}")
-    print(f"   PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")
     print()
 
-    # System timezone files and configuration
-    print("📁 SYSTEM TIMEZONE FILES:")
+    # System timezone
+    print(f"⏰ SYSTEM TIMEZONE:")
+    print(f"   Python timezone names: {time.tzname}")
+    print(f"   Timezone offset: {time.timezone} seconds ({time.timezone / 3600:.1f} hours)")
+    print(f"   DST active: {'Yes' if time.daylight else 'No'}")
+    print()
+
+    # System date command
+    print(f"🖥️ SYSTEM DATE:")
+    try:
+        date_result = subprocess.run(['date'], capture_output=True, text=True, timeout=5)
+        if date_result.returncode == 0:
+            print(f"   System date: {date_result.stdout.strip()}")
+        else:
+            print(f"   System date: Error getting date")
+    except Exception as e:
+        print(f"   System date: Error - {e}")
+
+    # UTC date
+    try:
+        date_utc_result = subprocess.run(['date', '-u'], capture_output=True, text=True, timeout=5)
+        if date_utc_result.returncode == 0:
+            print(f"   System UTC: {date_utc_result.stdout.strip()}")
+    except Exception as e:
+        print(f"   System UTC: Error - {e}")
+
+    print()
+
+    # Timezone files
+    print(f"📁 TIMEZONE CONFIG:")
     try:
         with open('/etc/timezone', 'r') as f:
-            timezone_content = f.read().strip()
-            print(f"   /etc/timezone: {timezone_content}")
+            tz_content = f.read().strip()
+            print(f"   /etc/timezone: {tz_content}")
     except FileNotFoundError:
-        print("   /etc/timezone: File not found")
+        print(f"   /etc/timezone: Not found")
     except Exception as e:
-        print(f"   /etc/timezone: Error reading - {e}")
+        print(f"   /etc/timezone: Error - {e}")
 
     try:
         if os.path.islink('/etc/localtime'):
-            link_target = os.readlink('/etc/localtime')
-            print(f"   /etc/localtime: Symlink to {link_target}")
-            # Extract timezone from symlink path
-            if '/zoneinfo/' in link_target:
-                tz_from_link = link_target.split('/zoneinfo/')[-1]
-                print(f"   Timezone from symlink: {tz_from_link}")
+            link = os.readlink('/etc/localtime')
+            print(f"   /etc/localtime: {link}")
         else:
-            print("   /etc/localtime: Regular file (not a symlink)")
+            print(f"   /etc/localtime: Regular file")
     except Exception as e:
-        print(f"   /etc/localtime: Error checking - {e}")
+        print(f"   /etc/localtime: Error - {e}")
 
     print()
 
-    # Python timezone detection
-    print("🐍 PYTHON TIMEZONE INFO:")
-    try:
-        # Method 1: time.tzname
-        print(f"   time.tzname: {time.tzname}")
-
-        # Method 2: datetime timezone
-        print(f"   datetime.now(): {now_local}")
-
-        # Method 3: Check if zoneinfo is available (Python 3.9+)
-        try:
-            from zoneinfo import ZoneInfo
-            if 'TZ' in os.environ:
-                tz = ZoneInfo(os.environ['TZ'])
-                now_with_tz = datetime.now(tz)
-                print(f"   datetime with TZ env: {now_with_tz}")
-                print(f"   ZoneInfo timezone: {tz}")
-        except ImportError:
-            print("   zoneinfo module not available (Python < 3.9)")
-        except Exception as e:
-            print(f"   zoneinfo error: {e}")
-
-        # Method 4: Try pytz if available
-        try:
-            import pytz
-            if 'TZ' in os.environ:
-                tz_pytz = pytz.timezone(os.environ['TZ'])
-                now_pytz = datetime.now(tz_pytz)
-                print(f"   pytz datetime: {now_pytz}")
-                print(f"   pytz timezone: {tz_pytz}")
-        except ImportError:
-            print("   pytz module not available")
-        except Exception as e:
-            print(f"   pytz error: {e}")
-
-    except Exception as e:
-        print(f"   Python timezone detection error: {e}")
-
+    # Container info
+    print(f"🐳 CONTAINER:")
+    print(f"   Working dir: {os.getcwd()}")
+    print(f"   User: {os.getuid()}:{os.getgid()}")
     print()
 
-    # System date commands
-    print("🕐 SYSTEM DATE COMMANDS:")
+    # Cron status
+    print(f"⏰ CRON STATUS:")
     try:
-        result = subprocess.run(['date'], capture_output=True, text=True, timeout=5)
-        print(f"   'date' command: {result.stdout.strip()}")
-    except Exception as e:
-        print(f"   'date' command error: {e}")
-
-    try:
-        result = subprocess.run(['date', '-u'], capture_output=True, text=True, timeout=5)
-        print(f"   'date -u' command: {result.stdout.strip()}")
-    except Exception as e:
-        print(f"   'date -u' command error: {e}")
-
-    try:
-        result = subprocess.run(['date', '+%Z %z'], capture_output=True, text=True, timeout=5)
-        print(f"   timezone info: {result.stdout.strip()}")
-    except Exception as e:
-        print(f"   timezone info error: {e}")
-
-    print()
-
-    # Process and container information
-    print("🐳 CONTAINER INFO:")
-    print(f"   Working directory: {os.getcwd()}")
-    print(f"   User ID: {os.getuid()}")
-    print(f"   Group ID: {os.getgid()}")
-    print(f"   Process ID: {os.getpid()}")
-    print()
-
-    # Cron daemon status
-    print("⏰ CRON DAEMON STATUS:")
-    try:
-        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
-        lines = result.stdout.split('\n')
-        cron_processes = [line for line in lines if any(
-            word in line.lower() for word in ['cron', 'crond']) and 'grep' not in line and line.strip()]
-
-        if cron_processes:
-            print("   Cron processes found:")
-            for process in cron_processes:
-                print(f"     {process.strip()}")
-        else:
-            print("   ❌ No cron processes found")
-    except Exception as e:
-        print(f"   Process check error: {e}")
-
-    # Check crontab entries
-    try:
-        result = subprocess.run(['crontab', '-l'], capture_output=True, text=True, timeout=5)
-        if result.returncode == 0 and result.stdout.strip():
-            print("   Current crontab entries:")
-            for line in result.stdout.strip().split('\n'):
-                if line.strip() and not line.strip().startswith('#'):
+        ps_result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
+        if ps_result.returncode == 0:
+            cron_lines = [line for line in ps_result.stdout.split('\n')
+                          if 'cron' in line.lower() and 'grep' not in line and line.strip()]
+            if cron_lines:
+                print(f"   Cron processes: {len(cron_lines)} found")
+                for line in cron_lines[:2]:  # Show first 2
                     print(f"     {line.strip()}")
-        else:
-            print("   ❌ No crontab entries found")
+            else:
+                print(f"   Cron processes: None found")
     except Exception as e:
-        print(f"   Crontab check error: {e}")
+        print(f"   Cron processes: Error - {e}")
 
-    # Check for cron logs
-    cron_log_files = ['/var/log/cron.log', '/var/log/cron', '/var/log/emby-newsletter.log']
-    print("   Checking for cron log files:")
-    for log_file in cron_log_files:
-        if os.path.exists(log_file):
-            try:
-                stat_info = os.stat(log_file)
-                print(f"     ✅ {log_file} (size: {stat_info.st_size} bytes)")
-                # Show last few lines if file is not too large
-                if stat_info.st_size < 10000:  # Less than 10KB
-                    try:
-                        with open(log_file, 'r') as f:
-                            lines = f.readlines()
-                            if lines:
-                                print(f"        Last few lines:")
-                                for line in lines[-3:]:
-                                    print(f"          {line.strip()}")
-                    except Exception as read_e:
-                        print(f"        Error reading file: {read_e}")
-            except Exception as stat_e:
-                print(f"     ❌ {log_file} (error: {stat_e})")
+    # Crontab entries
+    try:
+        crontab_result = subprocess.run(['crontab', '-l'], capture_output=True, text=True, timeout=5)
+        if crontab_result.returncode == 0 and crontab_result.stdout.strip():
+            lines = [line.strip() for line in crontab_result.stdout.strip().split('\n')
+                     if line.strip() and not line.strip().startswith('#')]
+            if lines:
+                print(f"   Crontab entries:")
+                for line in lines:
+                    print(f"     {line}")
+            else:
+                print(f"   Crontab entries: None active")
         else:
-            print(f"     ❌ {log_file} (not found)")
-
-    print()
-
-    # Expected vs actual time comparison
-    print("🎯 TIME COMPARISON:")
-    if 'TZ' in os.environ:
-        try:
-            expected_tz = os.environ['TZ']
-            print(f"   Expected timezone: {expected_tz}")
-
-            # Try to show what time it should be in that timezone
-            result = subprocess.run(['date'], capture_output=True, text=True, timeout=5)
-            current_time = result.stdout.strip()
-            print(f"   Current container time: {current_time}")
-
-            # Show what time it should be in expected timezone
-            try:
-                result = subprocess.run(['env', f'TZ={expected_tz}', 'date'], capture_output=True, text=True, timeout=5)
-                expected_time = result.stdout.strip()
-                print(f"   Expected time in {expected_tz}: {expected_time}")
-            except Exception:
-                print(f"   Could not calculate expected time for {expected_tz}")
-
-        except Exception as e:
-            print(f"   Time comparison error: {e}")
-    else:
-        print("   ❌ TZ environment variable not set")
+            print(f"   Crontab entries: None found")
+    except Exception as e:
+        print(f"   Crontab entries: Error - {e}")
 
     print("=" * 80)
-    print("END TIMEZONE DEBUG - Starting newsletter execution...")
+    print("END TIMEZONE DEBUG")
     print("=" * 80)
     print()
 
@@ -581,7 +487,7 @@ def main():
     """Main function"""
     try:
         # Run timezone debugging first
-        log_timezone_debug()
+        simple_timezone_debug()
 
         logger.info("🚀 Starting Emby Newsletter")
 
