@@ -12,11 +12,11 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  bulnd_and_deploy:
-    uses: ./.github/workflows/build_and_deploy.yml
+  security_test:
+    uses: ./.github/workflows/security_test.yml
 
   build:
-#    needs: [security_test]
+    needs: [security_test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
