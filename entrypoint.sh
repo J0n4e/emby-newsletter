@@ -16,11 +16,23 @@ if [ -n "${TZ:-}" ]; then
     if [ -f "/usr/share/zoneinfo/$TZ" ]; then
         echo "🌍 Setting timezone to: $TZ"
 
-        # Set system timezone
-        ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime
-        echo "$TZ" > /etc/timezone
+        # Try to set system timezone (may fail on read-only filesystem)
+        if ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime 2>/dev/null; then
+            echo "✅ System timezone symlink created successfully"
+        else
+            echo "⚠️  Cannot create /etc/localtime symlink (read-only filesystem)"
+            echo "   This is normal in Docker containers - using TZ environment variable instead"
+        fi
 
-        # Export TZ for all processes (including Python and cron)
+        # Try to write timezone file (may fail on read-only filesystem)
+        if echo "$TZ" > /etc/timezone 2>/dev/null; then
+            echo "✅ Timezone file updated successfully"
+        else
+            echo "⚠️  Cannot write to /etc/timezone (read-only filesystem)"
+            echo "   This is normal in Docker containers - using TZ environment variable instead"
+        fi
+
+        # Export TZ for all processes (including Python and cron) - this is the most important part
         export TZ="$TZ"
 
         # Update timezone data if dpkg-reconfigure is available
@@ -33,6 +45,7 @@ if [ -n "${TZ:-}" ]; then
         echo "   System time: $(date)"
         echo "   Timezone: $(date +%Z)"
         echo "   UTC offset: $(date +%z)"
+        echo "   TZ environment: $TZ"
     else
         echo "⚠️  Warning: Invalid timezone '$TZ' - timezone file not found"
         echo "   Available timezones: /usr/share/zoneinfo/"
