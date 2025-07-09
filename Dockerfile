@@ -3,7 +3,7 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including cron and procps
+# Install system dependencies including cron, procps, and tzdata
 RUN apt-get update && apt-get install -y \
     cron \
     procps \
@@ -15,8 +15,9 @@ RUN apt-get update && apt-get install -y \
 ENV TZ=Europe/Bucharest
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Verify cron installation
-RUN which cron && cron --version || echo "Cron installation verification failed"
+# Verify installations
+RUN which cron && cron --version && echo "Cron installed successfully"
+RUN python --version && echo "Python installed successfully"
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
@@ -33,14 +34,10 @@ COPY check_config.py .
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
-# Create a non-root user with specific UID/GID
-RUN groupadd -g 1000 emby && useradd -u 1000 -g emby -m emby
-
 # Create necessary directories and set permissions
 RUN mkdir -p /var/log /var/spool/cron/crontabs \
     && chmod 0755 /var/spool/cron \
-    && chmod 0755 /var/spool/cron/crontabs \
-    && chown -R emby:emby /app /var/log
+    && chmod 0755 /var/spool/cron/crontabs
 
 # Set environment variables
 ENV PYTHONPATH=/app/source
