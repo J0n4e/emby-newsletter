@@ -85,7 +85,7 @@ except Exception as e:
     # Validate cron expression format before using it
     if [[ "$CRON_EXPRESSION" =~ ^[0-9\*\-\,\/[:space:]]+$ ]]; then
         # Create cron job with safe command
-        echo "$CRON_EXPRESSION cd /app && python3 source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
+        echo "$CRON_EXPRESSION cd /app && python source/main.py >> /var/log/emby-newsletter.log 2>&1" | crontab -
 
         echo "Cron job scheduled: $CRON_EXPRESSION"
         echo "Logs will be written to: /var/log/emby-newsletter.log"
