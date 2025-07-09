@@ -7,12 +7,9 @@ services:
     volumes:
       - ./config:/app/config:ro
       - ./templates:/app/templates:ro
-    environment:
-      - TZ=Europe/Bucharest                   # Explicitly set Romania timezone
-      # PUID and PGID will be automatically inherited from Unraid variables
     restart: unless-stopped
     user: "0:0"          # Run as root for cron access
-    read_only: true      # Keep read-only for security (required for CI)
+    read_only: true      # Keep read-only for security
     security_opt:
       - no-new-privileges:true
     tmpfs:
@@ -22,4 +19,3 @@ services:
       - /var/spool:rw,noexec,nosuid,size=10m
       - /var/spool/cron:rw,noexec,nosuid,size=5m
       - /root:rw,noexec,nosuid,size=10m
-      - /etc:rw,noexec,nosuid,size=10m        # Allow timezone changes via tmpfs
