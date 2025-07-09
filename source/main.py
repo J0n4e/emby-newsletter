@@ -505,3 +505,86 @@ class NewsletterGenerator:
             email_config = self.config.email
             recipients = self.config.recipients
             subject = self.config.email_template.subject
+
+            logger.info(f"Sending to {len(recipients)} recipients: {recipients}")
+            logger.info(f"Using SMTP server: {email_config.smtp_server}:{email_config.smtp_port}")
+
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = email_config.smtp_sender_email
+            msg['To'] = ', '.join(recipients)
+
+            # Add HTML content
+            html_part = MIMEText(html_content, 'html', 'utf-8')
+            msg.attach(html_part)
+
+            # Send email with timeout
+            context = ssl.create_default_context()
+            with smtplib.SMTP(email_config.smtp_server, email_config.smtp_port, timeout=30) as server:
+                server.starttls(context=context)
+                server.login(email_config.smtp_username, email_config.smtp_password)
+                server.sendmail(email_config.smtp_sender_email, recipients, msg.as_string())
+
+            logger.info(f"✅ Newsletter sent successfully to {len(recipients)} recipients")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Error sending newsletter: {e}")
+            return False
+
+
+def main():
+    """Main function with proper timezone handling"""
+    try:
+        # Set up timezone first
+        setup_timezone()
+
+        # Run comprehensive timezone debugging
+        comprehensive_timezone_debug()
+
+        # Get timezone info for logging
+        current_tz = os.environ.get('TZ', 'UTC')
+        logger.info(f"🚀 Starting Emby Newsletter (Timezone: {current_tz})")
+
+        # Load configuration
+        config_manager = ConfigurationManager()
+        config_manager.load_config()
+
+        # Generate and send newsletter
+        generator = NewsletterGenerator(config_manager)
+        html_content = generator.generate_newsletter()
+
+        if html_content:
+            success = generator.send_newsletter(html_content)
+            if success:
+                current_time = datetime.now()
+                logger.info("✅ Newsletter generation and sending completed successfully")
+                print("=" * 80)
+                print("🎉 NEWSLETTER COMPLETED SUCCESSFULLY!")
+                print(f"📧 Sent at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+                print(f"⏰ Local time: {current_time}")
+                print("=" * 80)
+            else:
+                logger.error("❌ Failed to send newsletter")
+                sys.exit(1)
+        else:
+            logger.error("❌ Failed to generate newsletter")
+            sys.exit(1)
+
+    except Exception as e:
+        current_time = datetime.now()
+        current_tz = os.environ.get('TZ', 'UTC')
+        logger.error(f"💥 Unexpected error: {e}")
+        print("=" * 80)
+        print("❌ NEWSLETTER FAILED!")
+        print(f"💥 Error: {e}")
+        print(f"🕐 Failed at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+        print("=" * 80)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
