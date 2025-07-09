@@ -12,7 +12,7 @@ services:
       # PUID and PGID will be automatically inherited from Unraid variables
     restart: unless-stopped
     user: "0:0"          # Run as root for cron access
-    read_only: true      # Keep read-only for security
+    read_only: true      # Keep read-only for security.
     security_opt:
       - no-new-privileges:true
     tmpfs:
