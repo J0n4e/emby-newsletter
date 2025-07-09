@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Emby Newsletter - A newsletter for Emby to notify users of latest additions
+Enhanced with timezone support from config.yml
 """
 
 import sys
@@ -21,11 +22,56 @@ from configuration import ConfigurationManager
 from template_renderer import render_email_with_server_stats
 
 
-def simple_timezone_debug():
-    """Simple timezone debugging without import conflicts"""
+def set_timezone_from_config(config_path: str = "/app/config/config.yml") -> str:
+    """Set timezone from configuration file"""
+    try:
+        import yaml
+
+        if not os.path.exists(config_path):
+            return "UTC"
+
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+
+        if not isinstance(config, dict):
+            return "UTC"
+
+        # Get timezone from scheduler config
+        scheduler_tz = config.get('scheduler', {}).get('timezone', '')
+
+        if scheduler_tz and isinstance(scheduler_tz, str):
+            # Validate timezone
+            tz_path = f"/usr/share/zoneinfo/{scheduler_tz.strip()}"
+            if os.path.exists(tz_path):
+                os.environ['TZ'] = scheduler_tz.strip()
+                time.tzset()  # Apply timezone change
+                return scheduler_tz.strip()
+            else:
+                print(f"⚠️  Invalid timezone in config: {scheduler_tz}")
+
+        # Fallback to environment variable
+        env_tz = os.environ.get('TZ', 'UTC')
+        if env_tz != 'UTC':
+            tz_path = f"/usr/share/zoneinfo/{env_tz}"
+            if os.path.exists(tz_path):
+                time.tzset()
+                return env_tz
+
+        return "UTC"
+
+    except Exception as e:
+        print(f"Error setting timezone from config: {e}")
+        return "UTC"
+
+
+def enhanced_timezone_debug():
+    """Enhanced timezone debugging with config info"""
     print("=" * 80)
-    print("EMBY NEWSLETTER - TIMEZONE DEBUG")
+    print("EMBY NEWSLETTER - ENHANCED TIMEZONE DEBUG")
     print("=" * 80)
+
+    # Set timezone from config first
+    config_tz = set_timezone_from_config()
 
     # Basic time info
     now_local = datetime.now()
@@ -34,13 +80,30 @@ def simple_timezone_debug():
     print(f"📅 CURRENT TIME INFO:")
     print(f"   Local time: {now_local.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"   UTC time: {now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    print(f"   Time difference: {(now_local - now_utc).total_seconds() / 3600:.1f} hours from UTC")
+
+    # Calculate offset
+    offset_seconds = (now_local - now_utc).total_seconds()
+    offset_hours = offset_seconds / 3600
+    print(f"   Time difference: {offset_hours:+.1f} hours from UTC")
     print()
 
-    # Environment variables
-    print(f"🌍 ENVIRONMENT:")
-    print(f"   TZ variable: {os.environ.get('TZ', 'Not set')}")
+    # Configuration info
+    print(f"🔧 CONFIGURATION:")
+    print(f"   Config timezone: {config_tz}")
+    print(f"   TZ environment: {os.environ.get('TZ', 'Not set')}")
     print(f"   LANG: {os.environ.get('LANG', 'Not set')}")
+
+    # Try to read timezone from config file
+    try:
+        import yaml
+        with open('/app/config/config.yml', 'r') as f:
+            config = yaml.safe_load(f)
+        scheduler_tz = config.get('scheduler', {}).get('timezone', 'Not configured')
+        cron_expr = config.get('scheduler', {}).get('cron', 'Not configured')
+        print(f"   Config file timezone: {scheduler_tz}")
+        print(f"   Config file cron: {cron_expr}")
+    except Exception as e:
+        print(f"   Config file read error: {e}")
     print()
 
     # System timezone
@@ -48,6 +111,15 @@ def simple_timezone_debug():
     print(f"   Python timezone names: {time.tzname}")
     print(f"   Timezone offset: {time.timezone} seconds ({time.timezone / 3600:.1f} hours)")
     print(f"   DST active: {'Yes' if time.daylight else 'No'}")
+
+    # Additional timezone info
+    try:
+        import time
+        print(f"   time.tzname: {time.tzname}")
+        if hasattr(time, 'altzone'):
+            print(f"   time.altzone: {time.altzone} seconds")
+    except:
+        pass
     print()
 
     # System date command
@@ -87,7 +159,7 @@ def simple_timezone_debug():
             link = os.readlink('/etc/localtime')
             print(f"   /etc/localtime: {link}")
         else:
-            print(f"   /etc/localtime: Regular file")
+            print(f"   /etc/localtime: Regular file (not symlink)")
     except Exception as e:
         print(f"   /etc/localtime: Error - {e}")
 
@@ -132,8 +204,26 @@ def simple_timezone_debug():
     except Exception as e:
         print(f"   Crontab entries: Error - {e}")
 
+    # Python datetime with timezone
+    print()
+    print(f"🐍 PYTHON DATETIME:")
+    try:
+        print(f"   datetime.now(): {datetime.now()}")
+        print(f"   datetime.utcnow(): {datetime.utcnow()}")
+
+        # Try to show timezone-aware datetime if possible
+        try:
+            from datetime import timezone
+            utc_now = datetime.now(timezone.utc)
+            print(f"   datetime.now(timezone.utc): {utc_now}")
+        except:
+            pass
+
+    except Exception as e:
+        print(f"   Python datetime error: {e}")
+
     print("=" * 80)
-    print("END TIMEZONE DEBUG")
+    print("END ENHANCED TIMEZONE DEBUG")
     print("=" * 80)
     print()
 
@@ -484,12 +574,15 @@ class NewsletterGenerator:
 
 
 def main():
-    """Main function"""
+    """Main function with enhanced timezone support"""
     try:
-        # Run timezone debugging first
-        simple_timezone_debug()
+        # Set timezone from config first
+        config_timezone = set_timezone_from_config()
 
-        logger.info("🚀 Starting Emby Newsletter")
+        # Run enhanced timezone debugging
+        enhanced_timezone_debug()
+
+        logger.info(f"🚀 Starting Emby Newsletter (Timezone: {config_timezone})")
 
         # Load configuration
         config_manager = ConfigurationManager()
@@ -502,10 +595,12 @@ def main():
         if html_content:
             success = generator.send_newsletter(html_content)
             if success:
+                current_time = datetime.now()
                 logger.info("✅ Newsletter generation and sending completed successfully")
                 print("=" * 80)
                 print("🎉 NEWSLETTER COMPLETED SUCCESSFULLY!")
-                print(f"📧 Sent at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"📧 Sent at: {current_time.strftime('%Y-%m-%d %H:%M:%S')} ({current_time.strftime('%Z')})")
+                print(f"🌍 Timezone: {config_timezone}")
                 print("=" * 80)
             else:
                 logger.error("❌ Failed to send newsletter")
@@ -515,11 +610,12 @@ def main():
             sys.exit(1)
 
     except Exception as e:
+        current_time = datetime.now()
         logger.error(f"💥 Unexpected error: {e}")
         print("=" * 80)
         print("❌ NEWSLETTER FAILED!")
         print(f"💥 Error: {e}")
-        print(f"🕐 Failed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🕐 Failed at: {current_time.strftime('%Y-%m-%d %H:%M:%S')} ({current_time.strftime('%Z')})")
         print("=" * 80)
         sys.exit(1)
 
