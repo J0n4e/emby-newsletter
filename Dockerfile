@@ -11,13 +11,13 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Debug: Show Python installation
-RUN echo "=== Python Debug Info ===" \
-    && which python || echo "python not found" \
-    && which python3 || echo "python3 not found" \
-    && ls -la /usr/local/bin/python* || echo "No python in /usr/local/bin" \
-    && ls -la /usr/bin/python* || echo "No python in /usr/bin" \
-    && python --version || echo "python command failed" \
-    && echo "========================="
+RUN echo "=== Python Debug Info ===" && \
+    (which python || echo "python not found") && \
+    (which python3 || echo "python3 not found") && \
+    (ls -la /usr/local/bin/python* || echo "No python in /usr/local/bin") && \
+    (ls -la /usr/bin/python* || echo "No python in /usr/bin") && \
+    (python --version || echo "python command failed") && \
+    echo "========================="
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
@@ -44,16 +44,16 @@ RUN mkdir -p /var/log /var/spool/cron/crontabs \
     && chown -R emby:emby /app /var/log
 
 # Create symlinks for python commands to ensure they're available
-RUN ln -sf /usr/local/bin/python /usr/local/bin/python3 || true \
-    && ln -sf /usr/local/bin/python /usr/bin/python || true \
-    && ln -sf /usr/local/bin/python /usr/bin/python3 || true
+RUN (ln -sf /usr/local/bin/python /usr/local/bin/python3 || true) && \
+    (ln -sf /usr/local/bin/python /usr/bin/python || true) && \
+    (ln -sf /usr/local/bin/python /usr/bin/python3 || true)
 
 # Final debug: Verify Python is accessible
-RUN echo "=== Final Python Check ===" \
-    && python --version \
-    && python3 --version || echo "python3 symlink missing" \
-    && which python \
-    && echo "========================="
+RUN echo "=== Final Python Check ===" && \
+    (python --version || echo "python command failed") && \
+    (python3 --version || echo "python3 symlink missing") && \
+    (which python || echo "python not in PATH") && \
+    echo "========================="
 
 # Important: Don't switch to non-root user since cron needs root permissions
 # USER emby
