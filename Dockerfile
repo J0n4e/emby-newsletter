@@ -10,14 +10,21 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Debug: Show Python installation
-RUN echo "=== Python Debug Info ===" && \
-    (which python || echo "python not found") && \
-    (which python3 || echo "python3 not found") && \
-    (ls -la /usr/local/bin/python* || echo "No python in /usr/local/bin") && \
-    (ls -la /usr/bin/python* || echo "No python in /usr/bin") && \
-    (python --version || echo "python command failed") && \
-    echo "========================="
+# Ensure Python is accessible via multiple command names
+RUN ln -sf /usr/local/bin/python /usr/local/bin/python3 \
+    && ln -sf /usr/local/bin/python /usr/bin/python3 \
+    && ln -sf /usr/local/bin/python /usr/bin/python
+
+# Debug: Show Python installation status
+RUN echo "=== Python Installation Debug ===" \
+    && echo "Python version: $(python --version)" \
+    && echo "Python3 version: $(python3 --version)" \
+    && echo "Python location: $(which python)" \
+    && echo "Python3 location: $(which python3)" \
+    && echo "PATH: $PATH" \
+    && ls -la /usr/local/bin/python* \
+    && ls -la /usr/bin/python* \
+    && echo "================================"
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
@@ -43,20 +50,8 @@ RUN mkdir -p /var/log /var/spool/cron/crontabs \
     && chmod 0755 /var/spool/cron/crontabs \
     && chown -R emby:emby /app /var/log
 
-# Create symlinks for python commands to ensure they're available
-RUN (ln -sf /usr/local/bin/python /usr/local/bin/python3 || true) && \
-    (ln -sf /usr/local/bin/python /usr/bin/python || true) && \
-    (ln -sf /usr/local/bin/python /usr/bin/python3 || true)
-
-# Final debug: Verify Python is accessible
-RUN echo "=== Final Python Check ===" && \
-    (python --version || echo "python command failed") && \
-    (python3 --version || echo "python3 symlink missing") && \
-    (which python || echo "python not in PATH") && \
-    echo "========================="
-
-# Important: Don't switch to non-root user since cron needs root permissions
-# USER emby
+# Final verification that Python commands work
+RUN python --version && python3 --version
 
 # Set environment variables
 ENV PYTHONPATH=/app/source
