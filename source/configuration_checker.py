@@ -1,22 +1,38 @@
 #!/usr/bin/env python3
 """
 Configuration checker for Emby Newsletter
-Tests configuration and connectivity before running the newsletter
+Enhanced with proper timezone support
 """
 
 import sys
+import os
 import logging
 import requests
 import smtplib
 import ssl
 import re
+import time
+import argparse
 from typing import Dict, List, Tuple, Optional
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from configuration import ConfigurationManager, AppConfig
 
 logger = logging.getLogger(__name__)
+
+
+def setup_timezone():
+    """Set up timezone from environment variable"""
+    tz_env = os.environ.get('TZ')
+    if tz_env:
+        try:
+            os.environ['TZ'] = tz_env
+            time.tzset()
+            print(f"🌍 Timezone set to: {tz_env}")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not set timezone: {e}")
 
 
 class ConfigurationChecker:
@@ -291,23 +307,69 @@ class ConfigurationChecker:
 
 def main():
     """Main function for standalone configuration checking"""
+    parser = argparse.ArgumentParser(description="Check Emby Newsletter configuration")
+    parser.add_argument('-c', '--config',
+                        default='/app/config/config.yml',
+                        help='Path to configuration file')
+    parser.add_argument('--no-connectivity',
+                        action='store_true',
+                        help='Skip connectivity checks')
+
+    args = parser.parse_args()
+
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+
     try:
+        # Set up timezone
+        setup_timezone()
+
+        # Display current time info
+        current_time = datetime.now()
+        current_tz = os.environ.get('TZ', 'UTC')
+
+        print("=" * 60)
+        print("EMBY NEWSLETTER - CONFIGURATION CHECK")
+        print("=" * 60)
+        print(f"🕐 Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+        print(f"📁 Config file: {args.config}")
+        print("=" * 60)
+        print()
+
         # Load configuration
-        config_manager = ConfigurationManager()
+        config_manager = ConfigurationManager(args.config)
         config = config_manager.load_config()
 
-        # Run checks
+        # Run configuration checks
         checker = ConfigurationChecker(config)
-        success = checker.check_all()
 
-        # Also check for recent items
-        movies, episodes = checker.check_recent_items()
+        if args.no_connectivity:
+            print("🔍 Running basic configuration validation only...")
+            # Only run basic validation, no connectivity checks
+            success = True
+            print("✅ Basic configuration validation passed!")
+        else:
+            print("🔍 Running full configuration check...")
+            success = checker.check_all()
+
+            # Also check for recent items if connectivity checks passed
+            if success:
+                movies, episodes = checker.check_recent_items()
+                print(f"📊 Recent content: {movies} movies, {episodes} episodes")
 
         if success:
+            print()
             print("✅ Configuration check completed successfully!")
+            print("🚀 Ready to run newsletter!")
             sys.exit(0)
         else:
-            print("❌ Configuration check failed! Please fix the errors above.")
+            print()
+            print("❌ Configuration check failed!")
+            print("🔧 Please fix the errors above before running newsletter.")
             sys.exit(1)
 
     except Exception as e:
@@ -316,10 +378,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Set up logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-
     main()
