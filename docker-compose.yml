@@ -1,24 +1,12 @@
 version: '3.8'
 
 services:
-  emby-newsletter:
-    image: ghcr.io/j0n4e/emby-newsletter:latest
+  mediaserver-newsletter:
     container_name: emby-newsletter
-    volumes:
-      - ./config:/app/config:ro
-      - ./templates:/app/templates:ro
+    image: 'ghcr.io/j0n4e/emby-newsletter:latest'
     environment:
-      - TZ=Europe/Paris
-      # PUID and PGID will be automatically inherited from Unraid variables
-    restart: unless-stopped
-    user: "0:0"          # Run as root for cron access
-    read_only: true      # Keep read-only for security
-    security_opt:
-      - no-new-privileges:true
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=100m
-      - /var/log:rw,noexec,nosuid,size=50m
-      - /var/run:rw,noexec,nosuid,size=50m
-      - /var/spool:rw,noexec,nosuid,size=10m
-      - /var/spool/cron:rw,noexec,nosuid,size=5m     # Add this line - cron needs write access
-      - /root:rw,noexec,nosuid,size=10m
+      USER_UID: 1000
+      USER_GID: 1000
+      TZ: 'Europe/Bucharest'
+    volumes:
+      - './config:/app/config'
