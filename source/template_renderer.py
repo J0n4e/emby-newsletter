@@ -749,7 +749,7 @@ class SecureTemplateRenderer:
         title = self._secure_escape(show.get('title', 'Unknown'))
         overview = ''
 
-        # Get overview from Emby series data
+        # Get overview from Emby series data (same as movies logic)
         if show.get('overview'):
             overview = self._secure_escape(show['overview'])
             logger.info(f"📝 Using Emby overview for {title}: {len(overview)} chars")
@@ -779,10 +779,38 @@ class SecureTemplateRenderer:
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
-        # Build overview HTML (truncate if too long)
+        # Build meta information (like movies)
+        meta_parts = []
+        year = show.get('year')
+        if year:
+            year_escaped = self._secure_escape(str(year))
+            meta_parts.append(f'<span class="item-year">{year_escaped}</span>')
+
+        meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
+
+        # Build overview HTML (truncate if too long) - same logic as movies
         if overview and len(overview) > 300:
             overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
+
+        # Build genres HTML (like movies)
+        genres_html = ''
+        genres = show.get('genres', [])
+        if genres and isinstance(genres, list):
+            genre_tags = []
+            for genre in genres[:5]:  # Limit to 5 genres
+                if isinstance(genre, dict):
+                    genre_name = self._secure_escape(genre.get('Name', ''))
+                elif isinstance(genre, str):
+                    genre_name = self._secure_escape(genre)
+                else:
+                    genre_name = self._secure_escape(str(genre))
+
+                if genre_name:
+                    genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
+
+            if genre_tags:
+                genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
         # Build optimized seasons HTML
         seasons_html = ''
@@ -807,7 +835,7 @@ class SecureTemplateRenderer:
                 if isinstance(episodes, list):
                     for episode in episodes[:3]:  # Limit to 3 episodes
                         if isinstance(episode, dict):
-                            episode_num = self._secure_escape(episode.get('episode_number', ''))
+                            episode_num = self._secure_escape(str(episode.get('episode_number', '')))
                             episode_name = self._secure_escape(episode.get('name', 'Unknown'))
                             episode_overview = self._secure_escape(episode.get('overview', ''))
 
@@ -851,7 +879,7 @@ class SecureTemplateRenderer:
                 if isinstance(latest_episodes, list):
                     for episode in latest_episodes[:3]:  # Limit to 3 episodes
                         if isinstance(episode, dict):
-                            episode_num = self._secure_escape(episode.get('episode_number', ''))
+                            episode_num = self._secure_escape(str(episode.get('episode_number', '')))
                             episode_name = self._secure_escape(episode.get('name', 'Unknown'))
                             episode_overview = self._secure_escape(episode.get('overview', ''))
 
@@ -876,7 +904,9 @@ class SecureTemplateRenderer:
                                 </div>
                                 <div class="item-content">
                                     <div class="item-title">{title}</div>
+                                    {meta_html}
                                     {overview_html}
+                                    {genres_html}
                                     {seasons_html}
                                 </div>
                             </div>'''

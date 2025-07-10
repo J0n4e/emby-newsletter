@@ -572,13 +572,22 @@ class NewsletterGenerator:
                     # Get series info from Emby for description and other details
                     series_info = None
                     series_overview = ""
+                    series_genres = []
+                    series_year = None
+                    series_rating = None
 
                     if series_id:
                         series_info = self.emby_api.get_series_info(series_id)
                         if series_info:
                             series_overview = series_info.get('Overview', '')
-                            logger.info(
-                                f"✅ Got series overview from Emby for {series_name}: {len(series_overview)} chars")
+                            series_genres = series_info.get('Genres', [])
+                            series_year = series_info.get('ProductionYear')
+                            series_rating = series_info.get('CommunityRating')
+                            logger.info(f"✅ Got series info from Emby for {series_name}:")
+                            logger.info(f"   Overview: {len(series_overview)} chars")
+                            logger.info(f"   Genres: {series_genres}")
+                            logger.info(f"   Year: {series_year}")
+                            logger.info(f"   Rating: {series_rating}")
 
                     # Use Emby poster directly
                     emby_poster = None
@@ -600,12 +609,18 @@ class NewsletterGenerator:
                         'poster_url': emby_poster,
                         'poster_source': poster_source,
                         'series_id': series_id,
-                        'overview': series_overview,  # Add Emby overview
+                        'overview': series_overview,  # This should be used in template
+                        'genres': series_genres,  # Add genres like movies
+                        'year': series_year,  # Add year like movies
+                        'rating': series_rating,  # Add rating like movies
+                        'official_rating': series_info.get('OfficialRating') if series_info else None,
                         'tmdb_data': None  # Keep for template compatibility but don't use TMDB
                     }
 
-                    logger.info(
-                        f"📺 Series created: {series_name} (poster: {poster_source}, overview: {len(series_overview)} chars)")
+                    logger.info(f"📺 Series created: {series_name}")
+                    logger.info(f"   Poster: {poster_source}")
+                    logger.info(f"   Overview: {len(series_overview)} chars")
+                    logger.info(f"   Genres: {len(series_genres)} items")
 
                 # Add episode to season
                 if season_name not in series_dict[series_name]['seasons']:
@@ -626,11 +641,11 @@ class NewsletterGenerator:
         logger.info("=" * 50)
         logger.info("FINAL TV SHOW PROCESSING RESULTS (EMBY DIRECT):")
         for series_name, series_data in series_dict.items():
-            poster_info = f"{series_data['poster_source']}: {series_data['poster_url'][:60]}..." if series_data[
-                'poster_url'] else "none"
-            overview_info = f"{len(series_data.get('overview', ''))} chars" if series_data.get(
-                'overview') else "no overview"
-            logger.info(f"  📺 {series_name}: {poster_info} | {overview_info}")
+            poster_info = f"{series_data['poster_source']}: {series_data['poster_url'][:60]}..." if series_data['poster_url'] else "none"
+            overview_info = f"{len(series_data.get('overview', ''))} chars" if series_data.get('overview') else "no overview"
+            genres_info = f"{len(series_data.get('genres', []))} genres" if series_data.get('genres') else "no genres"
+            year_info = f"year: {series_data.get('year', 'N/A')}"
+            logger.info(f"  📺 {series_name}: {poster_info} | {overview_info} | {genres_info} | {year_info}")
         logger.info("=" * 50)
 
         return list(series_dict.values())
@@ -644,6 +659,9 @@ class NewsletterGenerator:
                 print(f"Show {i}: {show.get('title')}")
                 print(f"  poster_url: {show.get('poster_url')}")
                 print(f"  poster_source: {show.get('poster_source')}")
+                print(f"  overview: {len(show.get('overview', ''))} chars")
+                print(f"  genres: {show.get('genres')}")
+                print(f"  year: {show.get('year')}")
                 print(f"  tmdb_data type: {type(show.get('tmdb_data'))}")
                 if show.get('tmdb_data'):
                     print(f"  tmdb_data.poster_path: {show.get('tmdb_data', {}).get('poster_path')}")
