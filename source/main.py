@@ -354,10 +354,42 @@ class TMDBApi:
     def get_tv_details(self, title: str, year: int = None) -> Optional[Dict]:
         """Get TV show details from TMDB with improved matching"""
         try:
-            params = {'query': title}
+            # First, try exact search with year if available
             if year:
-                params['first_air_date_year'] = year
+                params = {
+                    'query': title,
+                    'first_air_date_year': year
+                }
 
+                url = f"{self.base_url}/search/tv"
+                response = self.session.get(url, params=params)
+                response.raise_for_status()
+
+                data = response.json()
+                results = data.get('results', [])
+
+                # Look for exact title match first
+                for result in results:
+                    result_title = result.get('name', '').lower()
+                    search_title = title.lower()
+                    result_year = None
+
+                    # Extract year from first_air_date
+                    if result.get('first_air_date'):
+                        try:
+                            result_year = int(result['first_air_date'][:4])
+                        except:
+                            pass
+
+                    # Exact match with year validation
+                    if (result_title == search_title and
+                            result_year and abs(result_year - year) <= 1):  # Allow 1 year difference
+                        logger.info(
+                            f"✅ Exact TMDB match with year for '{title}' ({year}): {result.get('name')} ({result_year})")
+                        return result
+
+            # Second attempt: Search without year constraint
+            params = {'query': title}
             url = f"{self.base_url}/search/tv"
             response = self.session.get(url, params=params)
             response.raise_for_status()
@@ -366,30 +398,60 @@ class TMDBApi:
             results = data.get('results', [])
 
             if results:
-                # Find best match by title similarity
+                # Find best match by title similarity and popularity
                 best_match = None
                 best_score = 0
 
-                for result in results[:3]:  # Check top 3 results
+                for result in results[:5]:  # Check top 5 results
                     result_title = result.get('name', '').lower()
                     search_title = title.lower()
+                    popularity = result.get('popularity', 0)
 
-                    # Simple similarity check
+                    # Calculate similarity score
                     if result_title == search_title:
-                        logger.info(f"✅ Exact TMDB match found for '{title}': {result.get('name')}")
-                        return result  # Exact match
-                    elif search_title in result_title or result_title in search_title:
-                        score = len(search_title) / max(len(result_title), 1)
-                        if score > best_score:
-                            best_score = score
-                            best_match = result
+                        score = 100  # Perfect match
+                    elif search_title in result_title:
+                        score = 80 + (popularity / 100)  # Partial match + popularity bonus
+                    elif result_title in search_title:
+                        score = 60 + (popularity / 100)  # Contains search term + popularity
+                    else:
+                        # Check for word overlap
+                        search_words = set(search_title.split())
+                        result_words = set(result_title.split())
+                        overlap = len(search_words.intersection(result_words))
+                        if overlap > 0:
+                            score = 40 + (overlap * 10) + (popularity / 100)
+                        else:
+                            score = popularity / 100  # Just popularity
+
+                    # Add year bonus if available and matches
+                    if year and result.get('first_air_date'):
+                        try:
+                            result_year = int(result['first_air_date'][:4])
+                            if abs(result_year - year) <= 1:
+                                score += 20  # Year match bonus
+                        except:
+                            pass
+
+                    if score > best_score:
+                        best_score = score
+                        best_match = result
 
                 if best_match:
-                    logger.info(f"✅ Best TMDB match for '{title}': {best_match.get('name')} (score: {best_score:.2f})")
+                    result_year = "Unknown"
+                    if best_match.get('first_air_date'):
+                        try:
+                            result_year = best_match['first_air_date'][:4]
+                        except:
+                            pass
+
+                    logger.info(
+                        f"✅ Best TMDB match for '{title}': {best_match.get('name')} ({result_year}) [score: {best_score:.1f}]")
                     return best_match
                 else:
-                    logger.warning(f"⚠️ Using first TMDB result for '{title}': {results[0].get('name')}")
-                    return results[0]  # Return first result as fallback
+                    logger.warning(
+                        f"⚠️ No good TMDB match found for '{title}' - using first result: {results[0].get('name')}")
+                    return results[0]  # Fallback to first result
 
         except Exception as e:
             logger.error(f"Error fetching TV details from TMDB for '{title}': {e}")
