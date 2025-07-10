@@ -514,7 +514,7 @@ class NewsletterGenerator:
             return None
 
     def _process_movies(self, movies: List[Dict]) -> List[Dict]:
-        """Process movie items and enhance with TMDB data"""
+        """Process movie items using Emby posters directly"""
         processed = []
 
         for movie in movies:
@@ -522,11 +522,12 @@ class NewsletterGenerator:
                 # Extract movie info
                 title = movie.get('Name', '')
                 year = movie.get('ProductionYear')
+                movie_id = movie.get('Id', '')
 
-                logger.info(f"Processing movie: {title} ({year})")
+                logger.info(f"Processing movie: {title} ({year}) - ID: {movie_id}")
 
-                # Get TMDB details
-                tmdb_data = self.tmdb_api.get_movie_details(title, year)
+                # Use Emby poster directly - no TMDB needed
+                emby_poster = self.emby_api.get_item_image_url(movie_id) if movie_id else None
 
                 processed_movie = {
                     'title': title,
@@ -536,26 +537,15 @@ class NewsletterGenerator:
                     'rating': movie.get('CommunityRating'),
                     'official_rating': movie.get('OfficialRating'),
                     'date_added': movie.get('DateCreated'),
-                    'emby_id': movie.get('Id'),
-                    'poster_url': self.emby_api.get_item_image_url(movie.get('Id', ''))
+                    'emby_id': movie_id,
+                    'poster_url': emby_poster,
+                    'poster_source': 'emby_direct'
                 }
 
-                # Enhance with TMDB data
-                if tmdb_data:
-                    tmdb_poster = None
-                    if tmdb_data.get('poster_path'):
-                        tmdb_poster = f"https://image.tmdb.org/t/p/w500{tmdb_data.get('poster_path')}"
-                        logger.info(f"✅ TMDB poster found for {title}: {tmdb_poster}")
-
-                    processed_movie.update({
-                        'tmdb_overview': tmdb_data.get('overview', ''),
-                        'tmdb_poster': tmdb_poster,
-                        'tmdb_rating': tmdb_data.get('vote_average'),
-                        'tmdb_genres': [{'Name': genre} for genre in tmdb_data.get('genre_ids', [])]
-                        # Format for compatibility
-                    })
+                if emby_poster:
+                    logger.info(f"✅ Using Emby poster for {title}: {emby_poster}")
                 else:
-                    logger.warning(f"⚠️ No TMDB data found for movie: {title}")
+                    logger.warning(f"⚠️ No Emby poster found for {title}")
 
                 processed.append(processed_movie)
 
@@ -565,7 +555,7 @@ class NewsletterGenerator:
         return processed
 
     def _process_tv_shows(self, episodes: List[Dict]) -> List[Dict]:
-        """Process TV show episodes and group by series with improved poster matching"""
+        """Process TV show episodes and group by series using Emby posters directly"""
         series_dict = {}
 
         for episode in episodes:
@@ -579,59 +569,27 @@ class NewsletterGenerator:
                 logger.info(f"Series ID: {series_id}")
 
                 if series_name not in series_dict:
-                    # Get series info from Emby first
-                    series_info = None
-                    if series_id:
-                        series_info = self.emby_api.get_series_info(series_id)
-
-                    # Get TMDB details for the series with better validation
-                    year = None
-                    if series_info:
-                        year = series_info.get('ProductionYear')
-                    if not year:
-                        year = episode.get('ProductionYear')
-
-                    logger.info(f"Searching TMDB for: {series_name} ({year})")
-                    tmdb_data = self.tmdb_api.get_tv_details(series_name, year)
-
-                    # Determine the best poster URL with priority order
-                    poster_url = None
+                    # Use Emby poster directly - no TMDB matching needed
+                    emby_poster = None
                     poster_source = "none"
 
-                    # Priority 1: TMDB poster (most reliable)
-                    if tmdb_data and tmdb_data.get('poster_path'):
-                        poster_url = f"https://image.tmdb.org/t/p/w500{tmdb_data.get('poster_path')}"
-                        poster_source = "tmdb"
-                        logger.info(f"✅ Using TMDB poster for {series_name}: {poster_url}")
-
-                    # Priority 2: Emby series poster
-                    elif series_id:
+                    if series_id:
                         emby_poster = self.emby_api.get_item_image_url(series_id)
                         if emby_poster:
-                            poster_url = emby_poster
-                            poster_source = "emby_series"
-                            logger.info(f"✅ Using Emby series poster for {series_name}: {poster_url}")
-
-                    # Priority 3: Fallback - no poster
-                    if not poster_url:
-                        logger.warning(f"⚠️ No poster found for series: {series_name}")
-                        poster_source = "none"
-
-                    # Validate the poster by checking if it's reasonable
-                    if poster_url and poster_source == "tmdb":
-                        # Basic validation - ensure it's a proper TMDB URL
-                        if not poster_url.startswith("https://image.tmdb.org"):
-                            logger.warning(f"⚠️ Invalid TMDB poster URL for {series_name}, discarding: {poster_url}")
-                            poster_url = None
-                            poster_source = "none"
+                            poster_source = "emby_direct"
+                            logger.info(f"✅ Using Emby poster for {series_name}: {emby_poster}")
+                        else:
+                            logger.warning(f"⚠️ No Emby poster found for {series_name} (ID: {series_id})")
+                    else:
+                        logger.warning(f"⚠️ No Series ID found for {series_name}")
 
                     series_dict[series_name] = {
                         'title': series_name,
                         'seasons': {},
-                        'tmdb_data': tmdb_data,
-                        'poster_url': poster_url,
+                        'poster_url': emby_poster,
                         'poster_source': poster_source,
-                        'series_id': series_id
+                        'series_id': series_id,
+                        'tmdb_data': None  # Keep for template compatibility but don't use TMDB
                     }
 
                     logger.info(f"📺 Series created: {series_name} (poster: {poster_source})")
@@ -653,7 +611,7 @@ class NewsletterGenerator:
 
         # Log final results
         logger.info("=" * 50)
-        logger.info("FINAL TV SHOW PROCESSING RESULTS:")
+        logger.info("FINAL TV SHOW PROCESSING RESULTS (EMBY DIRECT):")
         for series_name, series_data in series_dict.items():
             poster_info = f"{series_data['poster_source']}: {series_data['poster_url'][:60]}..." if series_data[
                 'poster_url'] else "none"
