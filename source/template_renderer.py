@@ -747,32 +747,26 @@ class SecureTemplateRenderer:
             return ""
 
         title = self._secure_escape(show.get('title', 'Unknown'))
-        overview = ''
 
-        # Get overview from Emby series data (same as movies logic)
-        if show.get('overview'):
-            overview = self._secure_escape(show['overview'])
-            logger.info(f"📝 Using Emby overview for {title}: {len(overview)} chars")
-        else:
-            logger.warning(f"⚠️ No overview found for {title}")
+        # DEBUG: Log what we're working with
+        logger.info(f"🔍 RENDERING TV SHOW: {title}")
+        logger.info(f"   Available keys: {list(show.keys())}")
+        logger.info(f"   Overview value: '{show.get('overview', 'NOT_FOUND')}'")
+        logger.info(f"   Overview type: {type(show.get('overview'))}")
+        logger.info(f"   Overview length: {len(show.get('overview', ''))}")
+
+        # Use EXACTLY the same logic as movies
+        overview = self._secure_escape(show.get('overview', ''))
+
+        logger.info(f"   After escape - Overview: '{overview[:50]}...' ({len(overview)} chars)")
 
         # Build poster HTML - use Emby posters directly (no TMDB)
         poster_url = ''
-
-        # DEBUG: Log what poster data we have
-        logger.info(f"🖼️ TEMPLATE DEBUG for {title}:")
-        logger.info(f"   show.poster_url: {show.get('poster_url')}")
-        logger.info(f"   show.poster_source: {show.get('poster_source')}")
-
-        # Use the poster_url from main.py (which is now Emby direct)
         if show.get('poster_url'):
             poster_url = self._secure_escape(show['poster_url'])
             logger.info(f"   ✅ Using Emby poster: {poster_url}")
         else:
             logger.warning(f"   ❌ No poster found for {title}")
-
-        logger.info(f"   🎯 FINAL poster_url: {poster_url}")
-        logger.info("---")
 
         if poster_url:
             poster_html = f'<img src="{poster_url}" alt="{title} poster">'
@@ -788,10 +782,12 @@ class SecureTemplateRenderer:
 
         meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
 
-        # Build overview HTML (truncate if too long) - same logic as movies
+        # Build overview HTML - EXACT same logic as movies
         if overview and len(overview) > 300:
             overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
+
+        logger.info(f"   Final overview HTML: {overview_html[:100]}...")
 
         # Build genres HTML (like movies)
         genres_html = ''
@@ -898,7 +894,7 @@ class SecureTemplateRenderer:
 
             seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>'
 
-        return f'''                            <div class="item">
+        final_html = f'''                            <div class="item">
                                 <div class="item-poster">
                                     {poster_html}
                                 </div>
@@ -910,6 +906,9 @@ class SecureTemplateRenderer:
                                     {seasons_html}
                                 </div>
                             </div>'''
+
+        logger.info(f"   ✅ Final HTML includes overview: {'overview' in final_html}")
+        return final_html
 
     def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize template context for security"""

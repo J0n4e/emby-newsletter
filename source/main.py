@@ -603,23 +603,24 @@ class NewsletterGenerator:
                     else:
                         logger.warning(f"⚠️ No Series ID found for {series_name}")
 
+                    # CRITICAL: Use exact same structure as movies
                     series_dict[series_name] = {
                         'title': series_name,
-                        'seasons': {},
+                        'year': series_year,
+                        'overview': series_overview,  # Same key as movies use
+                        'genres': series_genres,
+                        'rating': series_rating,
+                        'official_rating': series_info.get('OfficialRating') if series_info else None,
                         'poster_url': emby_poster,
                         'poster_source': poster_source,
                         'series_id': series_id,
-                        'overview': series_overview,  # This should be used in template
-                        'genres': series_genres,  # Add genres like movies
-                        'year': series_year,  # Add year like movies
-                        'rating': series_rating,  # Add rating like movies
-                        'official_rating': series_info.get('OfficialRating') if series_info else None,
-                        'tmdb_data': None  # Keep for template compatibility but don't use TMDB
+                        'seasons': {},  # TV-specific data
+                        'tmdb_data': None  # Keep for template compatibility
                     }
 
                     logger.info(f"📺 Series created: {series_name}")
+                    logger.info(f"   Overview stored: '{series_overview[:100]}...' ({len(series_overview)} chars)")
                     logger.info(f"   Poster: {poster_source}")
-                    logger.info(f"   Overview: {len(series_overview)} chars")
                     logger.info(f"   Genres: {len(series_genres)} items")
 
                 # Add episode to season
@@ -637,15 +638,20 @@ class NewsletterGenerator:
             except Exception as e:
                 logger.error(f"Error processing episode {episode.get('Name', 'Unknown')}: {e}")
 
-        # Log final results
+        # Log final results with overview check
         logger.info("=" * 50)
-        logger.info("FINAL TV SHOW PROCESSING RESULTS (EMBY DIRECT):")
+        logger.info("FINAL TV SHOW PROCESSING RESULTS:")
         for series_name, series_data in series_dict.items():
             poster_info = f"{series_data['poster_source']}: {series_data['poster_url'][:60]}..." if series_data['poster_url'] else "none"
-            overview_info = f"{len(series_data.get('overview', ''))} chars" if series_data.get('overview') else "no overview"
+            overview_info = f"'{series_data.get('overview', '')[:50]}...' ({len(series_data.get('overview', ''))} chars)" if series_data.get('overview') else "NO OVERVIEW"
             genres_info = f"{len(series_data.get('genres', []))} genres" if series_data.get('genres') else "no genres"
             year_info = f"year: {series_data.get('year', 'N/A')}"
-            logger.info(f"  📺 {series_name}: {poster_info} | {overview_info} | {genres_info} | {year_info}")
+            logger.info(f"  📺 {series_name}:")
+            logger.info(f"     Poster: {poster_info}")
+            logger.info(f"     Overview: {overview_info}")
+            logger.info(f"     Genres: {genres_info}")
+            logger.info(f"     Year: {year_info}")
+            logger.info(f"     All keys: {list(series_data.keys())}")
         logger.info("=" * 50)
 
         return list(series_dict.values())
@@ -654,17 +660,14 @@ class NewsletterGenerator:
         """Generate HTML newsletter content using secure template rendering"""
         try:
             # DEBUG: Print actual data being passed to template
-            print("\n=== DEBUG: TV SHOWS POSTER DATA ===")
+            print("\n=== DEBUG: TV SHOWS DATA STRUCTURE ===")
             for i, show in enumerate(tv_shows):
                 print(f"Show {i}: {show.get('title')}")
+                print(f"  overview: '{show.get('overview', 'NOT_FOUND')[:100]}...' ({len(show.get('overview', ''))} chars)")
                 print(f"  poster_url: {show.get('poster_url')}")
                 print(f"  poster_source: {show.get('poster_source')}")
-                print(f"  overview: {len(show.get('overview', ''))} chars")
                 print(f"  genres: {show.get('genres')}")
                 print(f"  year: {show.get('year')}")
-                print(f"  tmdb_data type: {type(show.get('tmdb_data'))}")
-                if show.get('tmdb_data'):
-                    print(f"  tmdb_data.poster_path: {show.get('tmdb_data', {}).get('poster_path')}")
                 print(f"  ALL KEYS: {list(show.keys())}")
                 print("---")
             print("=== END DEBUG ===\n")
