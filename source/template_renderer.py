@@ -54,19 +54,30 @@ class SecureTemplateRenderer:
     def render_email_template(self, context: Dict[str, Any]) -> str:
         """Render the email template with secure context"""
         try:
+            logger.info("🔄 Starting template render...")
+
             # Sanitize context data
+            logger.info("🧹 Sanitizing context data...")
             safe_context = self._sanitize_context(context)
+            logger.info("✅ Context sanitized successfully")
 
             # Always use built-in template for simplicity and security
+            logger.info("🎨 Building HTML email...")
             html_content = self._build_html_email(safe_context)
-            logger.debug("Email template rendered successfully")
+            logger.info("✅ Email template rendered successfully")
             return html_content
 
         except Exception as e:
-            logger.error(f"Error rendering email template: {e}")
+            logger.error(f"❌ Error rendering email template: {e}")
+            logger.error(f"📍 Error occurred at line: {e.__traceback__.tb_lineno if e.__traceback__ else 'unknown'}")
             # Fallback to built-in template on error
-            safe_context = self._sanitize_context(context)
-            return self._build_html_email(safe_context)
+            try:
+                logger.info("🔄 Attempting fallback render...")
+                safe_context = self._sanitize_context(context)
+                return self._build_html_email(safe_context)
+            except Exception as fallback_error:
+                logger.error(f"❌ Fallback render also failed: {fallback_error}")
+                raise
 
     def _build_html_email(self, context: Dict[str, Any]) -> str:
         """Build HTML email using secure string construction"""
@@ -619,6 +630,7 @@ class SecureTemplateRenderer:
 
         # TV Shows section
         if tv_shows and len(tv_shows) > 0:
+            logger.info(f"📺 Rendering {len(tv_shows)} TV shows...")
             html_content += '''
                         <div class="section">
                             <div class="section-header">
@@ -627,11 +639,21 @@ class SecureTemplateRenderer:
                                 <div class="section-line"></div>
                             </div>'''
 
-            for show in tv_shows:
-                show_html = self._render_tv_show_item(show)
-                html_content += show_html
+            for i, show_item in enumerate(tv_shows):
+                try:
+                    logger.info(f"📺 Rendering TV show {i + 1}/{len(tv_shows)}: {show_item.get('title', 'Unknown')}")
+                    show_html = self._render_tv_show_item(show_item)
+                    html_content += show_html
+                    logger.info(f"✅ Successfully rendered TV show {i + 1}")
+                except Exception as e:
+                    logger.error(f"❌ Error rendering TV show {i + 1} ({show_item.get('title', 'Unknown')}): {e}")
+                    logger.error(
+                        f"📍 Show data keys: {list(show_item.keys()) if isinstance(show_item, dict) else 'Not a dict'}")
+                    # Continue with other shows instead of failing completely
+                    continue
 
             html_content += '                        </div>'
+            logger.info("✅ All TV shows rendered successfully")
 
         # No content message
         if (not movies or len(movies) == 0) and (not tv_shows or len(tv_shows) == 0):
@@ -959,7 +981,7 @@ class SecureTemplateRenderer:
                 elif isinstance(value, (int, float, bool)):
                     sanitized_item[key] = value
                 elif isinstance(value, dict):
-                    # Handle nested dictionaries (like tmdb_data)
+                    # Handle nested dictionaries (like tmdb_data, seasons)
                     sanitized_item[key] = self._sanitize_nested_dict(value)
                 elif isinstance(value, list):
                     # Handle lists (like genres)
