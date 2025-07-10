@@ -749,10 +749,12 @@ class SecureTemplateRenderer:
         title = self._secure_escape(show.get('title', 'Unknown'))
         overview = ''
 
-        # Get overview from TMDB data if available
-        tmdb_data = show.get('tmdb_data', {})
-        if isinstance(tmdb_data, dict) and tmdb_data.get('overview'):
-            overview = self._secure_escape(tmdb_data['overview'])
+        # Get overview from Emby series data
+        if show.get('overview'):
+            overview = self._secure_escape(show['overview'])
+            logger.info(f"📝 Using Emby overview for {title}: {len(overview)} chars")
+        else:
+            logger.warning(f"⚠️ No overview found for {title}")
 
         # Build poster HTML - use Emby posters directly (no TMDB)
         poster_url = ''

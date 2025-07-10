@@ -555,7 +555,7 @@ class NewsletterGenerator:
         return processed
 
     def _process_tv_shows(self, episodes: List[Dict]) -> List[Dict]:
-        """Process TV show episodes and group by series using Emby posters directly"""
+        """Process TV show episodes and group by series using Emby posters and descriptions"""
         series_dict = {}
 
         for episode in episodes:
@@ -569,7 +569,18 @@ class NewsletterGenerator:
                 logger.info(f"Series ID: {series_id}")
 
                 if series_name not in series_dict:
-                    # Use Emby poster directly - no TMDB matching needed
+                    # Get series info from Emby for description and other details
+                    series_info = None
+                    series_overview = ""
+
+                    if series_id:
+                        series_info = self.emby_api.get_series_info(series_id)
+                        if series_info:
+                            series_overview = series_info.get('Overview', '')
+                            logger.info(
+                                f"✅ Got series overview from Emby for {series_name}: {len(series_overview)} chars")
+
+                    # Use Emby poster directly
                     emby_poster = None
                     poster_source = "none"
 
@@ -589,10 +600,12 @@ class NewsletterGenerator:
                         'poster_url': emby_poster,
                         'poster_source': poster_source,
                         'series_id': series_id,
+                        'overview': series_overview,  # Add Emby overview
                         'tmdb_data': None  # Keep for template compatibility but don't use TMDB
                     }
 
-                    logger.info(f"📺 Series created: {series_name} (poster: {poster_source})")
+                    logger.info(
+                        f"📺 Series created: {series_name} (poster: {poster_source}, overview: {len(series_overview)} chars)")
 
                 # Add episode to season
                 if season_name not in series_dict[series_name]['seasons']:
@@ -615,7 +628,9 @@ class NewsletterGenerator:
         for series_name, series_data in series_dict.items():
             poster_info = f"{series_data['poster_source']}: {series_data['poster_url'][:60]}..." if series_data[
                 'poster_url'] else "none"
-            logger.info(f"  📺 {series_name}: {poster_info}")
+            overview_info = f"{len(series_data.get('overview', ''))} chars" if series_data.get(
+                'overview') else "no overview"
+            logger.info(f"  📺 {series_name}: {poster_info} | {overview_info}")
         logger.info("=" * 50)
 
         return list(series_dict.values())
