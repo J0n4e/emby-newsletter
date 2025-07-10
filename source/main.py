@@ -603,6 +603,19 @@ class NewsletterGenerator:
     def _generate_html(self, movies: List[Dict], tv_shows: List[Dict]) -> str:
         """Generate HTML newsletter content using secure template rendering"""
         try:
+            # DEBUG: Print actual data being passed to template
+            print("\n=== DEBUG: TV SHOWS POSTER DATA ===")
+            for i, show in enumerate(tv_shows):
+                print(f"Show {i}: {show.get('title')}")
+                print(f"  poster_url: {show.get('poster_url')}")
+                print(f"  poster_source: {show.get('poster_source')}")
+                print(f"  tmdb_data type: {type(show.get('tmdb_data'))}")
+                if show.get('tmdb_data'):
+                    print(f"  tmdb_data.poster_path: {show.get('tmdb_data', {}).get('poster_path')}")
+                print(f"  ALL KEYS: {list(show.keys())}")
+                print("---")
+            print("=== END DEBUG ===\n")
+
             context = {
                 'language': self.config.email_template.language,
                 'title': self.config.email_template.title,
