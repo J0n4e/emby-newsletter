@@ -555,7 +555,7 @@ class NewsletterGenerator:
         return processed
 
     def _process_tv_shows(self, episodes: List[Dict]) -> List[Dict]:
-        """Process TV show episodes and group by series using Emby data directly"""
+        """Process TV show episodes and group by series using Emby posters and descriptions"""
         series_dict = {}
 
         for episode in episodes:
@@ -572,26 +572,13 @@ class NewsletterGenerator:
                     # Get series info from Emby for description and other details
                     series_info = None
                     series_overview = ""
-                    series_genres = []
 
                     if series_id:
                         series_info = self.emby_api.get_series_info(series_id)
                         if series_info:
                             series_overview = series_info.get('Overview', '')
-                            series_genres = series_info.get('Genres', [])
                             logger.info(
-                                f"✅ Got series info from Emby for {series_name}: overview={len(series_overview)} chars, genres={len(series_genres)}")
-                        else:
-                            logger.warning(f"⚠️ Could not get series info from Emby for {series_name}")
-
-                    # Fallback: try to get description from any episode if series info failed
-                    if not series_overview:
-                        # Sometimes the series overview might be in the episode data
-                        episode_overview = episode.get('Overview', '')
-                        if episode_overview:
-                            series_overview = f"Latest episode: {episode_overview}"
-                            logger.info(
-                                f"📝 Using episode overview as fallback for {series_name}: {len(series_overview)} chars")
+                                f"✅ Got series overview from Emby for {series_name}: {len(series_overview)} chars")
 
                     # Use Emby poster directly
                     emby_poster = None
@@ -614,12 +601,11 @@ class NewsletterGenerator:
                         'poster_source': poster_source,
                         'series_id': series_id,
                         'overview': series_overview,  # Add Emby overview
-                        'genres': series_genres,  # Add Emby genres
                         'tmdb_data': None  # Keep for template compatibility but don't use TMDB
                     }
 
                     logger.info(
-                        f"📺 Series created: {series_name} (poster: {poster_source}, overview: {len(series_overview)} chars, genres: {len(series_genres)})")
+                        f"📺 Series created: {series_name} (poster: {poster_source}, overview: {len(series_overview)} chars)")
 
                 # Add episode to season
                 if season_name not in series_dict[series_name]['seasons']:
@@ -644,8 +630,7 @@ class NewsletterGenerator:
                 'poster_url'] else "none"
             overview_info = f"{len(series_data.get('overview', ''))} chars" if series_data.get(
                 'overview') else "no overview"
-            genres_info = f"{len(series_data.get('genres', []))} genres" if series_data.get('genres') else "no genres"
-            logger.info(f"  📺 {series_name}: {poster_info} | {overview_info} | {genres_info}")
+            logger.info(f"  📺 {series_name}: {poster_info} | {overview_info}")
         logger.info("=" * 50)
 
         return list(series_dict.values())
