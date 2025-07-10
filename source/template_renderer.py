@@ -796,82 +796,80 @@ class SecureTemplateRenderer:
 
             total_seasons = len(season_items)
 
-            if total_seasons <= 3:
-                # Show all seasons if 3 or fewer
-                season_parts = []
-                for season_name, episodes in season_items:
-                    season_name_escaped = self._secure_escape(season_name)
-                    season_parts.append(f'<div class="tv-season"><h4>{season_name_escaped}</h4>')
+            # Always show just one line: latest season + summary
+            season_parts = []
 
-                    if isinstance(episodes, list):
-                        for episode in episodes[:5]:  # Limit to 5 episodes per season
-                            if isinstance(episode, dict):
-                                episode_num = self._secure_escape(episode.get('episode_number', ''))
-                                episode_name = self._secure_escape(episode.get('name', 'Unknown'))
-                                episode_overview = self._secure_escape(episode.get('overview', ''))
+            if total_seasons == 1:
+                # Show single season with episodes
+                season_name, episodes = season_items[0]
+                season_name_escaped = self._secure_escape(season_name)
+                season_parts.append(f'<div class="tv-season"><h4>{season_name_escaped}</h4>')
 
-                                # Truncate episode overview
-                                if episode_overview and len(episode_overview) > 100:
-                                    episode_overview = episode_overview[:100] + "..."
+                if isinstance(episodes, list):
+                    for episode in episodes[:3]:  # Limit to 3 episodes
+                        if isinstance(episode, dict):
+                            episode_num = self._secure_escape(episode.get('episode_number', ''))
+                            episode_name = self._secure_escape(episode.get('name', 'Unknown'))
+                            episode_overview = self._secure_escape(episode.get('overview', ''))
 
-                                episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
+                            # Truncate episode overview
+                            if episode_overview and len(episode_overview) > 80:
+                                episode_overview = episode_overview[:80] + "..."
 
-                                season_parts.append(f'''                                    <div class="episode">
+                            episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
+
+                            season_parts.append(f'''                                    <div class="episode">
                                         <div class="episode-title">Episode {episode_num}: {episode_name}</div>
                                         {episode_overview_html}
                                     </div>''')
 
-                    season_parts.append('                                </div>')
-
-                seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>'
+                season_parts.append('                                </div>')
 
             else:
-                # Show only latest 2 seasons + summary for shows with many seasons
-                season_parts = []
+                # Show only latest season + compact summary for multiple seasons
+                latest_season_name, latest_episodes = season_items[0]
+                latest_season_name_escaped = self._secure_escape(latest_season_name)
 
-                # Show latest 2 seasons with episodes
-                for season_name, episodes in season_items[:2]:
-                    season_name_escaped = self._secure_escape(season_name)
-                    season_parts.append(f'<div class="tv-season"><h4>{season_name_escaped}</h4>')
+                # Build summary text
+                oldest_season_num = self._get_season_number(season_items[-1][0])
+                latest_season_num = self._get_season_number(latest_season_name)
 
-                    if isinstance(episodes, list):
-                        for episode in episodes[:3]:  # Limit to 3 episodes per season
-                            if isinstance(episode, dict):
-                                episode_num = self._secure_escape(episode.get('episode_number', ''))
-                                episode_name = self._secure_escape(episode.get('name', 'Unknown'))
-                                episode_overview = self._secure_escape(episode.get('overview', ''))
+                if total_seasons > 1:
+                    if oldest_season_num > 0 and latest_season_num > oldest_season_num:
+                        if total_seasons == 2:
+                            summary_text = f"(+ Season {oldest_season_num} also available)"
+                        else:
+                            summary_text = f"(+ {total_seasons - 1} more seasons: {oldest_season_num}-{latest_season_num - 1} available)"
+                    else:
+                        summary_text = f"(+ {total_seasons - 1} more seasons available)"
+                else:
+                    summary_text = ""
 
-                                # Truncate episode overview
-                                if episode_overview and len(episode_overview) > 80:
-                                    episode_overview = episode_overview[:80] + "..."
+                # Show latest season with summary in title
+                season_title = f"{latest_season_name_escaped} {summary_text}" if summary_text else latest_season_name_escaped
+                season_parts.append(f'<div class="tv-season"><h4>{season_title}</h4>')
 
-                                episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
+                if isinstance(latest_episodes, list):
+                    for episode in latest_episodes[:3]:  # Limit to 3 episodes
+                        if isinstance(episode, dict):
+                            episode_num = self._secure_escape(episode.get('episode_number', ''))
+                            episode_name = self._secure_escape(episode.get('name', 'Unknown'))
+                            episode_overview = self._secure_escape(episode.get('overview', ''))
 
-                                season_parts.append(f'''                                    <div class="episode">
+                            # Truncate episode overview
+                            if episode_overview and len(episode_overview) > 80:
+                                episode_overview = episode_overview[:80] + "..."
+
+                            episode_overview_html = f'<div class="episode-overview">{episode_overview}</div>' if episode_overview else ''
+
+                            season_parts.append(f'''                                    <div class="episode">
                                         <div class="episode-title">Episode {episode_num}: {episode_name}</div>
                                         {episode_overview_html}
                                     </div>''')
 
-                    season_parts.append('                                </div>')
+                season_parts.append('                                </div>')
 
-                # Add summary for older seasons
-                oldest_season_num = self._get_season_number(season_items[-1][0])
-                newest_excluded_num = self._get_season_number(season_items[1][0]) if len(
-                    season_items) > 1 else oldest_season_num
-
-                if total_seasons > 2:
-                    remaining_seasons = total_seasons - 2
-                    if oldest_season_num > 0 and newest_excluded_num > oldest_season_num:
-                        season_range = f"Seasons {oldest_season_num}-{newest_excluded_num - 1}"
-                    else:
-                        season_range = f"{remaining_seasons} older seasons"
-
-                    season_parts.append(f'''                                <div class="tv-season-summary">
-                                    <div class="season-count">+ {remaining_seasons} More Seasons</div>
-                                    <div class="season-range">{season_range} available</div>
-                                </div>''')
-
-                seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>'
+            seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>'
 
         return f'''                            <div class="item">
                                 <div class="item-poster">
