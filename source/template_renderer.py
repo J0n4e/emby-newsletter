@@ -697,6 +697,25 @@ class SecureTemplateRenderer:
             overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
 
+        # Build genres HTML (like movies do)
+        genres_html = ''
+        genres = show.get('genres', [])
+        if genres and isinstance(genres, list):
+            genre_tags = []
+            for genre in genres[:5]:  # Limit to 5 genres
+                if isinstance(genre, dict):
+                    genre_name = self._secure_escape(genre.get('Name', ''))
+                elif isinstance(genre, str):
+                    genre_name = self._secure_escape(genre)
+                else:
+                    genre_name = self._secure_escape(str(genre))
+
+                if genre_name:
+                    genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
+
+            if genre_tags:
+                genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
+
         # Build genres HTML
         genres_html = ''
         genres = movie.get('tmdb_genres') or movie.get('genres', [])
@@ -877,6 +896,7 @@ class SecureTemplateRenderer:
                                 <div class="item-content">
                                     <div class="item-title">{title}</div>
                                     {overview_html}
+                                    {genres_html}
                                     {seasons_html}
                                 </div>
                             </div>'''
