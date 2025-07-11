@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Emby Newsletter - A newsletter for Emby to notify users of latest additions
-Enhanced with proper timezone support and fixed poster matching
+Emby Newsletter - Enhanced version with TMDB integration and improved processing
+Enhanced with proper timezone support, TMDB metadata, and robust poster matching
 """
 
 import sys
@@ -222,7 +222,7 @@ class EmbyAPI:
                 'Recursive': 'true',
                 'SortBy': 'DateCreated',
                 'SortOrder': 'Descending',
-                'Fields': 'DateCreated,ParentId,SeriesName,SeasonName,IndexNumber,ParentIndexNumber,Overview,Genres,ProductionYear,CommunityRating,OfficialRating,SeriesId',
+                'Fields': 'DateCreated,ParentId,SeriesName,SeasonName,IndexNumber,ParentIndexNumber,Overview,Genres,ProductionYear,CommunityRating,OfficialRating,SeriesId,ProviderIds',
                 'MinDateLastSaved': since_date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
             }
 
@@ -250,7 +250,7 @@ class EmbyAPI:
         try:
             url = f"{self.base_url}/emby/Items/{series_id}"
             params = {
-                'Fields': 'Overview,Genres,ProductionYear,CommunityRating,OfficialRating'
+                'Fields': 'Overview,Genres,ProductionYear,CommunityRating,OfficialRating,ProviderIds'
             }
             response = self.session.get(url, params=params)
             response.raise_for_status()
@@ -301,7 +301,7 @@ class EmbyAPI:
 
 
 class TMDBApi:
-    """Handles communication with TMDB API"""
+    """Enhanced TMDB API class based on original implementation"""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -311,6 +311,43 @@ class TMDBApi:
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         })
+
+    def get_media_detail_from_id(self, tmdb_id: str, media_type: str) -> Optional[Dict]:
+        """Get media details from TMDB using ID (from original implementation)"""
+        try:
+            if media_type == "movie":
+                url = f"{self.base_url}/movie/{tmdb_id}"
+            elif media_type == "tv":
+                url = f"{self.base_url}/tv/{tmdb_id}"
+            else:
+                logger.error(f"Unsupported media type: {media_type}")
+                return None
+
+            response = self.session.get(url)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(
+                f"✅ Found TMDB data by ID for {media_type}: {data.get('title' if media_type == 'movie' else 'name')}")
+            return data
+
+        except Exception as e:
+            logger.error(f"Error fetching {media_type} details from TMDB by ID {tmdb_id}: {e}")
+            return None
+
+    def get_media_detail_from_title(self, title: str, media_type: str, year: int = None) -> Optional[Dict]:
+        """Get media details from TMDB using title search (from original implementation)"""
+        try:
+            if media_type == "movie":
+                return self.get_movie_details(title, year)
+            elif media_type == "tv":
+                return self.get_tv_details(title, year)
+            else:
+                logger.error(f"Unsupported media type: {media_type}")
+                return None
+        except Exception as e:
+            logger.error(f"Error fetching {media_type} details from TMDB by title '{title}': {e}")
+            return None
 
     def get_movie_details(self, title: str, year: int = None) -> Optional[Dict]:
         """Get movie details from TMDB"""
@@ -460,7 +497,7 @@ class TMDBApi:
 
 
 class NewsletterGenerator:
-    """Generates and sends newsletters"""
+    """Enhanced newsletter generator with TMDB integration"""
 
     def __init__(self, config_manager: ConfigurationManager):
         self.config_manager = config_manager
@@ -472,9 +509,9 @@ class NewsletterGenerator:
         self.tmdb_api = TMDBApi(self.config.tmdb.api_key)
 
     def generate_newsletter(self) -> Optional[str]:
-        """Generate newsletter content"""
+        """Generate newsletter content with TMDB enhancement"""
         try:
-            logger.info("Starting newsletter generation...")
+            logger.info("Starting enhanced newsletter generation...")
 
             # Get recent items
             days = self.config.emby.observed_period_days
@@ -500,21 +537,21 @@ class NewsletterGenerator:
                 logger.info(f"Found {len(recent_tv_shows)} recent TV episodes")
 
             # Process items and enhance with TMDB data
-            processed_movies = self._process_movies(recent_movies)
-            processed_tv_shows = self._process_tv_shows(recent_tv_shows)
+            processed_movies = self._process_movies_with_tmdb(recent_movies)
+            processed_tv_shows = self._process_tv_shows_with_tmdb(recent_tv_shows)
 
             # Generate HTML content
             html_content = self._generate_html(processed_movies, processed_tv_shows)
 
-            logger.info("Newsletter generation completed successfully")
+            logger.info("Enhanced newsletter generation completed successfully")
             return html_content
 
         except Exception as e:
             logger.error(f"Error generating newsletter: {e}")
             return None
 
-    def _process_movies(self, movies: List[Dict]) -> List[Dict]:
-        """Process movie items using Emby posters directly"""
+    def _process_movies_with_tmdb(self, movies: List[Dict]) -> List[Dict]:
+        """Process movie items with TMDB enhancement (based on original implementation)"""
         processed = []
 
         for movie in movies:
@@ -526,9 +563,28 @@ class NewsletterGenerator:
 
                 logger.info(f"Processing movie: {title} ({year}) - ID: {movie_id}")
 
-                # Use Emby poster directly - no TMDB needed
+                # Get TMDB data if available
+                tmdb_data = None
+                tmdb_id = None
+
+                # Try to get TMDB ID from Emby
+                if movie.get('ProviderIds') and movie['ProviderIds'].get('Tmdb'):
+                    tmdb_id = movie['ProviderIds']['Tmdb']
+                    logger.info(f"Found TMDB ID for {title}: {tmdb_id}")
+                    tmdb_data = self.tmdb_api.get_media_detail_from_id(tmdb_id, "movie")
+
+                # If no TMDB ID or failed to get data, search by title
+                if not tmdb_data:
+                    if not tmdb_id:
+                        logger.info(f"No TMDB ID for {title}, searching by title")
+                    else:
+                        logger.info(f"TMDB ID lookup failed for {title}, searching by title")
+                    tmdb_data = self.tmdb_api.get_media_detail_from_title(title, "movie", year)
+
+                # Use Emby poster as fallback
                 emby_poster = self.emby_api.get_item_image_url(movie_id) if movie_id else None
 
+                # Prepare enhanced movie data
                 processed_movie = {
                     'title': title,
                     'year': year,
@@ -542,10 +598,41 @@ class NewsletterGenerator:
                     'poster_source': 'emby_direct'
                 }
 
-                if emby_poster:
-                    logger.info(f"✅ Using Emby poster for {title}: {emby_poster}")
+                # Enhance with TMDB data if available
+                if tmdb_data:
+                    logger.info(f"✅ Enhancing {title} with TMDB data")
+
+                    # Enhanced poster (prefer TMDB if available)
+                    if tmdb_data.get('poster_path'):
+                        tmdb_poster = f"https://image.tmdb.org/t/p/w500{tmdb_data['poster_path']}"
+                        processed_movie['tmdb_poster'] = tmdb_poster
+                        processed_movie['poster_url'] = tmdb_poster  # Use TMDB poster as primary
+                        processed_movie['poster_source'] = 'tmdb_enhanced'
+                        logger.info(f"✅ Using TMDB poster for {title}: {tmdb_poster}")
+
+                    # Enhanced overview (prefer TMDB if available and better)
+                    tmdb_overview = tmdb_data.get('overview', '')
+                    if tmdb_overview and (
+                            not processed_movie['overview'] or len(tmdb_overview) > len(processed_movie['overview'])):
+                        processed_movie['tmdb_overview'] = tmdb_overview
+                        processed_movie['overview'] = tmdb_overview  # Use TMDB overview as primary
+                        logger.info(f"✅ Using TMDB overview for {title} ({len(tmdb_overview)} chars)")
+
+                    # Enhanced genres (prefer TMDB if available)
+                    if tmdb_data.get('genres'):
+                        tmdb_genres = [genre['name'] for genre in tmdb_data['genres']]
+                        processed_movie['tmdb_genres'] = tmdb_genres
+                        if not processed_movie['genres'] or len(tmdb_genres) > len(processed_movie['genres']):
+                            processed_movie['genres'] = tmdb_genres
+                            logger.info(f"✅ Using TMDB genres for {title}: {tmdb_genres}")
+
+                    # Store full TMDB data for template
+                    processed_movie['tmdb_data'] = tmdb_data
                 else:
-                    logger.warning(f"⚠️ No Emby poster found for {title}")
+                    logger.warning(f"⚠️ No TMDB data found for {title}")
+
+                if not processed_movie['poster_url']:
+                    logger.warning(f"⚠️ No poster found for {title}")
 
                 processed.append(processed_movie)
 
@@ -554,8 +641,8 @@ class NewsletterGenerator:
 
         return processed
 
-    def _process_tv_shows(self, episodes: List[Dict]) -> List[Dict]:
-        """Process TV show episodes and group by series using Emby posters and descriptions"""
+    def _process_tv_shows_with_tmdb(self, episodes: List[Dict]) -> List[Dict]:
+        """Process TV show episodes and group by series with TMDB enhancement"""
         series_dict = {}
 
         for episode in episodes:
@@ -566,10 +653,9 @@ class NewsletterGenerator:
                 series_id = episode.get('SeriesId', '')
 
                 logger.info(f"Processing episode: {series_name} - {season_name} - {episode_name}")
-                logger.info(f"Series ID: {series_id}")
 
                 if series_name not in series_dict:
-                    # Get series info from Emby for description and other details
+                    # Get series info from Emby
                     series_info = None
                     series_overview = ""
                     series_genres = []
@@ -583,45 +669,77 @@ class NewsletterGenerator:
                             series_genres = series_info.get('Genres', [])
                             series_year = series_info.get('ProductionYear')
                             series_rating = series_info.get('CommunityRating')
-                            logger.info(f"✅ Got series info from Emby for {series_name}:")
-                            logger.info(f"   Overview: {len(series_overview)} chars")
-                            logger.info(f"   Genres: {series_genres}")
-                            logger.info(f"   Year: {series_year}")
-                            logger.info(f"   Rating: {series_rating}")
 
-                    # Use Emby poster directly
-                    emby_poster = None
-                    poster_source = "none"
+                    # Get TMDB data if available
+                    tmdb_data = None
+                    tmdb_id = None
 
-                    if series_id:
-                        emby_poster = self.emby_api.get_item_image_url(series_id)
-                        if emby_poster:
-                            poster_source = "emby_direct"
-                            logger.info(f"✅ Using Emby poster for {series_name}: {emby_poster}")
+                    # Try to get TMDB ID from Emby series info
+                    if series_info and series_info.get('ProviderIds') and series_info['ProviderIds'].get('Tmdb'):
+                        tmdb_id = series_info['ProviderIds']['Tmdb']
+                        logger.info(f"Found TMDB ID for {series_name}: {tmdb_id}")
+                        tmdb_data = self.tmdb_api.get_media_detail_from_id(tmdb_id, "tv")
+
+                    # If no TMDB ID or failed to get data, search by title
+                    if not tmdb_data:
+                        if not tmdb_id:
+                            logger.info(f"No TMDB ID for {series_name}, searching by title")
                         else:
-                            logger.warning(f"⚠️ No Emby poster found for {series_name} (ID: {series_id})")
-                    else:
-                        logger.warning(f"⚠️ No Series ID found for {series_name}")
+                            logger.info(f"TMDB ID lookup failed for {series_name}, searching by title")
+                        tmdb_data = self.tmdb_api.get_media_detail_from_title(series_name, "tv", series_year)
 
-                    # CRITICAL: Use exact same structure as movies
+                    # Use Emby poster as fallback
+                    emby_poster = self.emby_api.get_item_image_url(series_id) if series_id else None
+
+                    # Create series entry with enhanced data
                     series_dict[series_name] = {
                         'title': series_name,
                         'year': series_year,
-                        'overview': series_overview,  # Same key as movies use
+                        'overview': series_overview,
                         'genres': series_genres,
                         'rating': series_rating,
                         'official_rating': series_info.get('OfficialRating') if series_info else None,
                         'poster_url': emby_poster,
-                        'poster_source': poster_source,
+                        'poster_source': 'emby_direct',
                         'series_id': series_id,
-                        'seasons': {},  # TV-specific data
-                        'tmdb_data': None  # Keep for template compatibility
+                        'seasons': {},
+                        'tmdb_data': None
                     }
 
-                    logger.info(f"📺 Series created: {series_name}")
-                    logger.info(f"   Overview stored: '{series_overview[:100]}...' ({len(series_overview)} chars)")
-                    logger.info(f"   Poster: {poster_source}")
-                    logger.info(f"   Genres: {len(series_genres)} items")
+                    # Enhance with TMDB data if available
+                    if tmdb_data:
+                        logger.info(f"✅ Enhancing {series_name} with TMDB data")
+
+                        # Enhanced poster (prefer TMDB if available)
+                        if tmdb_data.get('poster_path'):
+                            tmdb_poster = f"https://image.tmdb.org/t/p/w500{tmdb_data['poster_path']}"
+                            series_dict[series_name]['tmdb_poster'] = tmdb_poster
+                            series_dict[series_name]['poster_url'] = tmdb_poster  # Use TMDB poster as primary
+                            series_dict[series_name]['poster_source'] = 'tmdb_enhanced'
+                            logger.info(f"✅ Using TMDB poster for {series_name}: {tmdb_poster}")
+
+                        # Enhanced overview (prefer TMDB if available and better)
+                        tmdb_overview = tmdb_data.get('overview', '')
+                        if tmdb_overview and (not series_overview or len(tmdb_overview) > len(series_overview)):
+                            series_dict[series_name]['tmdb_overview'] = tmdb_overview
+                            series_dict[series_name]['overview'] = tmdb_overview  # Use TMDB overview as primary
+                            logger.info(f"✅ Using TMDB overview for {series_name} ({len(tmdb_overview)} chars)")
+
+                        # Enhanced genres (prefer TMDB if available)
+                        if tmdb_data.get('genres'):
+                            tmdb_genres = [genre['name'] for genre in tmdb_data['genres']]
+                            series_dict[series_name]['tmdb_genres'] = tmdb_genres
+                            if not series_genres or len(tmdb_genres) > len(series_genres):
+                                series_dict[series_name]['genres'] = tmdb_genres
+                                logger.info(f"✅ Using TMDB genres for {series_name}: {tmdb_genres}")
+
+                        # Store full TMDB data for template
+                        series_dict[series_name]['tmdb_data'] = tmdb_data
+                    else:
+                        logger.warning(f"⚠️ No TMDB data found for {series_name}")
+
+                    if not series_dict[series_name]['poster_url']:
+                        logger.warning(f"⚠️ No poster found for {series_name}")
 
                 # Add episode to season
                 if season_name not in series_dict[series_name]['seasons']:
@@ -638,20 +756,22 @@ class NewsletterGenerator:
             except Exception as e:
                 logger.error(f"Error processing episode {episode.get('Name', 'Unknown')}: {e}")
 
-        # Log final results with overview check
+        # Log final results
         logger.info("=" * 50)
-        logger.info("FINAL TV SHOW PROCESSING RESULTS:")
+        logger.info("FINAL TV SHOW PROCESSING RESULTS (WITH TMDB):")
         for series_name, series_data in series_dict.items():
-            poster_info = f"{series_data['poster_source']}: {series_data['poster_url'][:60]}..." if series_data['poster_url'] else "none"
-            overview_info = f"'{series_data.get('overview', '')[:50]}...' ({len(series_data.get('overview', ''))} chars)" if series_data.get('overview') else "NO OVERVIEW"
+            poster_source = series_data.get('poster_source', 'none')
+            poster_url = series_data.get('poster_url', '')
+            poster_info = f"{poster_source}: {poster_url[:60]}..." if poster_url else "none"
+            overview_info = f"'{series_data.get('overview', '')[:50]}...' ({len(series_data.get('overview', ''))} chars)" if series_data.get(
+                'overview') else "NO OVERVIEW"
             genres_info = f"{len(series_data.get('genres', []))} genres" if series_data.get('genres') else "no genres"
-            year_info = f"year: {series_data.get('year', 'N/A')}"
+            tmdb_info = "TMDB enhanced" if series_data.get('tmdb_data') else "Emby only"
             logger.info(f"  📺 {series_name}:")
+            logger.info(f"     Source: {tmdb_info}")
             logger.info(f"     Poster: {poster_info}")
             logger.info(f"     Overview: {overview_info}")
             logger.info(f"     Genres: {genres_info}")
-            logger.info(f"     Year: {year_info}")
-            logger.info(f"     All keys: {list(series_data.keys())}")
         logger.info("=" * 50)
 
         return list(series_dict.values())
@@ -659,19 +779,6 @@ class NewsletterGenerator:
     def _generate_html(self, movies: List[Dict], tv_shows: List[Dict]) -> str:
         """Generate HTML newsletter content using secure template rendering"""
         try:
-            # DEBUG: Print actual data being passed to template
-            print("\n=== DEBUG: TV SHOWS DATA STRUCTURE ===")
-            for i, show in enumerate(tv_shows):
-                print(f"Show {i}: {show.get('title')}")
-                print(f"  overview: '{show.get('overview', 'NOT_FOUND')[:100]}...' ({len(show.get('overview', ''))} chars)")
-                print(f"  poster_url: {show.get('poster_url')}")
-                print(f"  poster_source: {show.get('poster_source')}")
-                print(f"  genres: {show.get('genres')}")
-                print(f"  year: {show.get('year')}")
-                print(f"  ALL KEYS: {list(show.keys())}")
-                print("---")
-            print("=== END DEBUG ===\n")
-
             context = {
                 'language': self.config.email_template.language,
                 'title': self.config.email_template.title,
@@ -683,7 +790,7 @@ class NewsletterGenerator:
                 'unsubscribe_email': self.config.email_template.unsubscribe_email
             }
 
-            # Use the new function that automatically fetches server statistics
+            # Use the enhanced function that automatically fetches server statistics
             return render_email_with_server_stats(context, config_path="/app/config/config.yml")
 
         except Exception as e:
@@ -739,7 +846,7 @@ def main():
 
         # Get timezone info for logging
         current_tz = os.environ.get('TZ', 'UTC')
-        logger.info(f"🚀 Starting Emby Newsletter (Timezone: {current_tz})")
+        logger.info(f"🚀 Starting Enhanced Emby Newsletter with TMDB (Timezone: {current_tz})")
 
         # Load configuration
         config_manager = ConfigurationManager()
@@ -753,12 +860,13 @@ def main():
             success = generator.send_newsletter(html_content)
             if success:
                 current_time = datetime.now()
-                logger.info("✅ Newsletter generation and sending completed successfully")
+                logger.info("✅ Enhanced newsletter generation and sending completed successfully")
                 print("=" * 80)
-                print("🎉 NEWSLETTER COMPLETED SUCCESSFULLY!")
+                print("🎉 ENHANCED NEWSLETTER COMPLETED SUCCESSFULLY!")
                 print(f"📧 Sent at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
                 print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
                 print(f"⏰ Local time: {current_time}")
+                print(f"🎬 TMDB integration: ACTIVE")
                 print("=" * 80)
             else:
                 logger.error("❌ Failed to send newsletter")
@@ -772,7 +880,7 @@ def main():
         current_tz = os.environ.get('TZ', 'UTC')
         logger.error(f"💥 Unexpected error: {e}")
         print("=" * 80)
-        print("❌ NEWSLETTER FAILED!")
+        print("❌ ENHANCED NEWSLETTER FAILED!")
         print(f"💥 Error: {e}")
         print(f"🕐 Failed at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")

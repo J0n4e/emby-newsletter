@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Secure template rendering for Emby Newsletter using string templates
+Enhanced secure template rendering for Emby Newsletter with TMDB integration
+Based on original implementation with improved styling and TMDB data support
 """
 
 import os
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class SecureTemplateRenderer:
-    """Secure template renderer with XSS protection using string templates"""
+    """Enhanced secure template renderer with TMDB support and improved styling"""
 
     def __init__(self, template_dir: str = "/app/templates"):
         """Initialize the secure template renderer"""
@@ -52,24 +53,24 @@ class SecureTemplateRenderer:
         return escaped
 
     def render_email_template(self, context: Dict[str, Any]) -> str:
-        """Render the email template with secure context"""
+        """Render the email template with secure context and TMDB support"""
         try:
             # Sanitize context data
             safe_context = self._sanitize_context(context)
 
-            # Always use built-in template for simplicity and security
-            html_content = self._build_html_email(safe_context)
-            logger.debug("Email template rendered successfully")
+            # Use enhanced HTML email builder
+            html_content = self._build_enhanced_html_email(safe_context)
+            logger.debug("Enhanced email template rendered successfully")
             return html_content
 
         except Exception as e:
             logger.error(f"Error rendering email template: {e}")
             # Fallback to built-in template on error
             safe_context = self._sanitize_context(context)
-            return self._build_html_email(safe_context)
+            return self._build_enhanced_html_email(safe_context)
 
-    def _build_html_email(self, context: Dict[str, Any]) -> str:
-        """Build HTML email using secure string construction"""
+    def _build_enhanced_html_email(self, context: Dict[str, Any]) -> str:
+        """Build enhanced HTML email with TMDB support and improved styling"""
         # Escape all context values
         title = self._secure_escape(context.get('title', 'Emby Newsletter'))
         subtitle = self._secure_escape(context.get('subtitle', ''))
@@ -99,26 +100,49 @@ class SecureTemplateRenderer:
         else:
             total_content_server = 0
 
-        # Build the complete HTML email
+        # Build the complete enhanced HTML email
         html_content = f"""<!DOCTYPE html>
 <html lang="{language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Gmail-specific meta tags -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="format-detection" content="date=no">
+    <meta name="format-detection" content="address=no">
+    <meta name="format-detection" content="email=no">
     <title>{title}</title>
     <style>
+        /* Enhanced email client reset */
+        body, table, td, p, a, h1, h2, h3 {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }}
+
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: rgb(229, 231, 235);
             margin: 0;
             padding: 0;
-            background: rgb(10, 10, 10);
+            background: #000011;
+            min-height: 100vh;
+        }}
+
+        /* Gmail-specific fixes */
+        u + .body a {{
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
         }}
 
         .email-wrapper {{
-            background: rgb(10, 10, 10);
+            background: #000011;
             min-height: 100vh;
             padding: 20px 0;
         }}
@@ -126,14 +150,14 @@ class SecureTemplateRenderer:
         .container {{
             max-width: 680px;
             margin: 0 auto;
-            background: rgb(17, 24, 39);
+            background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%);
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         }}
 
         .header {{
-            background: linear-gradient(135deg, rgb(153, 27, 27) 0%, rgb(220, 38, 38) 50%, rgb(239, 68, 68) 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
             padding: 48px 40px;
             text-align: center;
         }}
@@ -148,9 +172,23 @@ class SecureTemplateRenderer:
 
         .header .subtitle {{
             color: rgba(255, 255, 255, 0.9);
-            margin: 0;
+            margin: 0 0 20px 0;
             font-size: 1.125em;
             font-weight: 400;
+        }}
+
+        .header .button {{
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff !important;
+            display: inline-block;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 0;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
         }}
 
         .stats-section {{
@@ -238,13 +276,16 @@ class SecureTemplateRenderer:
             overflow: hidden;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(220, 38, 38, 0.15);
-            display: table;
             width: 100%;
-            table-layout: fixed;
+            border-collapse: collapse;
+        }}
+
+        .item-table {{
+            width: 100%;
+            border-collapse: collapse;
         }}
 
         .item-poster {{
-            display: table-cell;
             width: 140px;
             height: 210px;
             vertical-align: top;
@@ -272,7 +313,6 @@ class SecureTemplateRenderer:
         }}
 
         .item-content {{
-            display: table-cell;
             padding: 32px;
             vertical-align: top;
         }}
@@ -290,6 +330,7 @@ class SecureTemplateRenderer:
             align-items: center;
             gap: 16px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }}
 
         .item-year {{
@@ -300,6 +341,26 @@ class SecureTemplateRenderer:
             font-size: 0.875em;
             font-weight: 500;
             border: 1px solid rgba(220, 38, 38, 0.3);
+        }}
+
+        .item-rating {{
+            background: rgba(34, 197, 94, 0.15);
+            color: rgb(134, 239, 172);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875em;
+            font-weight: 500;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }}
+
+        .item-source {{
+            background: rgba(168, 85, 247, 0.15);
+            color: rgb(196, 181, 253);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 500;
+            border: 1px solid rgba(168, 85, 247, 0.3);
         }}
 
         .item-overview {{
@@ -344,28 +405,6 @@ class SecureTemplateRenderer:
             margin: 0 0 12px 0;
             font-size: 1.0em;
             font-weight: 600;
-        }}
-
-        .tv-season-summary {{
-            background: rgba(220, 38, 38, 0.08);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin: 12px 0;
-            border-left: 4px solid rgb(220, 38, 38);
-            text-align: center;
-        }}
-
-        .tv-season-summary .season-count {{
-            color: rgb(248, 113, 113);
-            font-weight: 600;
-            font-size: 1.0em;
-            margin-bottom: 6px;
-        }}
-
-        .tv-season-summary .season-range {{
-            color: rgb(209, 213, 219);
-            font-size: 0.875em;
-            font-weight: 400;
         }}
 
         .episode {{
@@ -502,31 +541,41 @@ class SecureTemplateRenderer:
             }}
 
             .item {{
-                display: block;
                 margin: 20px 0;
             }}
 
+            .item-table {{
+                display: block !important;
+                width: 100% !important;
+            }}
+
             .item-poster {{
-                display: block;
-                width: 100%;
-                height: 240px;
-                text-align: center;
+                display: block !important;
+                width: 100% !important;
+                height: 240px !important;
+                text-align: center !important;
+                padding: 15px !important;
+                box-sizing: border-box;
             }}
 
             .item-poster img {{
-                width: auto;
-                height: 240px;
-                max-width: 100%;
+                width: auto !important;
+                height: 200px !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
             }}
 
             .no-poster {{
-                width: 100%;
-                height: 240px;
+                width: 100% !important;
+                height: 200px !important;
+                margin: 0 auto !important;
             }}
 
             .item-content {{
-                display: block;
-                padding: 24px;
+                display: block !important;
+                padding: 20px !important;
+                width: 100% !important;
+                box-sizing: border-box;
             }}
 
             .tv-season {{
@@ -536,10 +585,20 @@ class SecureTemplateRenderer:
             .footer {{
                 padding: 32px 24px;
             }}
+
+            .item-meta {{
+                justify-content: center;
+                text-align: center;
+            }}
         }}
     </style>
 </head>
 <body>
+    <!-- Hidden content to prevent Gmail clipping -->
+    <div style="display: none; max-height: 0px; overflow: hidden;">
+        ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ 
+    </div>
+
     <div class="email-wrapper">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
             <tr>
@@ -548,6 +607,7 @@ class SecureTemplateRenderer:
                         <div class="header">
                             <h1>{title}</h1>
                             <p class="subtitle">{subtitle}</p>
+                            <a href="{emby_url}" class="button">🎭 Discover Now</a>
                         </div>"""
 
         # Add statistics section - intelligent display based on available data
@@ -612,7 +672,7 @@ class SecureTemplateRenderer:
                             </div>'''
 
             for movie in movies:
-                movie_html = self._render_movie_item(movie)
+                movie_html = self._render_enhanced_movie_item(movie)
                 html_content += movie_html
 
             html_content += '                        </div>'
@@ -628,7 +688,7 @@ class SecureTemplateRenderer:
                             </div>'''
 
             for show in tv_shows:
-                show_html = self._render_tv_show_item(show)
+                show_html = self._render_enhanced_tv_show_item(show)
                 html_content += show_html
 
             html_content += '                        </div>'
@@ -656,6 +716,12 @@ class SecureTemplateRenderer:
                                 <p>
                                     📧 To unsubscribe, contact <a href="mailto:{unsubscribe_email}">{unsubscribe_email}</a>
                                 </p>
+                                <p>
+                                    <small>
+                                        <a href="https://github.com/SeaweedbrainCY/emby-newsletter">Emby Newsletter</a> 
+                                        • Enhanced with TMDB • Developed with ❤️
+                                    </small>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -663,21 +729,46 @@ class SecureTemplateRenderer:
             </tr>
         </table>
     </div>
+
+    <!-- Prevent Gmail clipping -->
+    <div style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">
+        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+    </div>
 </body>
 </html>'''
 
         return html_content
 
-    def _render_movie_item(self, movie: Dict[str, Any]) -> str:
-        """Render a single movie item"""
+    def _render_enhanced_movie_item(self, movie: Dict[str, Any]) -> str:
+        """Render a single movie item with TMDB enhancement support"""
         if not isinstance(movie, dict):
             logger.warning(f"Movie item is not a dictionary: {type(movie)}")
             return ""
 
         title = self._secure_escape(movie.get('title', 'Unknown'))
         year = self._secure_escape(movie.get('year', ''))
-        overview = self._secure_escape(movie.get('tmdb_overview') or movie.get('overview', ''))
-        poster_url = self._secure_escape(movie.get('tmdb_poster') or movie.get('poster_url', ''))
+
+        # Priority: TMDB overview > Emby overview
+        overview = ''
+        if movie.get('tmdb_data') and movie['tmdb_data'].get('overview'):
+            overview = self._secure_escape(movie['tmdb_data']['overview'])
+        elif movie.get('tmdb_overview'):
+            overview = self._secure_escape(movie['tmdb_overview'])
+        elif movie.get('overview'):
+            overview = self._secure_escape(movie['overview'])
+
+        # Priority: TMDB poster > Emby poster
+        poster_url = ''
+        poster_source = 'none'
+        if movie.get('tmdb_data') and movie['tmdb_data'].get('poster_path'):
+            poster_url = f"https://image.tmdb.org/t/p/w500{movie['tmdb_data']['poster_path']}"
+            poster_source = 'tmdb'
+        elif movie.get('tmdb_poster'):
+            poster_url = self._secure_escape(movie['tmdb_poster'])
+            poster_source = 'tmdb'
+        elif movie.get('poster_url'):
+            poster_url = self._secure_escape(movie['poster_url'])
+            poster_source = 'emby'
 
         # Build poster HTML
         if poster_url:
@@ -685,10 +776,27 @@ class SecureTemplateRenderer:
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
-        # Build meta information
+        # Build meta information with enhanced data
         meta_parts = []
         if year:
             meta_parts.append(f'<span class="item-year">{year}</span>')
+
+        # Add rating if available
+        rating = movie.get('rating') or (
+            movie.get('tmdb_data', {}).get('vote_average') if movie.get('tmdb_data') else None)
+        if rating:
+            try:
+                rating_float = float(rating)
+                if rating_float > 0:
+                    meta_parts.append(f'<span class="item-rating">★ {rating_float:.1f}</span>')
+            except (ValueError, TypeError):
+                pass
+
+        # Add source indicator
+        if poster_source == 'tmdb':
+            meta_parts.append('<span class="item-source">TMDB Enhanced</span>')
+        elif poster_source == 'emby':
+            meta_parts.append('<span class="item-source">Emby</span>')
 
         meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
 
@@ -697,9 +805,18 @@ class SecureTemplateRenderer:
             overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
 
-        # Build genres HTML
+        # Build genres HTML with TMDB priority
         genres_html = ''
-        genres = movie.get('tmdb_genres') or movie.get('genres', [])
+        genres = []
+
+        # Priority: TMDB genres > Emby genres
+        if movie.get('tmdb_data') and movie['tmdb_data'].get('genres'):
+            genres = [genre['name'] for genre in movie['tmdb_data']['genres']]
+        elif movie.get('tmdb_genres'):
+            genres = movie['tmdb_genres']
+        elif movie.get('genres'):
+            genres = movie['genres']
+
         if genres and isinstance(genres, list):
             genre_tags = []
             for genre in genres[:5]:  # Limit to 5 genres
@@ -717,81 +834,100 @@ class SecureTemplateRenderer:
                 genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
         return f'''                            <div class="item">
-                                <div class="item-poster">
-                                    {poster_html}
-                                </div>
-                                <div class="item-content">
-                                    <div class="item-title">{title}</div>
-                                    {meta_html}
-                                    {overview_html}
-                                    {genres_html}
-                                </div>
+                                <table class="item-table" role="presentation" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td class="item-poster">
+                                            {poster_html}
+                                        </td>
+                                        <td class="item-content">
+                                            <div class="item-title">{title}</div>
+                                            {meta_html}
+                                            {overview_html}
+                                            {genres_html}
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>'''
 
-    def _get_season_number(self, season_name: str) -> int:
-        """Extract season number from season name for sorting"""
-        try:
-            # Try to extract number from season name
-            import re
-            match = re.search(r'(\d+)', season_name)
-            if match:
-                return int(match.group(1))
-            return 0
-        except:
-            return 0
-
-    def _render_tv_show_item(self, show: Dict[str, Any]) -> str:
-        """Render a single TV show item with optimized season display"""
+    def _render_enhanced_tv_show_item(self, show: Dict[str, Any]) -> str:
+        """Render a single TV show item with TMDB enhancement support"""
         if not isinstance(show, dict):
             logger.warning(f"TV show item is not a dictionary: {type(show)}")
             return ""
 
         title = self._secure_escape(show.get('title', 'Unknown'))
 
-        # DEBUG: Log what we're working with
-        logger.info(f"🔍 RENDERING TV SHOW: {title}")
-        logger.info(f"   Available keys: {list(show.keys())}")
-        logger.info(f"   Overview value: '{show.get('overview', 'NOT_FOUND')}'")
-        logger.info(f"   Overview type: {type(show.get('overview'))}")
-        logger.info(f"   Overview length: {len(show.get('overview', ''))}")
+        # Priority: TMDB overview > Emby overview
+        overview = ''
+        if show.get('tmdb_data') and show['tmdb_data'].get('overview'):
+            overview = self._secure_escape(show['tmdb_data']['overview'])
+        elif show.get('tmdb_overview'):
+            overview = self._secure_escape(show['tmdb_overview'])
+        elif show.get('overview'):
+            overview = self._secure_escape(show['overview'])
 
-        # Use EXACTLY the same logic as movies
-        overview = self._secure_escape(show.get('overview', ''))
-
-        logger.info(f"   After escape - Overview: '{overview[:50]}...' ({len(overview)} chars)")
-
-        # Build poster HTML - use Emby posters directly (no TMDB)
+        # Priority: TMDB poster > Emby poster
         poster_url = ''
-        if show.get('poster_url'):
+        poster_source = 'none'
+        if show.get('tmdb_data') and show['tmdb_data'].get('poster_path'):
+            poster_url = f"https://image.tmdb.org/t/p/w500{show['tmdb_data']['poster_path']}"
+            poster_source = 'tmdb'
+        elif show.get('tmdb_poster'):
+            poster_url = self._secure_escape(show['tmdb_poster'])
+            poster_source = 'tmdb'
+        elif show.get('poster_url'):
             poster_url = self._secure_escape(show['poster_url'])
-            logger.info(f"   ✅ Using Emby poster: {poster_url}")
-        else:
-            logger.warning(f"   ❌ No poster found for {title}")
+            poster_source = 'emby'
 
+        # Build poster HTML
         if poster_url:
             poster_html = f'<img src="{poster_url}" alt="{title} poster">'
         else:
             poster_html = '<div class="no-poster">No Poster<br>Available</div>'
 
-        # Build meta information (like movies)
+        # Build meta information with enhanced data
         meta_parts = []
         year = show.get('year')
         if year:
             year_escaped = self._secure_escape(str(year))
             meta_parts.append(f'<span class="item-year">{year_escaped}</span>')
 
+        # Add rating if available
+        rating = show.get('rating') or (
+            show.get('tmdb_data', {}).get('vote_average') if show.get('tmdb_data') else None)
+        if rating:
+            try:
+                rating_float = float(rating)
+                if rating_float > 0:
+                    meta_parts.append(f'<span class="item-rating">★ {rating_float:.1f}</span>')
+            except (ValueError, TypeError):
+                pass
+
+        # Add source indicator
+        if poster_source == 'tmdb':
+            meta_parts.append('<span class="item-source">TMDB Enhanced</span>')
+        elif poster_source == 'emby':
+            meta_parts.append('<span class="item-source">Emby</span>')
+
         meta_html = f'<div class="item-meta">{"".join(meta_parts)}</div>' if meta_parts else ''
 
-        # Build overview HTML - EXACT same logic as movies
+        # Build overview HTML (truncate if too long)
         if overview and len(overview) > 300:
             overview = overview[:300] + "..."
         overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
 
-        logger.info(f"   Final overview HTML: {overview_html[:100]}...")
-
-        # Build genres HTML (like movies)
+        # Build genres HTML with TMDB priority
         genres_html = ''
-        genres = show.get('genres', [])
+        genres = []
+
+        # Priority: TMDB genres > Emby genres
+        if show.get('tmdb_data') and show['tmdb_data'].get('genres'):
+            genres = [genre['name'] for genre in show['tmdb_data']['genres']]
+        elif show.get('tmdb_genres'):
+            genres = show['tmdb_genres']
+        elif show.get('genres'):
+            genres = show['genres']
+
         if genres and isinstance(genres, list):
             genre_tags = []
             for genre in genres[:5]:  # Limit to 5 genres
@@ -894,21 +1030,34 @@ class SecureTemplateRenderer:
 
             seasons_html = f'<div class="tv-seasons">{"".join(season_parts)}</div>'
 
-        final_html = f'''                            <div class="item">
-                                <div class="item-poster">
-                                    {poster_html}
-                                </div>
-                                <div class="item-content">
-                                    <div class="item-title">{title}</div>
-                                    {meta_html}
-                                    {overview_html}
-                                    {genres_html}
-                                    {seasons_html}
-                                </div>
+        return f'''                            <div class="item">
+                                <table class="item-table" role="presentation" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td class="item-poster">
+                                            {poster_html}
+                                        </td>
+                                        <td class="item-content">
+                                            <div class="item-title">{title}</div>
+                                            {meta_html}
+                                            {overview_html}
+                                            {genres_html}
+                                            {seasons_html}
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>'''
 
-        logger.info(f"   ✅ Final HTML includes overview: {'overview' in final_html}")
-        return final_html
+    def _get_season_number(self, season_name: str) -> int:
+        """Extract season number from season name for sorting"""
+        try:
+            # Try to extract number from season name
+            import re
+            match = re.search(r'(\d+)', season_name)
+            if match:
+                return int(match.group(1))
+            return 0
+        except:
+            return 0
 
     def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize template context for security"""
@@ -998,6 +1147,10 @@ class SecureTemplateRenderer:
                 sanitized[key] = self._sanitize_string(value)
             elif isinstance(value, (int, float, bool)):
                 sanitized[key] = value
+            elif isinstance(value, list):
+                sanitized[key] = self._sanitize_list(value)
+            elif isinstance(value, dict):
+                sanitized[key] = self._sanitize_nested_dict(value)
             elif value is None:
                 sanitized[key] = ""
             else:
@@ -1049,7 +1202,7 @@ def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
         return {}
 
 
-# Helper function to get server statistics (Option 1 implementation example)
+# Helper function to get server statistics (enhanced version)
 def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
     """
     Fetch total server statistics from Emby API.
@@ -1139,7 +1292,7 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
 
 def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
-    Convenience function that automatically fetches server statistics from config.yml and renders the email.
+    Enhanced convenience function that automatically fetches server statistics from config.yml and renders the email.
 
     Args:
         context: Template context data
@@ -1195,7 +1348,7 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
 def render_email_with_manual_stats(context: Dict[str, Any], emby_url: str = None, api_key: str = None) -> str:
     """
-    Convenience function with manual URL and API key (legacy support).
+    Enhanced convenience function with manual URL and API key (legacy support).
 
     Usage:
         html = render_email_with_manual_stats(context, emby_url="http://your-emby:8096", api_key="your_api_key")
