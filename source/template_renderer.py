@@ -76,6 +76,23 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         for key in custom_keys:
             template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
 
+        # Calculate statistics for the 4-column layout
+        total_content_server = total_movie + total_tv
+        new_movies_count = len(movies) if movies else 0
+        new_tv_count = len(series) if series else 0
+        new_content_total = new_movies_count + new_tv_count
+
+        # Statistics replacements for the new layout
+        stats_replacements = {
+            "total_content": str(total_content_server),
+            "movies_count": str(total_movie),
+            "series_count": str(total_tv),
+            "new_content": str(new_content_total)
+        }
+
+        for key, value in stats_replacements.items():
+            template = re.sub(r"\${" + key + "}", value, template)
+
         # Movies section (like the original)
         if movies:
             template = re.sub(r"\${display_movies}", "", template)
@@ -240,10 +257,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
             template = re.sub(r"\${tvs}", series_html, template)
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
-
-        # Statistics section (like the original)
-        template = re.sub(r"\${series_count}", str(total_tv), template)
-        template = re.sub(r"\${movies_count}", str(total_movie), template)
 
         logger.info("Template populated successfully")
         return template

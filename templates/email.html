@@ -310,16 +310,38 @@
                         <tr>
                             <td class="title">
                                 <h1>${title}</h1>
-                                <p>${subtitle}</p>
-                                <br>
-                                <a href="${emby_url}" class="button">${discover_now}</a>
+                                <p style="color: rgba(255, 255, 255, 0.9) !important; font-size: 16px; margin: 0;">${subtitle}</p>
                             </td>
                         </tr>
                     </table>
 
+                    <!-- Statistics Section -->
+                    <div class="stats-section">
+                        <table class="stats-table" role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="stats-cell">
+                                    <div class="stats-number">${total_content}</div>
+                                    <div class="stats-label">Total on Server</div>
+                                </td>
+                                <td class="stats-cell">
+                                    <div class="stats-number">${movies_count}</div>
+                                    <div class="stats-label">Movies on Server</div>
+                                </td>
+                                <td class="stats-cell">
+                                    <div class="stats-number">${series_count}</div>
+                                    <div class="stats-label">TV Shows on Server</div>
+                                </td>
+                                <td class="stats-cell">
+                                    <div class="stats-number">${new_content}</div>
+                                    <div class="stats-label">New This Update</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
                     <!-- Movies Section -->
                     <div style="${display_movies}">
-                        <h2 class="section-title">${new_film}</h2>
+                        <h2 class="section-title">🎬 ${new_film}</h2>
                         <div class="movie-container">
                             ${films}
                         </div>
@@ -327,27 +349,16 @@
 
                     <!-- TV Shows Section -->
                     <div style="${display_tv}">
-                        <h2 class="section-title">${new_tvs}</h2>
+                        <h2 class="section-title">📺 ${new_tvs}</h2>
                         <div class="movie-container">
                             ${tvs}
                         </div>
                     </div>
 
-                    <!-- Stats Section -->
-                    <div class="divider"></div>
-                    <h2 class="section-title">${currently_available}</h2>
-                    <table class="stats-table" role="presentation">
-                        <tr>
-                            <td class="stats-cell">
-                                <div class="stats-number">${movies_count}</div>
-                                <div class="stats-label">${movies_label}</div>
-                            </td>
-                            <td class="stats-cell">
-                                <div class="stats-number">${series_count}</div>
-                                <div class="stats-label">${episodes_label}</div>
-                            </td>
-                        </tr>
-                    </table>
+                    <!-- Discover Button Section -->
+                    <div style="text-align: center; padding: 30px 20px;">
+                        <a href="${emby_url}" class="button">🎭 ${discover_now}</a>
+                    </div>
 
                     <!-- Footer -->
                     <footer>
