@@ -201,7 +201,7 @@ def create_tv_show_card(title: str, serie_data: Dict[str, Any], language: str) -
 
 def populate_email_template(movies, series, total_tv, total_movie, config) -> str:
     """
-    Generate newsletter content using template file (simplified approach like original)
+    Generate newsletter content using template file (EXACT same approach as original)
     """
     try:
         # Read the template file
@@ -237,35 +237,87 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         for key in custom_keys:
             template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
 
-        # Movies section - simplified like original but enhanced
+        # Movies section - EXACT same logic as original
         if movies:
             template = re.sub(r"\${display_movies}", "", template)
             movies_html = ""
 
             for movie_title, movie_data in movies.items():
-                movies_html += create_movie_card(movie_title, movie_data, language)
+                added_date = movie_data["created_on"].split("T")[0] if movie_data.get("created_on") else ""
+
+                # Use enhanced card creation but maintain original structure
+                movies_html += f"""
+                <div class="movie_container" style="margin-bottom: 15px;">
+                    <div class="movie_bg" style="background: url('{movie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="movie-image">
+                                    <img src="{movie_data['poster']}" alt="{movie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto; border-radius: 8px;">
+                                </td>
+                                <td class="movie-content-cell">
+                                    <div class="mobile-text-container">
+                                        <h3 class="movie-title">{movie_title}</h3>
+                                        <div class="movie-date">
+                                            {translation[language]['added_on']} {added_date}
+                                        </div>
+                                        <div class="movie-description">
+                                            {movie_data['description']}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                """
 
             template = re.sub(r"\${films}", movies_html, template)
         else:
             template = re.sub(r"\${display_movies}", "display:none", template)
 
-        # TV Shows section - simplified like original but enhanced
+        # TV Shows section - EXACT same logic as original
         if series:
             template = re.sub(r"\${display_tv}", "", template)
             series_html = ""
 
             for serie_title, serie_data in series.items():
-                series_html += create_tv_show_card(serie_title, serie_data, language)
+                added_date = serie_data["created_on"].split("T")[0] if serie_data.get("created_on") else ""
+                seasons_str = ", ".join(serie_data["seasons"]) if serie_data.get("seasons") else ""
+
+                series_html += f"""
+                <div class="movie_container" style="margin-bottom: 15px;">
+                    <div class="movie_bg" style="background: url('{serie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="movie-image">
+                                    <img src="{serie_data['poster']}" alt="{serie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto; border-radius: 8px;">
+                                </td>
+                                <td class="movie-content-cell">
+                                    <div class="mobile-text-container">
+                                        <h3 class="movie-title">{serie_title} {seasons_str}</h3>
+                                        <div class="movie-date">
+                                            {translation[language]['added_on']} {added_date}
+                                        </div>
+                                        <div class="movie-description">
+                                            {serie_data['description']}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                """
 
             template = re.sub(r"\${tvs}", series_html, template)
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section (like the original) - USE TOTAL SERVER COUNTS!
+        # Statistics section - EXACT same as original, use the passed parameters directly
         template = re.sub(r"\${series_count}", str(total_tv), template)
         template = re.sub(r"\${movies_count}", str(total_movie), template)
 
-        logger.info("Template populated successfully")
+        logger.info(f"Template populated successfully with stats: {total_movie} movies, {total_tv} episodes")
         return template
 
     except Exception as e:
