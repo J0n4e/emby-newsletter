@@ -49,7 +49,7 @@
         }
 
         h1 {
-            color: #ef4444 !important;
+            color: #ffffff !important;
             font-size: 28px !important;
             margin: 0 0 10px !important;
             font-weight: 700;
@@ -60,7 +60,7 @@
             font-size: 16px !important;
             line-height: 1.4 !important;
             margin: 0 0 15px !important;
-            color: #dddddd !important;
+            color: rgba(255, 255, 255, 0.9) !important;
         }
 
         .button {
@@ -311,26 +311,12 @@
                         <tr>
                             <td class="title">
                                 <h1>${title}</h1>
-                                <p style="color: rgba(255, 255, 255, 0.9) !important; font-size: 16px; margin: 0;">${subtitle}</p>
+                                <p>${subtitle}</p>
+                                <br>
+                                <a href="${emby_url}" class="button">${discover_now}</a>
                             </td>
                         </tr>
                     </table>
-
-                    <!-- Statistics Section -->
-                    <div class="stats-section">
-                        <table class="stats-table" role="presentation" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="stats-cell">
-                                    <div class="stats-number">${movies_count}</div>
-                                    <div class="stats-label">${movies_label}</div>
-                                </td>
-                                <td class="stats-cell">
-                                    <div class="stats-number">${series_count}</div>
-                                    <div class="stats-label">${episodes_label}</div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
 
                     <!-- Movies Section -->
                     <div style="${display_movies}">
@@ -348,10 +334,21 @@
                         </div>
                     </div>
 
-                    <!-- Discover Button Section -->
-                    <div style="text-align: center; padding: 30px 20px;">
-                        <a href="${emby_url}" class="button">🎭 ${discover_now}</a>
-                    </div>
+                    <!-- Stats Section -->
+                    <div class="divider"></div>
+                    <h2 class="section-title">${currently_available}</h2>
+                    <table class="stats-table" role="presentation">
+                        <tr>
+                            <td class="stats-cell">
+                                <div class="stats-number">${movies_count}</div>
+                                <div class="stats-label">${movies_label}</div>
+                            </td>
+                            <td class="stats-cell">
+                                <div class="stats-number">${series_count}</div>
+                                <div class="stats-label">${episodes_label}</div>
+                            </td>
+                        </tr>
+                    </table>
 
                     <!-- Footer -->
                     <footer>
