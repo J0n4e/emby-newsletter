@@ -87,19 +87,19 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
                 # Build enhanced movie HTML with TMDB data
                 meta_html = ""
                 if movie_data.get("year"):
-                    meta_html += f'<span style="background: rgba(0, 204, 255, 0.15); color: #00ccff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px;">{movie_data["year"]}</span>'
+                    meta_html += f'<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">{movie_data["year"]}</span>'
 
                 # Add TMDB rating if available
                 if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("vote_average"):
                     rating = movie_data["tmdb_data"]["vote_average"]
                     if rating > 0:
-                        meta_html += f'<span style="background: rgba(34, 197, 94, 0.15); color: #86efac; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px;">★ {rating:.1f}</span>'
+                        meta_html += f'<span style="background: rgba(34, 197, 94, 0.15); color: #86efac; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(34, 197, 94, 0.3);">★ {rating:.1f}</span>'
 
                 # Add source indicator
                 if movie_data.get("tmdb_data"):
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500;">TMDB Enhanced</span>'
+                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">TMDB Enhanced</span>'
                 else:
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500;">Emby</span>'
+                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">Emby</span>'
 
                 # Use TMDB description if available, otherwise Emby
                 description = ""
@@ -156,19 +156,19 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
                 # Build enhanced TV show HTML with TMDB data
                 meta_html = ""
                 if serie_data.get("year"):
-                    meta_html += f'<span style="background: rgba(0, 204, 255, 0.15); color: #00ccff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px;">{serie_data["year"]}</span>'
+                    meta_html += f'<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">{serie_data["year"]}</span>'
 
                 # Add TMDB rating if available
                 if serie_data.get("tmdb_data") and serie_data["tmdb_data"].get("vote_average"):
                     rating = serie_data["tmdb_data"]["vote_average"]
                     if rating > 0:
-                        meta_html += f'<span style="background: rgba(34, 197, 94, 0.15); color: #86efac; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px;">★ {rating:.1f}</span>'
+                        meta_html += f'<span style="background: rgba(34, 197, 94, 0.15); color: #86efac; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(34, 197, 94, 0.3);">★ {rating:.1f}</span>'
 
                 # Add source indicator
                 if serie_data.get("tmdb_data"):
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500;">TMDB Enhanced</span>'
+                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">TMDB Enhanced</span>'
                 else:
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500;">Emby</span>'
+                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">Emby</span>'
 
                 # Use TMDB description if available, otherwise Emby
                 description = ""
