@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Template rendering for Emby Newsletter using the original approach
-Based on the original email_template.py implementation
+Enhanced Template rendering for Emby Newsletter
+Combines the simplicity of original email_template.py with enhanced features
 """
 
 import os
@@ -38,9 +38,170 @@ translation = {
 }
 
 
+def create_metadata_badges(movie_data: Dict[str, Any]) -> str:
+    """Create metadata badges for movies/shows with enhanced styling"""
+    meta_html = ""
+
+    # Year badge
+    if movie_data.get("year"):
+        meta_html += f'<span class="meta-badge year-badge">{movie_data["year"]}</span>'
+
+    # TMDB rating badge
+    if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("vote_average"):
+        rating = movie_data["tmdb_data"]["vote_average"]
+        if rating > 0:
+            meta_html += f'<span class="meta-badge rating-badge">★ {rating:.1f}</span>'
+
+    # Source indicator badge
+    if movie_data.get("tmdb_data"):
+        meta_html += '<span class="meta-badge source-badge">TMDB Enhanced</span>'
+    else:
+        meta_html += '<span class="meta-badge source-badge">Emby</span>'
+
+    return meta_html
+
+
+def create_movie_card(title: str, movie_data: Dict[str, Any], language: str) -> str:
+    """Create a single movie card HTML - simplified approach like original"""
+
+    # Get the added date
+    added_date = movie_data.get("created_on", "").split("T")[0] if movie_data.get("created_on") else ""
+
+    # Create metadata badges
+    meta_html = create_metadata_badges(movie_data)
+
+    # Use TMDB description if available, otherwise Emby
+    description = ""
+    if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("overview"):
+        description = html.escape(
+            movie_data["tmdb_data"]["overview"][:300] + "..." if len(movie_data["tmdb_data"]["overview"]) > 300 else
+            movie_data["tmdb_data"]["overview"])
+    else:
+        description = html.escape(movie_data.get("description", "")[:300] + "..." if len(
+            movie_data.get("description", "")) > 300 else movie_data.get("description", ""))
+
+    # Use TMDB poster if available, otherwise Emby
+    poster_url = ""
+    if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("poster_path"):
+        poster_url = f"https://image.tmdb.org/t/p/w500{movie_data['tmdb_data']['poster_path']}"
+    else:
+        poster_url = movie_data.get("poster",
+                                    "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png")
+
+    # Escape the title
+    safe_title = html.escape(title)
+
+    # Simple card structure like original but with background image
+    return f"""
+    <div class="movie_container" style="margin-bottom: 15px;">
+        <div class="movie_bg" style="background: url('{poster_url}') no-repeat center center; background-size: cover; border-radius: 10px;">
+            <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="movie-image">
+                        <img src="{poster_url}" alt="{safe_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto; border-radius: 8px;">
+                    </td>
+                    <td class="movie-content-cell">
+                        <div class="mobile-text-container">
+                            <h3 class="movie-title">{safe_title}</h3>
+                            <div class="movie-date">
+                                {meta_html}
+                            </div>
+                            <div class="movie-description">
+                                {description}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    """
+
+
+def create_tv_show_card(title: str, serie_data: Dict[str, Any], language: str) -> str:
+    """Create a single TV show card HTML with season information"""
+
+    # Get the added date
+    added_date = serie_data.get("created_on", "").split("T")[0] if serie_data.get("created_on") else ""
+
+    # Create metadata badges
+    meta_html = create_metadata_badges(serie_data)
+
+    # Use TMDB description if available, otherwise Emby
+    description = ""
+    if serie_data.get("tmdb_data") and serie_data["tmdb_data"].get("overview"):
+        description = html.escape(
+            serie_data["tmdb_data"]["overview"][:300] + "..." if len(serie_data["tmdb_data"]["overview"]) > 300 else
+            serie_data["tmdb_data"]["overview"])
+    else:
+        description = html.escape(serie_data.get("description", "")[:300] + "..." if len(
+            serie_data.get("description", "")) > 300 else serie_data.get("description", ""))
+
+    # Use TMDB poster if available, otherwise Emby
+    poster_url = ""
+    if serie_data.get("tmdb_data") and serie_data["tmdb_data"].get("poster_path"):
+        poster_url = f"https://image.tmdb.org/t/p/w500{serie_data['tmdb_data']['poster_path']}"
+    else:
+        poster_url = serie_data.get("poster",
+                                    "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png")
+
+    # Escape the title
+    safe_title = html.escape(title)
+
+    # Build seasons info with compact format
+    seasons_info = ""
+    seasons = serie_data.get("seasons", [])
+    total_episodes = serie_data.get("total_episodes", 0)
+
+    if seasons:
+        if len(seasons) == 1:
+            season_num = seasons[0].replace("Season ", "").replace("season ", "")
+            seasons_info = f"""
+            <div class="tv-season-info">
+                <div class="season-summary">Season {season_num} • {total_episodes} episodes</div>
+                <div class="season-total">The show has {season_num} season with {total_episodes} episodes in total.</div>
+            </div>"""
+        else:
+            # Get total from TMDB if available
+            total_seasons_tmdb = serie_data.get("tmdb_data", {}).get("number_of_seasons", len(seasons))
+            total_episodes_tmdb = serie_data.get("tmdb_data", {}).get("number_of_episodes", total_episodes)
+
+            seasons_info = f"""
+            <div class="tv-season-info">
+                <div class="season-summary">{len(seasons)} seasons available • {total_episodes} episodes</div>
+                <div class="season-total">The show has {total_seasons_tmdb} seasons with {total_episodes_tmdb} episodes in total.</div>
+            </div>"""
+
+    return f"""
+    <div class="movie_container" style="margin-bottom: 15px;">
+        <div class="movie_bg" style="background: url('{poster_url}') no-repeat center center; background-size: cover; border-radius: 10px;">
+            <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="movie-image">
+                        <img src="{poster_url}" alt="{safe_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto; border-radius: 8px;">
+                    </td>
+                    <td class="movie-content-cell">
+                        <div class="mobile-text-container">
+                            <h3 class="movie-title">{safe_title}</h3>
+                            <div class="movie-date">
+                                {meta_html}
+                            </div>
+                            <div class="movie-description">
+                                {description}
+                            </div>
+                            {seasons_info}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    """
+
+
 def populate_email_template(movies, series, total_tv, total_movie, config) -> str:
     """
-    Generate newsletter content using template file (like original implementation)
+    Generate newsletter content using template file (simplified approach like original)
     """
     try:
         # Read the template file
@@ -76,166 +237,25 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         for key in custom_keys:
             template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
 
-        # Movies section (like the original)
+        # Movies section - simplified like original but enhanced
         if movies:
             template = re.sub(r"\${display_movies}", "", template)
             movies_html = ""
 
             for movie_title, movie_data in movies.items():
-                added_date = movie_data.get("created_on", "").split("T")[0] if movie_data.get("created_on") else ""
-
-                # Build enhanced movie HTML with TMDB data
-                meta_html = ""
-                if movie_data.get("year"):
-                    meta_html += f'<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">{movie_data["year"]}</span>'
-
-                # Add TMDB rating if available
-                if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("vote_average"):
-                    rating = movie_data["tmdb_data"]["vote_average"]
-                    if rating > 0:
-                        meta_html += f'<span style="background: rgba(34, 197, 94, 0.15); color: #86efac; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(34, 197, 94, 0.3);">★ {rating:.1f}</span>'
-
-                # Add source indicator
-                if movie_data.get("tmdb_data"):
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">TMDB Enhanced</span>'
-                else:
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">Emby</span>'
-
-                # Use TMDB description if available, otherwise Emby
-                description = ""
-                if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("overview"):
-                    description = movie_data["tmdb_data"]["overview"]
-                else:
-                    description = movie_data.get("description", "")
-
-                # Use TMDB poster if available, otherwise Emby
-                poster_url = ""
-                if movie_data.get("tmdb_data") and movie_data["tmdb_data"].get("poster_path"):
-                    poster_url = f"https://image.tmdb.org/t/p/w500{movie_data['tmdb_data']['poster_path']}"
-                else:
-                    poster_url = movie_data.get("poster",
-                                                "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png")
-
-                movies_html += f"""
-                <div class="movie_container" style="margin-bottom: 15px;">
-                    <div class="movie_bg" style="background: url('{poster_url}') no-repeat center center; background-size: cover; border-radius: 10px;">
-                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.7); border-radius: 10px; width: 100%;">
-                            <tr>
-                                <td class="movie-image" valign="top" style="padding: 15px; text-align: center; width: 120px;">
-                                    <img src="{poster_url}" alt="{movie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
-                                </td>
-                                <td class="movie-content-cell" valign="top" style="padding: 15px;">
-                                    <div class="mobile-text-container">
-                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{movie_title}</h3>
-                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
-                                            {meta_html}
-                                        </div>
-                                        <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
-                                            {description}
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                """
+                movies_html += create_movie_card(movie_title, movie_data, language)
 
             template = re.sub(r"\${films}", movies_html, template)
         else:
             template = re.sub(r"\${display_movies}", "display:none", template)
 
-        # TV Shows section (like the original but enhanced)
+        # TV Shows section - simplified like original but enhanced
         if series:
             template = re.sub(r"\${display_tv}", "", template)
             series_html = ""
 
             for serie_title, serie_data in series.items():
-                added_date = serie_data.get("created_on", "").split("T")[0] if serie_data.get("created_on") else ""
-
-                # Build enhanced TV show HTML with TMDB data
-                meta_html = ""
-                if serie_data.get("year"):
-                    meta_html += f'<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">{serie_data["year"]}</span>'
-
-                # Add TMDB rating if available
-                if serie_data.get("tmdb_data") and serie_data["tmdb_data"].get("vote_average"):
-                    rating = serie_data["tmdb_data"]["vote_average"]
-                    if rating > 0:
-                        meta_html += f'<span style="background: rgba(34, 197, 94, 0.15); color: #86efac; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-right: 8px; border: 1px solid rgba(34, 197, 94, 0.3);">★ {rating:.1f}</span>'
-
-                # Add source indicator
-                if serie_data.get("tmdb_data"):
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">TMDB Enhanced</span>'
-                else:
-                    meta_html += '<span style="background: rgba(168, 85, 247, 0.15); color: #c4b5fd; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 500; border: 1px solid rgba(168, 85, 247, 0.3);">Emby</span>'
-
-                # Use TMDB description if available, otherwise Emby
-                description = ""
-                if serie_data.get("tmdb_data") and serie_data["tmdb_data"].get("overview"):
-                    description = serie_data["tmdb_data"]["overview"]
-                else:
-                    description = serie_data.get("description", "")
-
-                # Use TMDB poster if available, otherwise Emby
-                poster_url = ""
-                if serie_data.get("tmdb_data") and serie_data["tmdb_data"].get("poster_path"):
-                    poster_url = f"https://image.tmdb.org/t/p/w500{serie_data['tmdb_data']['poster_path']}"
-                else:
-                    poster_url = serie_data.get("poster",
-                                                "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png")
-
-                # Build seasons info with compact format
-                seasons_info = ""
-                seasons = serie_data.get("seasons", [])
-                if seasons:
-                    if len(seasons) == 1:
-                        season_num = seasons[0].replace("Season ", "").replace("season ", "")
-                        total_episodes = serie_data.get("total_episodes", "?")
-                        seasons_info = f"""
-                        <div class="tv-season-info">
-                            <div class="season-summary">Season {season_num} • {total_episodes} episodes</div>
-                            <div class="season-total">The show has {season_num} season with {total_episodes} episodes in total.</div>
-                        </div>"""
-                    else:
-                        seasons_str = ", ".join(seasons)
-                        total_episodes = serie_data.get("total_episodes", len(seasons))
-
-                        # Get total from TMDB if available
-                        total_seasons_tmdb = serie_data.get("tmdb_data", {}).get("number_of_seasons", len(seasons))
-                        total_episodes_tmdb = serie_data.get("tmdb_data", {}).get("number_of_episodes", total_episodes)
-
-                        seasons_info = f"""
-                        <div class="tv-season-info">
-                            <div class="season-summary">Seasons {len(seasons)} available • {total_episodes} episodes</div>
-                            <div class="season-total">The show has {total_seasons_tmdb} seasons with {total_episodes_tmdb} episodes in total.</div>
-                        </div>"""
-
-                series_html += f"""
-                <div class="movie_container" style="margin-bottom: 15px;">
-                    <div class="movie_bg" style="background: url('{poster_url}') no-repeat center center; background-size: cover; border-radius: 10px;">
-                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.7); border-radius: 10px; width: 100%;">
-                            <tr>
-                                <td class="movie-image" valign="top" style="padding: 15px; text-align: center; width: 120px;">
-                                    <img src="{poster_url}" alt="{serie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
-                                </td>
-                                <td class="movie-content-cell" valign="top" style="padding: 15px;">
-                                    <div class="mobile-text-container">
-                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{serie_title}</h3>
-                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
-                                            {meta_html}
-                                        </div>
-                                        <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
-                                            {description}
-                                        </div>
-                                        {seasons_info}
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                """
+                series_html += create_tv_show_card(serie_title, serie_data, language)
 
             template = re.sub(r"\${tvs}", series_html, template)
         else:
