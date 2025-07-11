@@ -391,10 +391,13 @@ class TMDBApi:
     def get_tv_details(self, title: str, year: int = None) -> Optional[Dict]:
         """Get TV show details from TMDB with improved matching"""
         try:
+            # Clean the title for better matching
+            clean_title = self._clean_search_title(title)
+
             # First, try exact search with year if available
             if year:
                 params = {
-                    'query': title,
+                    'query': clean_title,
                     'first_air_date_year': year
                 }
 
@@ -408,7 +411,7 @@ class TMDBApi:
                 # Look for exact title match first
                 for result in results:
                     result_title = result.get('name', '').lower()
-                    search_title = title.lower()
+                    search_title = clean_title.lower()
                     result_year = None
 
                     # Extract year from first_air_date
@@ -426,7 +429,7 @@ class TMDBApi:
                         return result
 
             # Second attempt: Search without year constraint
-            params = {'query': title}
+            params = {'query': clean_title}
             url = f"{self.base_url}/search/tv"
             response = self.session.get(url, params=params)
             response.raise_for_status()
@@ -439,25 +442,26 @@ class TMDBApi:
                 best_match = None
                 best_score = 0
 
-                for result in results[:5]:  # Check top 5 results
+                for result in results[:10]:  # Check top 10 results for TV shows
                     result_title = result.get('name', '').lower()
-                    search_title = title.lower()
+                    search_title = clean_title.lower()
                     popularity = result.get('popularity', 0)
 
                     # Calculate similarity score
                     if result_title == search_title:
                         score = 100  # Perfect match
                     elif search_title in result_title:
-                        score = 80 + (popularity / 100)  # Partial match + popularity bonus
+                        score = 90 + (popularity / 100)  # Partial match + popularity bonus
                     elif result_title in search_title:
-                        score = 60 + (popularity / 100)  # Contains search term + popularity
+                        score = 80 + (popularity / 100)  # Contains search term + popularity
                     else:
                         # Check for word overlap
                         search_words = set(search_title.split())
                         result_words = set(result_title.split())
                         overlap = len(search_words.intersection(result_words))
                         if overlap > 0:
-                            score = 40 + (overlap * 10) + (popularity / 100)
+                            word_ratio = overlap / max(len(search_words), len(result_words))
+                            score = 60 + (word_ratio * 30) + (popularity / 100)
                         else:
                             score = popularity / 100  # Just popularity
 
@@ -465,16 +469,20 @@ class TMDBApi:
                     if year and result.get('first_air_date'):
                         try:
                             result_year = int(result['first_air_date'][:4])
-                            if abs(result_year - year) <= 1:
+                            if abs(result_year - year) <= 2:  # Allow 2 year difference for TV shows
                                 score += 20  # Year match bonus
                         except:
                             pass
+
+                    # Boost score for more popular shows (helps with common titles)
+                    if popularity > 50:
+                        score += 10
 
                     if score > best_score:
                         best_score = score
                         best_match = result
 
-                if best_match:
+                if best_match and best_score > 60:  # Require minimum confidence
                     result_year = "Unknown"
                     if best_match.get('first_air_date'):
                         try:
@@ -487,13 +495,41 @@ class TMDBApi:
                     return best_match
                 else:
                     logger.warning(
-                        f"⚠️ No good TMDB match found for '{title}' - using first result: {results[0].get('name')}")
-                    return results[0]  # Fallback to first result
+                        f"⚠️ No confident TMDB match found for '{title}' - best score: {best_score:.1f}")
+                    return None
 
         except Exception as e:
             logger.error(f"Error fetching TV details from TMDB for '{title}': {e}")
 
         return None
+
+    def _clean_search_title(self, title: str) -> str:
+        """Clean title for better TMDB search results"""
+        import re
+
+        # Remove common suffixes that interfere with search
+        cleaned = title
+
+        # Remove year in parentheses
+        cleaned = re.sub(r'\s*\(\d{4}\)\s*', '', cleaned)
+
+        # Remove country codes and TV indicators
+        patterns_to_remove = [
+            r'\s*\(US\)\s*',
+            r'\s*\(UK\)\s*',
+            r'\s*\(AU\)\s*',
+            r'\s*\(CA\)\s*',
+            r'\s*\(TV Series\)\s*',
+            r'\s*\(TV\)\s*',
+        ]
+
+        for pattern in patterns_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+
+        # Clean up extra whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+        return cleaned
 
 
 class NewsletterGenerator:
@@ -670,7 +706,7 @@ class NewsletterGenerator:
                             series_year = series_info.get('ProductionYear')
                             series_rating = series_info.get('CommunityRating')
 
-                    # Get TMDB data if available
+                    # Get TMDB data if available - More aggressive search for TV shows
                     tmdb_data = None
                     tmdb_id = None
 
@@ -680,13 +716,29 @@ class NewsletterGenerator:
                         logger.info(f"Found TMDB ID for {series_name}: {tmdb_id}")
                         tmdb_data = self.tmdb_api.get_media_detail_from_id(tmdb_id, "tv")
 
-                    # If no TMDB ID or failed to get data, search by title
+                    # If no TMDB ID or failed to get data, search by title - be more aggressive
                     if not tmdb_data:
                         if not tmdb_id:
                             logger.info(f"No TMDB ID for {series_name}, searching by title")
                         else:
                             logger.info(f"TMDB ID lookup failed for {series_name}, searching by title")
+
+                        # Try multiple search strategies for TV shows
                         tmdb_data = self.tmdb_api.get_media_detail_from_title(series_name, "tv", series_year)
+
+                        # If still no data, try without year constraint
+                        if not tmdb_data and series_year:
+                            logger.info(f"Retrying TMDB search for {series_name} without year constraint")
+                            tmdb_data = self.tmdb_api.get_media_detail_from_title(series_name, "tv", None)
+
+                        # Try with cleaned title (remove common suffixes)
+                        if not tmdb_data:
+                            cleaned_title = self._clean_series_title(series_name)
+                            if cleaned_title != series_name:
+                                logger.info(f"Retrying TMDB search with cleaned title: '{cleaned_title}'")
+                                tmdb_data = self.tmdb_api.get_media_detail_from_title(cleaned_title, "tv", series_year)
+                                if not tmdb_data and series_year:
+                                    tmdb_data = self.tmdb_api.get_media_detail_from_title(cleaned_title, "tv", None)
 
                     # Use Emby poster as fallback
                     emby_poster = self.emby_api.get_item_image_url(series_id) if series_id else None
@@ -720,10 +772,18 @@ class NewsletterGenerator:
 
                         # Enhanced overview (prefer TMDB if available and better)
                         tmdb_overview = tmdb_data.get('overview', '')
-                        if tmdb_overview and (not series_overview or len(tmdb_overview) > len(series_overview)):
+                        if tmdb_overview and len(tmdb_overview.strip()) > 0:
                             series_dict[series_name]['tmdb_overview'] = tmdb_overview
                             series_dict[series_name]['overview'] = tmdb_overview  # Use TMDB overview as primary
                             logger.info(f"✅ Using TMDB overview for {series_name} ({len(tmdb_overview)} chars)")
+                        elif not series_overview or len(series_overview.strip()) == 0:
+                            # If no Emby overview and TMDB has one, use it even if short
+                            if tmdb_overview:
+                                series_dict[series_name]['overview'] = tmdb_overview
+                                logger.info(f"✅ Using TMDB overview for {series_name} (Emby had none)")
+                        else:
+                            logger.info(
+                                f"⚠️ Keeping Emby overview for {series_name} (TMDB: {len(tmdb_overview)} chars, Emby: {len(series_overview)} chars)")
 
                         # Enhanced genres (prefer TMDB if available)
                         if tmdb_data.get('genres'):
