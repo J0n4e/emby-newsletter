@@ -299,11 +299,18 @@
             margin-bottom: 6px;
         }
 
-        .season-episodes {
-            color: #ffffff !important;  /* Force white with !important */
+        .tv-season-summary .season-episodes {
+            color: #ffffff !important;  /* Force white with specific selector */
             font-size: 0.875em;
             font-weight: 400;
             line-height: 1.4;
+        }
+
+        /* Additional selectors to override any inheritance */
+        .tv-seasons .season-episodes,
+        .tv-season-summary div.season-episodes,
+        div.season-episodes {
+            color: #ffffff !important;
         }
 
         .footer {
@@ -461,8 +468,10 @@
                 text-align: center;
             }
 
-            .season-episodes {
-                color: #ffffff !important;  /* Ensure white on mobile too */
+            .season-episodes,
+            .tv-season-summary .season-episodes,
+            div.season-episodes {
+                color: #ffffff !important;  /* Multiple selectors for mobile */
             }
 
             .footer {
