@@ -1,4 +1,263 @@
-#!/usr/bin/env python3
+def _generate_movies_html(self, movies: List[Dict]) -> str:
+    """Generate HTML for movies section"""
+    movies_html = ""
+
+    for movie in movies:
+        if not isinstance(movie, dict):
+            continue
+
+        title = self._secure_escape(movie.get('title', 'Unknown'))
+        year = self._secure_escape(str(movie.get('year', '')))
+        date_added = movie.get('date_added', '').split('T')[0] if movie.get('date_added') else ''
+
+        # Priority: TMDB overview > Emby overview
+        overview = ''
+        if movie.get('tmdb_data') and movie['tmdb_data'].get('overview'):
+            overview = self._secure_escape(movie['tmdb_data']['overview'])
+        elif movie.get('tmdb_overview'):
+            overview = self._secure_escape(movie['tmdb_overview'])
+        elif movie.get('overview'):
+            overview = self._secure_escape(movie['overview'])
+
+        # Priority: TMDB poster > Emby poster
+        poster_url = ''
+        poster_source = 'none'
+        if movie.get('tmdb_data') and movie['tmdb_data'].get('poster_path'):
+            poster_url = f"https://image.tmdb.org/t/p/w500{movie['tmdb_data']['poster_path']}"
+            poster_source = 'tmdb'
+        elif movie.get('tmdb_poster'):
+            poster_url = self._secure_escape(movie['tmdb_poster'])
+            poster_source = 'tmdb'
+        elif movie.get('poster_url'):
+            poster_url = self._secure_escape(movie['poster_url'])
+            poster_source = 'emby'
+
+        # Build meta information
+        meta_html = ''
+        if year:
+            meta_html += f'<span class="movie-year">{year}</span>'
+
+        # Add rating if available
+        rating = show.get('rating') or (
+            show.get('tmdb_data', {}).get('vote_average') if show.get('tmdb_data') else None)
+        if rating:
+            try:
+                rating_float = float(rating)
+                if rating_float > 0:
+                    meta_html += f'<span class="movie-rating">★ {rating_float:.1f}</span>'
+            except (ValueError, TypeError):
+                pass
+
+        # Add source indicator
+        if poster_source == 'tmdb':
+            meta_html += '<span class="movie-source">TMDB Enhanced</span>'
+        elif poster_source == 'emby':
+            meta_html += '<span class="movie-source">Emby</span>'
+
+        # Build genres HTML
+        genres_html = ''
+        genres = []
+
+        # Priority: TMDB genres > Emby genres
+        if show.get('tmdb_data') and show['tmdb_data'].get('genres'):
+            genres = [genre['name'] for genre in show['tmdb_data']['genres']]
+        elif show.get('tmdb_genres'):
+            genres = show['tmdb_genres']
+        elif show.get('genres'):
+            genres = show['genres']
+
+        if genres and isinstance(genres, list):
+            for genre in genres[:5]:  # Limit to 5 genres
+                if isinstance(genre, dict):
+                    genre_name = self._secure_escape(genre.get('Name', ''))
+                elif isinstance(genre, str):
+                    genre_name = self._secure_escape(genre)
+                else:
+                    genre_name = self._secure_escape(str(genre))
+
+                if genre_name:
+                    genres_html += f'<span class="genre-tag">{genre_name}</span>'
+
+        # Build compact seasons HTML
+        seasons_html = ''
+        seasons = show.get('seasons', {})
+        if isinstance(seasons, dict) and seasons:
+            # Sort seasons by number (newest first)
+            season_items = list(seasons.items())
+            season_items.sort(key=lambda x: self._get_season_number(x[0]), reverse=True)
+
+            total_seasons = len(season_items)
+
+            # Get total episodes count
+            total_episodes = sum(len(episodes) for episodes in seasons.values() if isinstance(episodes, list))
+
+            # Build compact season summary
+            if total_seasons > 0:
+                latest_season_name, latest_episodes = season_items[0]
+                latest_season_num = self._get_season_number(latest_season_name)
+                oldest_season_num = self._get_season_number(season_items[-1][0])
+
+                # Create compact summary line
+                if total_seasons == 1:
+                    available_summary = f"Season {latest_season_num} • {len(latest_episodes)} episodes"
+                    total_summary = f"The show has {latest_season_num} season with {len(latest_episodes)} episodes in total."
+                else:
+                    # Find season range for available seasons
+                    if oldest_season_num > 0 and latest_season_num > oldest_season_num:
+                        available_summary = f"Seasons {oldest_season_num}-{latest_season_num} available • {total_episodes} episodes"
+                    else:
+                        available_summary = f"{total_seasons} seasons available • {total_episodes} episodes"
+
+                    # Get total from TMDB if available, otherwise use available count
+                    tmdb_data = show.get('tmdb_data', {})
+                    total_seasons_count = tmdb_data.get('number_of_seasons', total_seasons)
+                    total_episodes_count = tmdb_data.get('number_of_episodes', total_episodes)
+
+                    if total_seasons_count > total_seasons or total_episodes_count > total_episodes:
+                        total_summary = f"The show has {total_seasons_count} seasons with {total_episodes_count} episodes in total."
+                    else:
+                        total_summary = f"The show has {total_seasons} seasons with {total_episodes} episodes in total."
+
+                seasons_html = f'''
+                        <div class="tv-seasons">
+                            <div class="tv-season-summary">
+                                <div class="season-count">{available_summary}</div>
+                                <div class="season-episodes">{total_summary}</div>
+                            </div>
+                        </div>'''
+
+        tv_shows_html += f'''
+                <div class="movie_container" style="margin-bottom: 15px;">
+                    <div class="movie_bg" style="background: url('{poster_url}') no-repeat center center; background-size: cover; border-radius: 10px;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="movie-image" valign="top" style="padding: 15px; text-align: center; width: 120px;">
+                                    <img src="{poster_url}" alt="{title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
+                                </td>
+                                <td class="movie-content-cell" valign="top" style="padding: 15px;">
+                                    <div class="mobile-text-container">
+                                        <h3 class="movie-title">{title}</h3>
+                                        <div class="movie-meta">{meta_html}</div>
+                                        <div class="movie-description">{overview}</div>
+                                        <div style="margin-top: 10px;">{genres_html}</div>
+                                        {seasons_html}
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>'''
+
+    return tv_shows_html
+
+    class ="movie-year" > {year} < / span > '
+
+    # Add rating if available
+
+    rating = movie.get('rating') or (movie.get('tmdb_data', {}).get('vote_average') if movie.get('tmdb_data') else None)
+    if rating:
+        try:
+            rating_float = float(rating)
+            if rating_float > 0:
+                meta_html += f'<span class="movie-rating">★ {rating_float:.1f}</span>'
+        except (ValueError, TypeError):
+            pass
+
+    # Add source indicator
+    if poster_source == 'tmdb':
+        meta_html += '<span class="movie-source">TMDB Enhanced</span>'
+    elif poster_source == 'emby':
+        meta_html += '<span class="movie-source">Emby</span>'
+
+    # Build genres HTML
+    genres_html = ''
+    genres = []
+
+    # Priority: TMDB genres > Emby genres
+    if movie.get('tmdb_data') and movie['tmdb_data'].get('genres'):
+        genres = [genre['name'] for genre in movie['tmdb_data']['genres']]
+    elif movie.get('tmdb_genres'):
+        genres = movie['tmdb_genres']
+    elif movie.get('genres'):
+        genres = movie['genres']
+
+    if genres and isinstance(genres, list):
+        for genre in genres[:5]:  # Limit to 5 genres
+            if isinstance(genre, dict):
+                genre_name = self._secure_escape(genre.get('Name', ''))
+            elif isinstance(genre, str):
+                genre_name = self._secure_escape(genre)
+            else:
+                genre_name = self._secure_escape(str(genre))
+
+            if genre_name:
+                genres_html += f'<span class="genre-tag">{genre_name}</span>'
+
+    movies_html += f'''
+                <div class="movie_container" style="margin-bottom: 15px;">
+                    <div class="movie_bg" style="background: url('{poster_url}') no-repeat center center; background-size: cover; border-radius: 10px;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="movie-image" valign="top" style="padding: 15px; text-align: center; width: 120px;">
+                                    <img src="{poster_url}" alt="{title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
+                                </td>
+                                <td class="movie-content-cell" valign="top" style="padding: 15px;">
+                                    <div class="mobile-text-container">
+                                        <h3 class="movie-title">{title}</h3>
+                                        <div class="movie-meta">{meta_html}</div>
+                                        <div class="movie-description">{overview}</div>
+                                        <div style="margin-top: 10px;">{genres_html}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>'''
+
+
+return movies_html
+
+
+def _generate_tv_shows_html(self, tv_shows: List[Dict]) -> str:
+    """Generate HTML for TV shows section"""
+    tv_shows_html = ""
+
+    for show in tv_shows:
+        if not isinstance(show, dict):
+            continue
+
+        title = self._secure_escape(show.get('title', 'Unknown'))
+        year = self._secure_escape(str(show.get('year', ''))) if show.get('year') else ''
+        date_added = show.get('date_added', '').split('T')[0] if show.get('date_added') else ''
+
+        # Priority: TMDB overview > Emby overview
+        overview = ''
+        if show.get('tmdb_data') and show['tmdb_data'].get('overview'):
+            overview = self._secure_escape(show['tmdb_data']['overview'])
+        elif show.get('tmdb_overview'):
+            overview = self._secure_escape(show['tmdb_overview'])
+        elif show.get('overview'):
+            overview = self._secure_escape(show['overview'])
+
+        # Priority: TMDB poster > Emby poster
+        poster_url = ''
+        poster_source = 'none'
+        if show.get('tmdb_data') and show['tmdb_data'].get('poster_path'):
+            poster_url = f"https://image.tmdb.org/t/p/w500{show['tmdb_data']['poster_path']}"
+            poster_source = 'tmdb'
+        elif show.get('tmdb_poster'):
+            poster_url = self._secure_escape(show['tmdb_poster'])
+            poster_source = 'tmdb'
+        elif show.get('poster_url'):
+            poster_url = self._secure_escape(show['poster_url'])
+            poster_source = 'emby'
+
+        # Build meta information
+        meta_html = ''
+        if year:
+            meta_html += f'<span#!/usr/bin/env python3
+
+
 """
 Enhanced secure template rendering for Emby Newsletter with TMDB integration
 Based on original implementation with improved styling and TMDB data support
@@ -136,63 +395,74 @@ class SecureTemplateRenderer:
             'has_server_stats': 'true' if has_server_stats else 'false'
         }
 
+        # Process display logic
+        has_content = (movies and len(movies) > 0) or (tv_shows and len(tv_shows) > 0)
+
+        display_replacements = {
+            'display_movies': '' if movies and len(movies) > 0 else 'display:none',
+            'display_tv': '' if tv_shows and len(tv_shows) > 0 else 'display:none',
+            'display_stats': '' if has_content or has_server_stats else 'display:none',
+            'display_no_content': 'display:none' if has_content else ''
+        }
+
+        # Add display replacements
+        replacements.update(display_replacements)
+
         # Replace basic variables
         for key, value in replacements.items():
             template = re.sub(r'\$\{' + key + r'\}', value, template)
 
         # Process movies section
         if movies and len(movies) > 0:
-            template = re.sub(r'\$\{display_movies\}', '', template)
             movies_html = self._generate_movies_html(movies)
             template = re.sub(r'\$\{movies\}', movies_html, template)
         else:
-            template = re.sub(r'\$\{display_movies\}', 'display:none', template)
             template = re.sub(r'\$\{movies\}', '', template)
 
         # Process TV shows section
         if tv_shows and len(tv_shows) > 0:
-            template = re.sub(r'\$\{display_tv\}', '', template)
             tv_shows_html = self._generate_tv_shows_html(tv_shows)
             template = re.sub(r'\$\{tv_shows\}', tv_shows_html, template)
         else:
-            template = re.sub(r'\$\{display_tv\}', 'display:none', template)
             template = re.sub(r'\$\{tv_shows\}', '', template)
 
         # Process statistics
-        if has_server_stats:
-            stats_html = f'''
-                <div class="stat-item">
-                    <div class="stat-number">{(total_movies_server or 0) + (total_tv_shows_server or 0)}</div>
-                    <div class="stat-label">Total on Server</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">{total_movies_server or 0}</div>
-                    <div class="stat-label">Movies on Server</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">{total_tv_shows_server or 0}</div>
-                    <div class="stat-label">TV Shows on Server</div>
-                </div>'''
-            if new_content > 0:
-                stats_html += f'''
-                <div class="stat-item">
-                    <div class="stat-number">{new_content}</div>
-                    <div class="stat-label">New This Update</div>
-                </div>'''
-        else:
-            stats_html = f'''
-                <div class="stat-item">
-                    <div class="stat-number">{new_content}</div>
-                    <div class="stat-label">New Items</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">{new_movies}</div>
-                    <div class="stat-label">New Movies</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">{new_tv_shows}</div>
-                    <div class="stat-label">New TV Shows</div>
-                </div>'''
+        stats_html = ''
+        if has_content or has_server_stats:
+            if has_server_stats:
+                stats_html = f'''
+                    <td class="stats-cell">
+                        <div class="stats-number">{(total_movies_server or 0) + (total_tv_shows_server or 0)}</div>
+                        <div class="stats-label">Total on Server</div>
+                    </td>
+                    <td class="stats-cell">
+                        <div class="stats-number">{total_movies_server or 0}</div>
+                        <div class="stats-label">Movies on Server</div>
+                    </td>
+                    <td class="stats-cell">
+                        <div class="stats-number">{total_tv_shows_server or 0}</div>
+                        <div class="stats-label">TV Shows on Server</div>
+                    </td>'''
+                if new_content > 0:
+                    stats_html += f'''
+                    <td class="stats-cell">
+                        <div class="stats-number">{new_content}</div>
+                        <div class="stats-label">New This Update</div>
+                    </td>'''
+            else:
+                stats_html = f'''
+                    <td class="stats-cell">
+                        <div class="stats-number">{new_content}</div>
+                        <div class="stats-label">New Items</div>
+                    </td>
+                    <td class="stats-cell">
+                        <div class="stats-number">{new_movies}</div>
+                        <div class="stats-label">New Movies</div>
+                    </td>
+                    <td class="stats-cell">
+                        <div class="stats-number">{new_tv_shows}</div>
+                        <div class="stats-label">New TV Shows</div>
+                    </td>'''
 
         template = re.sub(r'\$\{statistics\}', stats_html, template)
 
