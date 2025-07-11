@@ -275,22 +275,12 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
 
 def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
-    Main function to render email - FIXED to use server totals
+    Main function to render email - EXACT same approach as original email_template.py
     """
     try:
         # Convert context to the format expected by populate_email_template
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
-
-        # Try to get server statistics if not already in context
-        if 'total_movies_server' not in context or 'total_tv_shows_server' not in context:
-            emby_url = context.get('emby_url', '')
-            api_key = context.get('api_key', '')
-
-            if emby_url and api_key:
-                server_stats = get_emby_server_statistics(emby_url, api_key)
-                context.update(server_stats)
-                logger.info(f"Fetched server stats: {server_stats}")
 
         # Convert movies list to dictionary format like original
         movies_dict = {}
@@ -323,21 +313,13 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'tmdb_data': show.get('tmdb_data')
             }
 
-        # FIXED: Get TOTAL SERVER COUNTS, not just new items!
-        # This is the key fix - we prioritize server totals over new content counts
-        total_movies_server = context.get('total_movies_server', 0)
-        total_tv_shows_server = context.get('total_tv_shows_server', 0)
+        # EXACT same approach as original - these should come from your application logic
+        # The original email_template.py expects total_tv and total_movie to be passed as parameters
+        # These represent the TOTAL server counts, not the new content counts
+        total_movies_on_server = context.get('total_movies_on_server', context.get('total_movies_server', 0))
+        total_episodes_on_server = context.get('total_episodes_on_server', context.get('total_tv_shows_server', 0))
 
-        # Only fall back to new items count if server totals are 0 or missing
-        if total_movies_server == 0:
-            total_movies_server = len(movies)
-            logger.warning(f"Server movie count was 0, using new movies count: {total_movies_server}")
-
-        if total_tv_shows_server == 0:
-            total_tv_shows_server = len(tv_shows)
-            logger.warning(f"Server TV count was 0, using new TV shows count: {total_tv_shows_server}")
-
-        logger.info(f"Using server totals - Movies: {total_movies_server}, TV Shows: {total_tv_shows_server}")
+        logger.info(f"Server totals from context: Movies={total_movies_on_server}, Episodes={total_episodes_on_server}")
 
         # Create mock config object
         class MockConfig:
@@ -353,8 +335,9 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         config = MockConfig(context)
 
-        # Pass the TOTAL SERVER COUNTS to the template function
-        return populate_email_template(movies_dict, series_dict, total_tv_shows_server, total_movies_server, config)
+        # Call exactly like the original: populate_email_template(movies, series, total_tv, total_movie)
+        return populate_email_template(movies_dict, series_dict, total_episodes_on_server, total_movies_on_server,
+                                       config)
 
     except Exception as e:
         logger.error(f"Error rendering email with server stats: {e}")
