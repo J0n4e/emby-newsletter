@@ -53,14 +53,22 @@ class SecureTemplateRenderer:
         return escaped
 
     def render_email_template(self, context: Dict[str, Any]) -> str:
-        """Render the email template with secure context and TMDB support"""
+        """Render the email template using external HTML file with string replacement"""
         try:
             # Sanitize context data
             safe_context = self._sanitize_context(context)
 
-            # Use enhanced HTML email builder
-            html_content = self._build_enhanced_html_email(safe_context)
-            logger.debug("Enhanced email template rendered successfully")
+            # Try to read the external template file first
+            template_path = os.path.join(self.template_dir, 'email.html')
+            if os.path.exists(template_path):
+                logger.info(f"Using external template: {template_path}")
+                html_content = self._render_from_template_file(template_path, safe_context)
+            else:
+                logger.warning(f"Template file not found: {template_path}, using built-in template")
+                # Fallback to built-in template
+                html_content = self._build_enhanced_html_email(safe_context)
+
+            logger.debug("Email template rendered successfully")
             return html_content
 
         except Exception as e:
@@ -68,6 +76,407 @@ class SecureTemplateRenderer:
             # Fallback to built-in template on error
             safe_context = self._sanitize_context(context)
             return self._build_enhanced_html_email(safe_context)
+
+    def _render_from_template_file(self, template_path: str, context: Dict[str, Any]) -> str:
+        """Render email using external template file with string replacement (like original implementation)"""
+        try:
+            # Read the template file
+            with open(template_path, 'r', encoding='utf-8') as template_file:
+                template = template_file.read()
+
+            # Process the template with context data
+            html_content = self._process_template_with_context(template, context)
+
+            return html_content
+
+        except Exception as e:
+            logger.error(f"Error reading template file {template_path}: {e}")
+            raise
+
+    def _process_template_with_context(self, template: str, context: Dict[str, Any]) -> str:
+        """Process template string with context data using ${variable} replacement like original"""
+        import re
+
+        # Get basic context values
+        title = self._secure_escape(context.get('title', 'Emby Newsletter'))
+        subtitle = self._secure_escape(context.get('subtitle', ''))
+        language = self._secure_escape(context.get('language', 'en'))
+        emby_url = self._secure_escape(context.get('emby_url', ''))
+        emby_owner_name = self._secure_escape(context.get('emby_owner_name', ''))
+        unsubscribe_email = self._secure_escape(context.get('unsubscribe_email', ''))
+
+        movies = context.get('movies', [])
+        tv_shows = context.get('tv_shows', [])
+
+        # Calculate statistics
+        new_movies = len(movies) if movies else 0
+        new_tv_shows = len(tv_shows) if tv_shows else 0
+        new_content = new_movies + new_tv_shows
+
+        # Get total server statistics
+        total_movies_server = context.get('total_movies_server', new_movies)
+        total_tv_shows_server = context.get('total_tv_shows_server', new_tv_shows)
+        has_server_stats = (total_movies_server is not None and total_tv_shows_server is not None
+                            and total_movies_server > 0 and total_tv_shows_server > 0)
+
+        # Basic template variables replacement
+        replacements = {
+            'title': title,
+            'subtitle': subtitle,
+            'language': language,
+            'emby_url': emby_url,
+            'emby_owner_name': emby_owner_name,
+            'unsubscribe_email': unsubscribe_email,
+            'new_movies_count': str(new_movies),
+            'new_tv_shows_count': str(new_tv_shows),
+            'new_content_count': str(new_content),
+            'total_movies_server': str(total_movies_server) if total_movies_server else '0',
+            'total_tv_shows_server': str(total_tv_shows_server) if total_tv_shows_server else '0',
+            'total_content_server': str((total_movies_server or 0) + (total_tv_shows_server or 0)),
+            'has_server_stats': 'true' if has_server_stats else 'false'
+        }
+
+        # Replace basic variables
+        for key, value in replacements.items():
+            template = re.sub(r'\$\{' + key + r'\}', value, template)
+
+        # Process movies section
+        if movies and len(movies) > 0:
+            template = re.sub(r'\$\{display_movies\}', '', template)
+            movies_html = self._generate_movies_html(movies)
+            template = re.sub(r'\$\{movies\}', movies_html, template)
+        else:
+            template = re.sub(r'\$\{display_movies\}', 'display:none', template)
+            template = re.sub(r'\$\{movies\}', '', template)
+
+        # Process TV shows section
+        if tv_shows and len(tv_shows) > 0:
+            template = re.sub(r'\$\{display_tv\}', '', template)
+            tv_shows_html = self._generate_tv_shows_html(tv_shows)
+            template = re.sub(r'\$\{tv_shows\}', tv_shows_html, template)
+        else:
+            template = re.sub(r'\$\{display_tv\}', 'display:none', template)
+            template = re.sub(r'\$\{tv_shows\}', '', template)
+
+        # Process statistics
+        if has_server_stats:
+            stats_html = f'''
+                <div class="stat-item">
+                    <div class="stat-number">{(total_movies_server or 0) + (total_tv_shows_server or 0)}</div>
+                    <div class="stat-label">Total on Server</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{total_movies_server or 0}</div>
+                    <div class="stat-label">Movies on Server</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{total_tv_shows_server or 0}</div>
+                    <div class="stat-label">TV Shows on Server</div>
+                </div>'''
+            if new_content > 0:
+                stats_html += f'''
+                <div class="stat-item">
+                    <div class="stat-number">{new_content}</div>
+                    <div class="stat-label">New This Update</div>
+                </div>'''
+        else:
+            stats_html = f'''
+                <div class="stat-item">
+                    <div class="stat-number">{new_content}</div>
+                    <div class="stat-label">New Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{new_movies}</div>
+                    <div class="stat-label">New Movies</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{new_tv_shows}</div>
+                    <div class="stat-label">New TV Shows</div>
+                </div>'''
+
+        template = re.sub(r'\$\{statistics\}', stats_html, template)
+
+        return template
+
+    def _generate_movies_html(self, movies: List[Dict]) -> str:
+        """Generate HTML for movies section"""
+        movies_html = ""
+
+        for movie in movies:
+            if not isinstance(movie, dict):
+                continue
+
+            title = self._secure_escape(movie.get('title', 'Unknown'))
+            year = self._secure_escape(str(movie.get('year', '')))
+
+            # Priority: TMDB overview > Emby overview
+            overview = ''
+            if movie.get('tmdb_data') and movie['tmdb_data'].get('overview'):
+                overview = self._secure_escape(movie['tmdb_data']['overview'])
+            elif movie.get('tmdb_overview'):
+                overview = self._secure_escape(movie['tmdb_overview'])
+            elif movie.get('overview'):
+                overview = self._secure_escape(movie['overview'])
+
+            # Priority: TMDB poster > Emby poster
+            poster_url = ''
+            poster_source = 'none'
+            if movie.get('tmdb_data') and movie['tmdb_data'].get('poster_path'):
+                poster_url = f"https://image.tmdb.org/t/p/w500{movie['tmdb_data']['poster_path']}"
+                poster_source = 'tmdb'
+            elif movie.get('tmdb_poster'):
+                poster_url = self._secure_escape(movie['tmdb_poster'])
+                poster_source = 'tmdb'
+            elif movie.get('poster_url'):
+                poster_url = self._secure_escape(movie['poster_url'])
+                poster_source = 'emby'
+
+            # Build poster HTML
+            if poster_url:
+                poster_html = f'<img src="{poster_url}" alt="{title} poster">'
+            else:
+                poster_html = '<div class="no-poster">No Poster<br>Available</div>'
+
+            # Build meta information
+            meta_parts = []
+            if year:
+                meta_parts.append(f'<span class="item-year">{year}</span>')
+
+            # Add rating if available
+            rating = movie.get('rating') or (
+                movie.get('tmdb_data', {}).get('vote_average') if movie.get('tmdb_data') else None)
+            if rating:
+                try:
+                    rating_float = float(rating)
+                    if rating_float > 0:
+                        meta_parts.append(f'<span class="item-rating">★ {rating_float:.1f}</span>')
+                except (ValueError, TypeError):
+                    pass
+
+            # Add source indicator
+            if poster_source == 'tmdb':
+                meta_parts.append('<span class="item-source">TMDB Enhanced</span>')
+            elif poster_source == 'emby':
+                meta_parts.append('<span class="item-source">Emby</span>')
+
+            meta_html = ''.join(meta_parts) if meta_parts else ''
+
+            # Build overview HTML (truncate if too long)
+            if overview and len(overview) > 300:
+                overview = overview[:300] + "..."
+            overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
+
+            # Build genres HTML
+            genres_html = ''
+            genres = []
+
+            # Priority: TMDB genres > Emby genres
+            if movie.get('tmdb_data') and movie['tmdb_data'].get('genres'):
+                genres = [genre['name'] for genre in movie['tmdb_data']['genres']]
+            elif movie.get('tmdb_genres'):
+                genres = movie['tmdb_genres']
+            elif movie.get('genres'):
+                genres = movie['genres']
+
+            if genres and isinstance(genres, list):
+                genre_tags = []
+                for genre in genres[:5]:  # Limit to 5 genres
+                    if isinstance(genre, dict):
+                        genre_name = self._secure_escape(genre.get('Name', ''))
+                    elif isinstance(genre, str):
+                        genre_name = self._secure_escape(genre)
+                    else:
+                        genre_name = self._secure_escape(str(genre))
+
+                    if genre_name:
+                        genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
+
+                if genre_tags:
+                    genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
+
+            movies_html += f'''
+                <div class="item">
+                    <table class="item-table" role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="item-poster">
+                                {poster_html}
+                            </td>
+                            <td class="item-content">
+                                <div class="item-title">{title}</div>
+                                <div class="item-meta">{meta_html}</div>
+                                {overview_html}
+                                {genres_html}
+                            </td>
+                        </tr>
+                    </table>
+                </div>'''
+
+        return movies_html
+
+    def _generate_tv_shows_html(self, tv_shows: List[Dict]) -> str:
+        """Generate HTML for TV shows section"""
+        tv_shows_html = ""
+
+        for show in tv_shows:
+            if not isinstance(show, dict):
+                continue
+
+            title = self._secure_escape(show.get('title', 'Unknown'))
+
+            # Priority: TMDB overview > Emby overview
+            overview = ''
+            if show.get('tmdb_data') and show['tmdb_data'].get('overview'):
+                overview = self._secure_escape(show['tmdb_data']['overview'])
+            elif show.get('tmdb_overview'):
+                overview = self._secure_escape(show['tmdb_overview'])
+            elif show.get('overview'):
+                overview = self._secure_escape(show['overview'])
+
+            # Priority: TMDB poster > Emby poster
+            poster_url = ''
+            poster_source = 'none'
+            if show.get('tmdb_data') and show['tmdb_data'].get('poster_path'):
+                poster_url = f"https://image.tmdb.org/t/p/w500{show['tmdb_data']['poster_path']}"
+                poster_source = 'tmdb'
+            elif show.get('tmdb_poster'):
+                poster_url = self._secure_escape(show['tmdb_poster'])
+                poster_source = 'tmdb'
+            elif show.get('poster_url'):
+                poster_url = self._secure_escape(show['poster_url'])
+                poster_source = 'emby'
+
+            # Build poster HTML
+            if poster_url:
+                poster_html = f'<img src="{poster_url}" alt="{title} poster">'
+            else:
+                poster_html = '<div class="no-poster">No Poster<br>Available</div>'
+
+            # Build meta information
+            meta_parts = []
+            year = show.get('year')
+            if year:
+                year_escaped = self._secure_escape(str(year))
+                meta_parts.append(f'<span class="item-year">{year_escaped}</span>')
+
+            # Add rating if available
+            rating = show.get('rating') or (
+                show.get('tmdb_data', {}).get('vote_average') if show.get('tmdb_data') else None)
+            if rating:
+                try:
+                    rating_float = float(rating)
+                    if rating_float > 0:
+                        meta_parts.append(f'<span class="item-rating">★ {rating_float:.1f}</span>')
+                except (ValueError, TypeError):
+                    pass
+
+            # Add source indicator
+            if poster_source == 'tmdb':
+                meta_parts.append('<span class="item-source">TMDB Enhanced</span>')
+            elif poster_source == 'emby':
+                meta_parts.append('<span class="item-source">Emby</span>')
+
+            meta_html = ''.join(meta_parts) if meta_parts else ''
+
+            # Build overview HTML (truncate if too long)
+            if overview and len(overview) > 300:
+                overview = overview[:300] + "..."
+            overview_html = f'<div class="item-overview">{overview}</div>' if overview else ''
+
+            # Build genres HTML
+            genres_html = ''
+            genres = []
+
+            # Priority: TMDB genres > Emby genres
+            if show.get('tmdb_data') and show['tmdb_data'].get('genres'):
+                genres = [genre['name'] for genre in show['tmdb_data']['genres']]
+            elif show.get('tmdb_genres'):
+                genres = show['tmdb_genres']
+            elif show.get('genres'):
+                genres = show['genres']
+
+            if genres and isinstance(genres, list):
+                genre_tags = []
+                for genre in genres[:5]:  # Limit to 5 genres
+                    if isinstance(genre, dict):
+                        genre_name = self._secure_escape(genre.get('Name', ''))
+                    elif isinstance(genre, str):
+                        genre_name = self._secure_escape(genre)
+                    else:
+                        genre_name = self._secure_escape(str(genre))
+
+                    if genre_name:
+                        genre_tags.append(f'<span class="genre-tag">{genre_name}</span>')
+
+                if genre_tags:
+                    genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
+
+            # Build compact seasons HTML
+            seasons_html = ''
+            seasons = show.get('seasons', {})
+            if isinstance(seasons, dict) and seasons:
+
+                # Sort seasons by number (newest first)
+                season_items = list(seasons.items())
+                season_items.sort(key=lambda x: self._get_season_number(x[0]), reverse=True)
+
+                total_seasons = len(season_items)
+
+                # Get total episodes count
+                total_episodes = sum(len(episodes) for episodes in seasons.values() if isinstance(episodes, list))
+
+                # Build compact season summary
+                if total_seasons > 0:
+                    latest_season_name, latest_episodes = season_items[0]
+                    latest_season_num = self._get_season_number(latest_season_name)
+                    oldest_season_num = self._get_season_number(season_items[-1][0])
+
+                    # Create compact summary line
+                    if total_seasons == 1:
+                        available_summary = f"Season {latest_season_num} • {len(latest_episodes)} episodes"
+                        total_summary = f"The show has {latest_season_num} season with {len(latest_episodes)} episodes in total."
+                    else:
+                        # Find season range for available seasons
+                        if oldest_season_num > 0 and latest_season_num > oldest_season_num:
+                            available_summary = f"Seasons {oldest_season_num}-{latest_season_num} available • {total_episodes} episodes"
+                        else:
+                            available_summary = f"{total_seasons} seasons available • {total_episodes} episodes"
+
+                        # Get total from TMDB if available, otherwise use available count
+                        tmdb_data = show.get('tmdb_data', {})
+                        total_seasons_count = tmdb_data.get('number_of_seasons', total_seasons)
+                        total_episodes_count = tmdb_data.get('number_of_episodes', total_episodes)
+
+                        if total_seasons_count > total_seasons or total_episodes_count > total_episodes:
+                            total_summary = f"The show has {total_seasons_count} seasons with {total_episodes_count} episodes in total."
+                        else:
+                            total_summary = f"The show has {total_seasons} seasons with {total_episodes} episodes in total."
+
+                    seasons_html = f'''<div class="tv-seasons">
+                                        <div class="tv-season-summary">
+                                            <div class="season-count">{available_summary}</div>
+                                            <div class="season-episodes" style="color: #ffffff !important;">{total_summary}</div>
+                                        </div>
+                                    </div>'''
+
+            tv_shows_html += f'''
+                <div class="item">
+                    <table class="item-table" role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="item-poster">
+                                {poster_html}
+                            </td>
+                            <td class="item-content">
+                                <div class="item-title">{title}</div>
+                                <div class="item-meta">{meta_html}</div>
+                                {overview_html}
+                                {genres_html}
+                                {seasons_html}
+                            </td>
+                        </tr>
+                    </table>
+                </div>'''
+
+        return tv_shows_html
 
     def _build_enhanced_html_email(self, context: Dict[str, Any]) -> str:
         """Build enhanced HTML email with TMDB support and improved styling"""
