@@ -49,18 +49,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
             template = template_file.read()
 
         logger.info(f"Template loaded from: {template_path}")
-        logger.info(f"Template size: {len(template)} characters")
-
-        # Check if template has required sections
-        has_stats_section = "${movies_count}" in template and "${series_count}" in template
-        has_footer_section = "${footer_label}" in template
-        has_closing_tags = "</body>" in template and "</html>" in template
-
-        logger.info(
-            f"Template structure check - Stats section: {has_stats_section}, Footer: {has_footer_section}, Complete: {has_closing_tags}")
-
-        if not has_closing_tags:
-            logger.error("Template file appears to be incomplete or corrupted!")
 
         # Get language from config
         language = getattr(config.email_template, 'language', 'en')
@@ -87,12 +75,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
 
         for key in custom_keys:
             template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
-
-        # Handle footer_label replacement (needs special handling for placeholders within)
-        footer_text = translation[language]["footer_label"]
-        footer_text = footer_text.replace("${emby_owner_name}", config.email_template.emby_owner_name)
-        footer_text = footer_text.replace("${unsubscribe_email}", config.email_template.unsubscribe_email)
-        template = re.sub(r"\${footer_label}", footer_text, template)
 
         # Movies section (like the original)
         if movies:
@@ -259,28 +241,9 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section (like the original - simple 2 column)
+        # Statistics section (like the original)
         template = re.sub(r"\${series_count}", str(total_tv), template)
         template = re.sub(r"\${movies_count}", str(total_movie), template)
-
-        # Debug: Log the final template length and check for stats section
-        template_length = len(template)
-        has_stats = "${movies_count}" not in template and "${series_count}" not in template
-        has_footer = "${footer_label}" not in template
-
-        logger.info(f"Template stats - Length: {template_length}, Has stats: {has_stats}, Has footer: {has_footer}")
-
-        # Clean up any remaining unreplaced variables (safety check)
-        remaining_vars = re.findall(r'\$\{([^}]+)\}', template)
-        if remaining_vars:
-            logger.warning(f"Unreplaced template variables found: {remaining_vars}")
-            # Replace with empty string to prevent broken display
-            for var in remaining_vars:
-                template = re.sub(r"\${" + var + "}", "", template)
-
-        # Final debug check
-        if "</html>" not in template:
-            logger.error("Template appears to be incomplete - missing closing html tag")
 
         logger.info("Template populated successfully")
         return template
