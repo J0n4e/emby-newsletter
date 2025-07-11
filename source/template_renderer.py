@@ -282,6 +282,16 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
+        # Try to get server statistics if not already in context
+        if 'total_movies_server' not in context or 'total_tv_shows_server' not in context:
+            emby_url = context.get('emby_url', '')
+            api_key = context.get('api_key', '')
+
+            if emby_url and api_key:
+                server_stats = get_emby_server_statistics(emby_url, api_key)
+                context.update(server_stats)
+                logger.info(f"Fetched server stats: {server_stats}")
+
         # Convert movies list to dictionary format like original
         movies_dict = {}
         for movie in movies:
@@ -313,9 +323,15 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'tmdb_data': show.get('tmdb_data')
             }
 
-        # Get totals
-        total_movies = context.get('total_movies_server', len(movies))
-        total_tv_shows = context.get('total_tv_shows_server', len(tv_shows))
+        # Get totals - use server totals, not just new items count
+        total_movies = context.get('total_movies_server', 0)
+        total_tv_shows = context.get('total_tv_shows_server', 0)
+
+        # If server totals aren't available, fall back to new items count
+        if total_movies == 0:
+            total_movies = len(movies)
+        if total_tv_shows == 0:
+            total_tv_shows = len(tv_shows)
 
         # Create mock config object
         class MockConfig:
