@@ -531,6 +531,34 @@ class TMDBApi:
 
         return cleaned
 
+    def _clean_series_title(self, title: str) -> str:
+        """Clean series title for better matching - add this method"""
+        import re
+
+        # Remove common suffixes that interfere with search
+        cleaned = title
+
+        # Remove year in parentheses
+        cleaned = re.sub(r'\s*\(\d{4}\)\s*', '', cleaned)
+
+        # Remove country codes and TV indicators
+        patterns_to_remove = [
+            r'\s*\(US\)\s*',
+            r'\s*\(UK\)\s*',
+            r'\s*\(AU\)\s*',
+            r'\s*\(CA\)\s*',
+            r'\s*\(TV Series\)\s*',
+            r'\s*\(TV\)\s*',
+        ]
+
+        for pattern in patterns_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+
+        # Clean up extra whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+        return cleaned
+
 
 class NewsletterGenerator:
     """Enhanced newsletter generator with TMDB integration"""
@@ -720,7 +748,7 @@ class NewsletterGenerator:
                     if not tmdb_data:
                         if not tmdb_id:
                             logger.info(f"No TMDB ID for {series_name}, searching by title")
-                        else:
+                            else:
                             logger.info(f"TMDB ID lookup failed for {series_name}, searching by title")
 
                         # Try multiple search strategies for TV shows
@@ -740,7 +768,7 @@ class NewsletterGenerator:
                                 if not tmdb_data and series_year:
                                     tmdb_data = self.tmdb_api.get_media_detail_from_title(cleaned_title, "tv", None)
 
-                    # Use Emby poster as fallback
+                        # Use Emby poster as fallback
                     emby_poster = self.emby_api.get_item_image_url(series_id) if series_id else None
 
                     # Create series entry with enhanced data
@@ -801,7 +829,7 @@ class NewsletterGenerator:
                     if not series_dict[series_name]['poster_url']:
                         logger.warning(f"⚠️ No poster found for {series_name}")
 
-                # Add episode to season
+                    # Add episode to season
                 if season_name not in series_dict[series_name]['seasons']:
                     series_dict[series_name]['seasons'][season_name] = []
 
@@ -813,10 +841,10 @@ class NewsletterGenerator:
                     'overview': episode.get('Overview', '')
                 })
 
-            except Exception as e:
+                except Exception as e:
                 logger.error(f"Error processing episode {episode.get('Name', 'Unknown')}: {e}")
 
-        # Log final results
+            # Log final results
         logger.info("=" * 50)
         logger.info("FINAL TV SHOW PROCESSING RESULTS (WITH TMDB):")
         for series_name, series_data in series_dict.items():
@@ -836,9 +864,47 @@ class NewsletterGenerator:
 
         return list(series_dict.values())
 
+    def _clean_series_title(self, title: str) -> str:
+        """Clean series title for better matching"""
+        import re
+
+        # Remove common suffixes that interfere with search
+        cleaned = title
+
+        # Remove year in parentheses
+        cleaned = re.sub(r'\s*\(\d{4}\)\s*', '', cleaned)
+
+        # Remove country codes and TV indicators
+        patterns_to_remove = [
+            r'\s*\(US\)\s*',
+            r'\s*\(UK\)\s*',
+            r'\s*\(AU\)\s*',
+            r'\s*\(CA\)\s*',
+            r'\s*\(TV Series\)\s*',
+            r'\s*\(TV\)\s*',
+        ]
+
+        for pattern in patterns_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+
+        # Clean up extra whitespace
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+        return cleaned
+
     def _generate_html(self, movies: List[Dict], tv_shows: List[Dict]) -> str:
-        """Generate HTML newsletter content using secure template rendering"""
+        """Generate HTML newsletter content using secure template rendering - FIXED WITH SERVER STATS"""
         try:
+            # Fetch server statistics BEFORE generating the template
+            from template_renderer import get_emby_server_statistics
+
+            logger.info("Fetching server statistics...")
+            server_stats = get_emby_server_statistics(
+                self.config.emby.url,  # Your Emby URL
+                self.config.emby.api_token  # Your Emby API key
+            )
+            logger.info(f"Server stats fetched: {server_stats}")
+
             context = {
                 'language': self.config.email_template.language,
                 'title': self.config.email_template.title,
@@ -850,7 +916,13 @@ class NewsletterGenerator:
                 'unsubscribe_email': self.config.email_template.unsubscribe_email
             }
 
-            # Use the enhanced function that automatically fetches server statistics
+            # Add server statistics to context
+            context.update(server_stats)
+
+            logger.info(
+                f"Context now includes: total_movies_server={context.get('total_movies_server')}, total_episodes_server={context.get('total_episodes_server')}")
+
+            # Use the enhanced function that now has server statistics
             return render_email_with_server_stats(context, config_path="/app/config/config.yml")
 
         except Exception as e:
@@ -894,59 +966,57 @@ class NewsletterGenerator:
             logger.error(f"❌ Error sending newsletter: {e}")
             return False
 
+    def main():
+        """Main function with proper timezone handling"""
+        try:
+            # Set up timezone first
+            setup_timezone()
 
-def main():
-    """Main function with proper timezone handling"""
-    try:
-        # Set up timezone first
-        setup_timezone()
+            # Run comprehensive timezone debugging
+            comprehensive_timezone_debug()
 
-        # Run comprehensive timezone debugging
-        comprehensive_timezone_debug()
+            # Get timezone info for logging
+            current_tz = os.environ.get('TZ', 'UTC')
+            logger.info(f"🚀 Starting Enhanced Emby Newsletter with TMDB (Timezone: {current_tz})")
 
-        # Get timezone info for logging
-        current_tz = os.environ.get('TZ', 'UTC')
-        logger.info(f"🚀 Starting Enhanced Emby Newsletter with TMDB (Timezone: {current_tz})")
+            # Load configuration
+            config_manager = ConfigurationManager()
+            config_manager.load_config()
 
-        # Load configuration
-        config_manager = ConfigurationManager()
-        config_manager.load_config()
+            # Generate and send newsletter
+            generator = NewsletterGenerator(config_manager)
+            html_content = generator.generate_newsletter()
 
-        # Generate and send newsletter
-        generator = NewsletterGenerator(config_manager)
-        html_content = generator.generate_newsletter()
-
-        if html_content:
-            success = generator.send_newsletter(html_content)
-            if success:
-                current_time = datetime.now()
-                logger.info("✅ Enhanced newsletter generation and sending completed successfully")
-                print("=" * 80)
-                print("🎉 ENHANCED NEWSLETTER COMPLETED SUCCESSFULLY!")
-                print(f"📧 Sent at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
-                print(f"⏰ Local time: {current_time}")
-                print(f"🎬 TMDB integration: ACTIVE")
-                print("=" * 80)
+            if html_content:
+                success = generator.send_newsletter(html_content)
+                if success:
+                    current_time = datetime.now()
+                    logger.info("✅ Enhanced newsletter generation and sending completed successfully")
+                    print("=" * 80)
+                    print("🎉 ENHANCED NEWSLETTER COMPLETED SUCCESSFULLY!")
+                    print(f"📧 Sent at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                    print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+                    print(f"⏰ Local time: {current_time}")
+                    print(f"🎬 TMDB integration: ACTIVE")
+                    print("=" * 80)
+                else:
+                    logger.error("❌ Failed to send newsletter")
+                    sys.exit(1)
             else:
-                logger.error("❌ Failed to send newsletter")
+                logger.error("❌ Failed to generate newsletter")
                 sys.exit(1)
-        else:
-            logger.error("❌ Failed to generate newsletter")
+
+        except Exception as e:
+            current_time = datetime.now()
+            current_tz = os.environ.get('TZ', 'UTC')
+            logger.error(f"💥 Unexpected error: {e}")
+            print("=" * 80)
+            print("❌ ENHANCED NEWSLETTER FAILED!")
+            print(f"💥 Error: {e}")
+            print(f"🕐 Failed at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+            print("=" * 80)
             sys.exit(1)
 
-    except Exception as e:
-        current_time = datetime.now()
-        current_tz = os.environ.get('TZ', 'UTC')
-        logger.error(f"💥 Unexpected error: {e}")
-        print("=" * 80)
-        print("❌ ENHANCED NEWSLETTER FAILED!")
-        print(f"💥 Error: {e}")
-        print(f"🕐 Failed at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
-        print("=" * 80)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()
