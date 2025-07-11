@@ -300,7 +300,7 @@
         }
 
         .season-episodes {
-            color: rgba(255, 255, 255, 0.7);
+            color: #ffffff;  /* Changed to white */
             font-size: 0.875em;
             font-weight: 400;
             line-height: 1.4;
@@ -688,26 +688,30 @@
                                             </div>
                                             {% endif %}
 
-                                            <!-- Compact seasons display -->
+                                            <!-- Compact seasons display with totals -->
                                             {% if show.seasons %}
                                             <div class="tv-seasons">
                                                 {% set total_seasons = show.seasons|length %}
                                                 {% set total_episodes = show.seasons.values()|map('length')|sum %}
                                                 {% set latest_season = show.seasons.items()|list|first %}
+                                                {% set season_keys = show.seasons.keys()|list %}
 
                                                 <div class="tv-season-summary">
                                                     {% if total_seasons == 1 %}
-                                                    <div class="season-count">Season {{ latest_season[0].split(' ')[-1] if latest_season[0].split(' ')[-1].isdigit() else '1' }} • {{ latest_season[1]|length }} episodes</div>
+                                                    {% set season_num = latest_season[0].split(' ')[-1] if latest_season[0].split(' ')[-1].isdigit() else '1' %}
+                                                    <div class="season-count">Season {{ season_num }} • {{ latest_season[1]|length }} episodes</div>
+                                                    <div class="season-episodes">The show has {{ season_num }} season with {{ latest_season[1]|length }} episodes in total.</div>
                                                     {% else %}
-                                                    <div class="season-count">{{ total_seasons }} seasons available • {{ total_episodes }} episodes</div>
+                                                    {% set oldest_season_num = season_keys|map('regex_replace', '.*?(\d+).*', '\\1')|map('int')|min %}
+                                                    {% set latest_season_num = season_keys|map('regex_replace', '.*?(\d+).*', '\\1')|map('int')|max %}
+                                                    <div class="season-count">Seasons {{ oldest_season_num }}-{{ latest_season_num }} available • {{ total_episodes }} episodes</div>
+
+                                                    {% if show.tmdb_data and (show.tmdb_data.number_of_seasons > total_seasons or show.tmdb_data.number_of_episodes > total_episodes) %}
+                                                    <div class="season-episodes">The show has {{ show.tmdb_data.number_of_seasons }} seasons with {{ show.tmdb_data.number_of_episodes }} episodes in total.</div>
+                                                    {% else %}
+                                                    <div class="season-episodes">The show has {{ total_seasons }} seasons with {{ total_episodes }} episodes in total.</div>
                                                     {% endif %}
-
-                                                    {% set episode_list = [] %}
-                                                    {% for episode in latest_season[1][:3] %}
-                                                        {% set _ = episode_list.append("Ep " + (episode.episode_number|string if episode.episode_number else "?") + ": " + episode.name) %}
-                                                    {% endfor %}
-
-                                                    <div class="season-episodes">{{ episode_list|join(" • ") if episode_list else "New episodes available" }}</div>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                             {% endif %}

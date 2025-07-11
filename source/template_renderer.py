@@ -944,7 +944,7 @@ class SecureTemplateRenderer:
             if genre_tags:
                 genres_html = f'<div class="genres">{"".join(genre_tags)}</div>'
 
-        # Build compact seasons HTML (single line summary + episodes)
+        # Build compact seasons HTML (single line summary + total info)
         seasons_html = ''
         seasons = show.get('seasons', {})
         if isinstance(seasons, dict) and seasons:
@@ -962,33 +962,33 @@ class SecureTemplateRenderer:
             if total_seasons > 0:
                 latest_season_name, latest_episodes = season_items[0]
                 latest_season_num = self._get_season_number(latest_season_name)
+                oldest_season_num = self._get_season_number(season_items[-1][0])
 
                 # Create compact summary line
                 if total_seasons == 1:
-                    season_summary = f"Season {latest_season_num} • {len(latest_episodes)} episodes"
+                    available_summary = f"Season {latest_season_num} • {len(latest_episodes)} episodes"
+                    total_summary = f"The show has {latest_season_num} season with {len(latest_episodes)} episodes in total."
                 else:
-                    # Find season range
-                    oldest_season_num = self._get_season_number(season_items[-1][0])
+                    # Find season range for available seasons
                     if oldest_season_num > 0 and latest_season_num > oldest_season_num:
-                        season_summary = f"Seasons {oldest_season_num}-{latest_season_num} available • {total_episodes} episodes"
+                        available_summary = f"Seasons {oldest_season_num}-{latest_season_num} available • {total_episodes} episodes"
                     else:
-                        season_summary = f"{total_seasons} seasons available • {total_episodes} episodes"
+                        available_summary = f"{total_seasons} seasons available • {total_episodes} episodes"
 
-                # Show only latest episodes in compact format
-                episode_lines = []
-                if isinstance(latest_episodes, list):
-                    for episode in latest_episodes[:3]:  # Limit to 3 episodes
-                        if isinstance(episode, dict):
-                            episode_num = episode.get('episode_number', '')
-                            episode_name = self._secure_escape(episode.get('name', 'Unknown'))
-                            episode_lines.append(f"Ep {episode_num}: {episode_name}")
+                    # Get total from TMDB if available, otherwise use available count
+                    tmdb_data = show.get('tmdb_data', {})
+                    total_seasons_count = tmdb_data.get('number_of_seasons', total_seasons)
+                    total_episodes_count = tmdb_data.get('number_of_episodes', total_episodes)
 
-                episodes_text = " • ".join(episode_lines) if episode_lines else "New episodes available"
+                    if total_seasons_count > total_seasons or total_episodes_count > total_episodes:
+                        total_summary = f"The show has {total_seasons_count} seasons with {total_episodes_count} episodes in total."
+                    else:
+                        total_summary = f"The show has {total_seasons} seasons with {total_episodes} episodes in total."
 
                 seasons_html = f'''<div class="tv-seasons">
                                     <div class="tv-season-summary">
-                                        <div class="season-count">{season_summary}</div>
-                                        <div class="season-episodes">{episodes_text}</div>
+                                        <div class="season-count">{available_summary}</div>
+                                        <div class="season-episodes">{total_summary}</div>
                                     </div>
                                 </div>'''
 
