@@ -271,7 +271,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         logger.info(f"Template stats - Length: {template_length}, Has stats: {has_stats}, Has footer: {has_footer}")
 
         # Clean up any remaining unreplaced variables (safety check)
-        import re
         remaining_vars = re.findall(r'\$\{([^}]+)\}', template)
         if remaining_vars:
             logger.warning(f"Unreplaced template variables found: {remaining_vars}")
