@@ -300,7 +300,7 @@
         }
 
         .season-episodes {
-            color: #ffffff;  /* Changed to white */
+            color: #ffffff !important;  /* Force white with !important */
             font-size: 0.875em;
             font-weight: 400;
             line-height: 1.4;
@@ -459,6 +459,10 @@
 
             .season-count, .season-episodes {
                 text-align: center;
+            }
+
+            .season-episodes {
+                color: #ffffff !important;  /* Ensure white on mobile too */
             }
 
             .footer {
