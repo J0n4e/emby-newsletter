@@ -76,6 +76,12 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         for key in custom_keys:
             template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
 
+        # Handle footer_label replacement (needs special handling for placeholders within)
+        footer_text = translation[language]["footer_label"]
+        footer_text = footer_text.replace("${emby_owner_name}", config.email_template.emby_owner_name)
+        footer_text = footer_text.replace("${unsubscribe_email}", config.email_template.unsubscribe_email)
+        template = re.sub(r"\${footer_label}", footer_text, template)
+
         # Movies section (like the original)
         if movies:
             template = re.sub(r"\${display_movies}", "", template)
