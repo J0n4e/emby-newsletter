@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="${language}">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,6 @@
     <meta name="format-detection" content="date=no">
     <meta name="format-detection" content="address=no">
     <meta name="format-detection" content="email=no">
-    <title>${title}</title>
     <style>
         /* Reset for email clients */
         body, table, td, p, a, h1, h2, h3 {
@@ -36,7 +35,6 @@
             max-width: 600px;
             border-collapse: collapse;
             margin: 0 auto;
-            background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%);
         }
 
         .content-cell {
@@ -46,15 +44,12 @@
         .title {
             text-align: center;
             padding: 20px 0;
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
         }
 
         h1 {
-            color: #ffffff !important;
-            font-size: 28px !important;
+            color: #00ccff !important;
+            font-size: 24px !important;
             margin: 0 0 10px !important;
-            font-weight: 700;
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         p {
@@ -65,48 +60,15 @@
         }
 
         .button {
-            background: rgba(255, 255, 255, 0.15);
+            background-color: #00ccff;
             color: #ffffff !important;
             display: inline-block;
             padding: 12px 25px;
             text-decoration: none;
-            border-radius: 25px;
+            border-radius: 5px;
             font-size: 16px;
             font-weight: bold;
             margin: 10px 0;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .stats-section {
-            background: rgba(220, 38, 38, 0.1);
-            padding: 30px 20px;
-            text-align: center;
-        }
-
-        .stats-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        .stats-cell {
-            padding: 15px;
-            width: 25%;
-            text-align: center;
-        }
-
-        .stats-number {
-            font-size: 32px !important;
-            margin: 0 0 5px !important;
-            color: #f87171 !important;
-            font-weight: 700;
-        }
-
-        .stats-label {
-            font-size: 12px !important;
-            color: #dddddd !important;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
         .movie-container {
@@ -126,11 +88,10 @@
             border-radius: 10px;
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
         .movie-card {
-            background: linear-gradient(145deg, #1a1a1a 0%, #262626 100%);
+            background: rgba(0, 0, 0, 0.7);
             border: 1px solid #444;
             border-radius: 10px;
             margin: 0 0 15px;
@@ -158,46 +119,12 @@
             font-size: 18px !important;
             margin: 0 0 5px !important;
             color: #ffffff !important;
-            font-weight: 700;
         }
 
-        .movie-meta {
-            margin: 5px 0 10px !important;
-        }
-
-        .movie-year {
-            background: rgba(220, 38, 38, 0.15);
-            color: #fca5a5 !important;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px !important;
-            font-weight: 500;
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        .movie-rating {
-            background: rgba(34, 197, 94, 0.15);
-            color: #86efac !important;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px !important;
-            font-weight: 500;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        .movie-source {
-            background: rgba(168, 85, 247, 0.15);
-            color: #c4b5fd !important;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 10px !important;
-            font-weight: 500;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            display: inline-block;
+        .movie-date {
+            color: #dddddd !important;
+            font-size: 14px !important;
+            margin: 0 0 10px !important;
         }
 
         .movie-description {
@@ -208,53 +135,56 @@
             overflow-wrap: break-word !important;
             max-width: 100% !important;
             word-break: break-word !important;
-            margin: 10px 0 !important;
-        }
-
-        .genre-tag {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            color: #ffffff !important;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px !important;
-            font-weight: 500;
-            margin-right: 6px;
-            margin-bottom: 6px;
-            display: inline-block;
-        }
-
-        .tv-seasons {
-            margin-top: 15px;
-        }
-
-        .tv-season-summary {
-            background: rgba(220, 38, 38, 0.08);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin: 12px 0;
-            border-left: 4px solid rgb(220, 38, 38);
-        }
-
-        .season-count {
-            color: #fca5a5 !important;
-            font-weight: 600;
-            font-size: 14px !important;
-            margin-bottom: 6px;
-        }
-
-        .season-episodes {
-            color: #ffffff !important;
-            font-size: 13px !important;
-            font-weight: 400;
-            line-height: 1.4;
         }
 
         .section-title {
-            color: #ef4444 !important;
+            color: #00ccff !important;
             font-size: 20px !important;
             padding: 10px 15px;
-            margin: 20px 0 10px 0;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .stats-cell {
+            padding: 15px;
+            width: 50%;
+        }
+
+        .stats-number {
+            font-size: 28px !important;
+            margin: 0 0 5px !important;
+            color: #00ccff !important;
+        }
+
+        .stats-label {
+            font-size: 14px !important;
+            color: #dddddd !important;
+        }
+
+        .tv-season-info {
+            background: rgba(0, 204, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-left: 4px solid #00ccff;
+        }
+
+        .season-summary {
+            color: #00ccff !important;
             font-weight: 600;
+            font-size: 14px !important;
+            margin-bottom: 4px;
+        }
+
+        .season-total {
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 400;
         }
 
         .divider {
@@ -267,11 +197,10 @@
             padding: 20px 0;
             font-size: 12px !important;
             color: #aaaaaa !important;
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
         }
 
         .footer-link, .footer-link:visited {
-            color: #ef4444 !important;
+            color: #4287f5 !important;
             text-decoration: underline !important;
         }
 
@@ -290,10 +219,10 @@
             /* No changes needed for desktop */
         }
 
-        /* Media Queries */
+        /* Mobile-specific spacing */
         @media screen and (max-width: 600px) {
             .mobile-text-container {
-                margin-top: 20px;
+                margin-top: 20px; /* Increased space above text */
             }
 
             .movie-image {
@@ -301,11 +230,13 @@
             }
 
             .movie-content-cell {
-                padding-top: 5px !important;
+                padding-top: 5px !important; /* Reduced cell padding */
                 padding-left: 15px !important;
                 padding-right: 15px !important;
             }
-
+        }
+        /* Media Queries */
+        @media screen and (max-width: 600px) {
             .movie-card-table {
                 display: block !important;
                 width: 100% !important;
@@ -340,10 +271,6 @@
             .content-cell {
                 padding: 10px !important;
             }
-
-            .stats-cell {
-                width: 50% !important;
-            }
         }
     </style>
 </head>
@@ -362,56 +289,51 @@
                         <tr>
                             <td class="title">
                                 <h1>${title}</h1>
-                                <p style="color: rgba(255, 255, 255, 0.9) !important;">${subtitle}</p>
+                                <p>${subtitle}</p>
                                 <br>
-                                <a href="${emby_url}" class="button">🎭 Discover Now</a>
+                                <a href="${emby_url}" class="button">${discover_now}</a>
                             </td>
                         </tr>
                     </table>
 
-                    <!-- Statistics Section -->
-                    <div class="stats-section" style="${display_stats}">
-                        <table class="stats-table" role="presentation">
-                            <tr>
-                                ${statistics}
-                            </tr>
-                        </table>
-                    </div>
-
                     <!-- Movies Section -->
                     <div style="${display_movies}">
-                        <h2 class="section-title">🎬 New Movies</h2>
+                        <h2 class="section-title">${new_film}</h2>
                         <div class="movie-container">
-                            ${movies}
+                            ${films}
                         </div>
                     </div>
 
                     <!-- TV Shows Section -->
                     <div style="${display_tv}">
-                        <h2 class="section-title">📺 New TV Episodes</h2>
+                        <h2 class="section-title">${new_tvs}</h2>
                         <div class="movie-container">
-                            ${tv_shows}
+                            ${tvs}
                         </div>
                     </div>
 
-                    <!-- No Content Section -->
-                    <div style="${display_no_content}">
-                        <div style="text-align: center; color: rgba(255, 255, 255, 0.6); padding: 60px 20px; background: rgba(239, 68, 68, 0.05); border-radius: 15px; margin: 20px 0; border: 1px solid rgba(239, 68, 68, 0.2);">
-                            <div style="font-size: 3em; margin-bottom: 20px; opacity: 0.6;">🎭</div>
-                            <h3 style="font-size: 1.5em; font-weight: 600; color: #ffffff !important; margin: 0 0 8px 0;">No New Content</h3>
-                            <p style="font-size: 1em; margin: 0; line-height: 1.6;">No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
-                        </div>
-                    </div>
+                    <!-- Stats Section -->
+                    <div class="divider"></div>
+                    <h2 class="section-title">${currently_available}</h2>
+                    <table class="stats-table" role="presentation">
+                        <tr>
+                            <td class="stats-cell">
+                                <div class="stats-number">${movies_count}</div>
+                                <div class="stats-label">${movies_label}</div>
+                            </td>
+                            <td class="stats-cell">
+                                <div class="stats-number">${series_count}</div>
+                                <div class="stats-label">${episodes_label}</div>
+                            </td>
+                        </tr>
+                    </table>
 
                     <!-- Footer -->
                     <footer>
-                        <div style="font-size: 1.5em; font-weight: 700; color: #ef4444 !important; margin-bottom: 15px;">${emby_owner_name}</div>
-                        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 20px 0;"></div>
-                        <p style="color: #aaaaaa !important;">
-                            🎭 Enjoy your content on <a href="${emby_url}" class="footer-link">${emby_owner_name}</a><br><br>
-                            📧 To unsubscribe, contact <a href="mailto:${unsubscribe_email}" class="footer-link">${unsubscribe_email}</a><br><br>
+                        ${footer_label}<br><br>
+                        <p>
                             <a href="https://github.com/SeaweedbrainCY/emby-newsletter" class="footer-link">Emby Newsletter</a>
-                            • Enhanced with TMDB • Developed with ❤️ by
+                            is an open source project. Developed with ❤️ by
                             <a href="https://github.com/SeaweedbrainCY/" class="footer-link">Seaweedbrain</a>
                         </p>
                     </footer>
@@ -421,1346 +343,6 @@
     </center>
 
     <!-- Prevent Gmail clipping -->
-    <div style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">
-        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-    </div>
-</body>
-</html>
-        /* Enhanced email client reset based on original implementation */
-        body, table, td, p, a, h1, h2, h3 {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-        }
-
-        body {
-            line-height: 1.6;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-            background: #000011;
-            min-height: 100vh;
-        }
-
-        /* Gmail-specific fixes from original */
-        u + .body a {
-            color: inherit !important;
-            text-decoration: none !important;
-            font-size: inherit !important;
-            font-family: inherit !important;
-            font-weight: inherit !important;
-            line-height: inherit !important;
-        }
-
-        .email-wrapper {
-            background: #000011;
-            min-height: 100vh;
-            padding: 20px 0;
-        }
-
-        .container {
-            max-width: 680px;
-            margin: 0 auto;
-            background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-        }
-
-        .header {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
-            padding: 48px 40px;
-            text-align: center;
-        }
-
-        .header h1 {
-            color: #ffffff;
-            margin: 0 0 12px 0;
-            font-size: 2.75em;
-            font-weight: 700;
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
-        .header .subtitle {
-            color: rgba(255, 255, 255, 0.9);
-            margin: 0 0 20px 0;
-            font-size: 1.125em;
-            font-weight: 400;
-        }
-
-        .header .button {
-            background: rgba(255, 255, 255, 0.15);
-            color: #ffffff !important;
-            display: inline-block;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 10px 0;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .stats-section {
-            background: rgba(220, 38, 38, 0.1);
-            padding: 40px;
-            border-bottom: 1px solid rgba(220, 38, 38, 0.2);
-        }
-
-        .stats-container {
-            display: flex;
-            justify-content: center;
-            gap: 48px;
-            flex-wrap: wrap;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .stat-item {
-            text-align: center;
-            min-width: 140px;
-            flex: 1;
-            max-width: 200px;
-            padding: 16px 12px;
-        }
-
-        .stat-number {
-            font-size: 3em;
-            font-weight: 700;
-            color: rgb(248, 113, 113);
-            margin-bottom: 12px;
-            text-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
-            line-height: 1;
-        }
-
-        .stat-label {
-            color: rgb(209, 213, 219);
-            font-size: 0.95em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            line-height: 1.3;
-        }
-
-        .section {
-            padding: 48px 40px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 32px;
-            gap: 16px;
-        }
-
-        .section h2 {
-            color: #ef4444;
-            font-size: 1.875em;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .section-icon {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5em;
-            box-shadow: 0 8px 16px rgba(220, 38, 38, 0.3);
-        }
-
-        .section-line {
-            flex: 1;
-            height: 2px;
-            background: linear-gradient(90deg, #dc2626 0%, rgba(220, 38, 38, 0.2) 100%);
-        }
-
-        .item {
-            background: linear-gradient(145deg, #1a1a1a 0%, #262626 100%);
-            margin: 25px 0;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .item-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .item-poster {
-            width: 140px;
-            height: 210px;
-            vertical-align: top;
-            padding: 0;
-        }
-
-        .item-poster img {
-            width: 140px;
-            height: 210px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .no-poster {
-            width: 140px;
-            height: 210px;
-            background: linear-gradient(135deg, #262626 0%, #404040 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 0.875em;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .item-content {
-            padding: 32px;
-            vertical-align: top;
-        }
-
-        .item-title {
-            font-size: 1.5em;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .item-meta {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .item-year {
-            background: rgba(220, 38, 38, 0.15);
-            color: #fca5a5;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            border: 1px solid rgba(220, 38, 38, 0.3);
-        }
-
-        .item-rating {
-            background: rgba(34, 197, 94, 0.15);
-            color: #86efac;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
-        .item-source {
-            background: rgba(168, 85, 247, 0.15);
-            color: #c4b5fd;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 500;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-        }
-
-        .item-overview {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.9375em;
-            line-height: 1.6;
-            margin-bottom: 24px;
-            font-weight: 400;
-        }
-
-        .genre-tag {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            color: #ffffff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.8125em;
-            font-weight: 500;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            display: inline-block;
-            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
-        <!DOCTYPE html>
-<html lang="{{ language }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- Gmail-specific meta tags -->
-    <meta name="format-detection" content="telephone=no">
-    <meta name="format-detection" content="date=no">
-    <meta name="format-detection" content="address=no">
-    <meta name="format-detection" content="email=no">
-    <title>{{ title }}</title>
-    <style>
-        /* Enhanced email client reset based on original implementation */
-        body, table, td, p, a, h1, h2, h3 {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-        }
-
-        body {
-            line-height: 1.6;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-            background: #000011;
-            min-height: 100vh;
-        }
-
-        /* Gmail-specific fixes from original */
-        u + .body a {
-            color: inherit !important;
-            text-decoration: none !important;
-            font-size: inherit !important;
-            font-family: inherit !important;
-            font-weight: inherit !important;
-            line-height: inherit !important;
-        }
-
-        .email-wrapper {
-            background: #000011;
-            min-height: 100vh;
-            padding: 20px 0;
-        }
-
-        .container {
-            max-width: 680px;
-            margin: 0 auto;
-            background: linear-gradient(145deg, #141414 0%, #1f1f1f 100%);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-        }
-
-        .header {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
-            padding: 48px 40px;
-            text-align: center;
-        }
-
-        .header h1 {
-            color: #ffffff;
-            margin: 0 0 12px 0;
-            font-size: 2.75em;
-            font-weight: 700;
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
-        .header .subtitle {
-            color: rgba(255, 255, 255, 0.9);
-            margin: 0 0 20px 0;
-            font-size: 1.125em;
-            font-weight: 400;
-        }
-
-        .header .button {
-            background: rgba(255, 255, 255, 0.15);
-            color: #ffffff !important;
-            display: inline-block;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 10px 0;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .stats-section {
-            background: rgba(220, 38, 38, 0.1);
-            padding: 40px;
-            border-bottom: 1px solid rgba(220, 38, 38, 0.2);
-        }
-
-        .stats-container {
-            display: flex;
-            justify-content: center;
-            gap: 48px;
-            flex-wrap: wrap;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .stat-item {
-            text-align: center;
-            min-width: 140px;
-            flex: 1;
-            max-width: 200px;
-            padding: 16px 12px;
-        }
-
-        .stat-number {
-            font-size: 3em;
-            font-weight: 700;
-            color: rgb(248, 113, 113);
-            margin-bottom: 12px;
-            text-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
-            line-height: 1;
-        }
-
-        .stat-label {
-            color: rgb(209, 213, 219);
-            font-size: 0.95em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            line-height: 1.3;
-        }
-
-        .section {
-            padding: 48px 40px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 32px;
-            gap: 16px;
-        }
-
-        .section h2 {
-            color: #ef4444;
-            font-size: 1.875em;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .section-icon {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5em;
-            box-shadow: 0 8px 16px rgba(220, 38, 38, 0.3);
-        }
-
-        .section-line {
-            flex: 1;
-            height: 2px;
-            background: linear-gradient(90deg, #dc2626 0%, rgba(220, 38, 38, 0.2) 100%);
-        }
-
-        .item {
-            background: linear-gradient(145deg, #1a1a1a 0%, #262626 100%);
-            margin: 25px 0;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .item-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .item-poster {
-            width: 140px;
-            height: 210px;
-            vertical-align: top;
-            padding: 0;
-        }
-
-        .item-poster img {
-            width: 140px;
-            height: 210px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .no-poster {
-            width: 140px;
-            height: 210px;
-            background: linear-gradient(135deg, #262626 0%, #404040 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 0.875em;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .item-content {
-            padding: 32px;
-            vertical-align: top;
-        }
-
-        .item-title {
-            font-size: 1.5em;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .item-meta {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .item-year {
-            background: rgba(220, 38, 38, 0.15);
-            color: #fca5a5;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            border: 1px solid rgba(220, 38, 38, 0.3);
-        }
-
-        .item-rating {
-            background: rgba(34, 197, 94, 0.15);
-            color: #86efac;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
-        .item-source {
-            background: rgba(168, 85, 247, 0.15);
-            color: #c4b5fd;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 500;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-        }
-
-        .item-overview {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.9375em;
-            line-height: 1.6;
-            margin-bottom: 24px;
-            font-weight: 400;
-        }
-
-        .genre-tag {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            color: #ffffff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.8125em;
-            font-weight: 500;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            display: inline-block;
-            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
-        }
-
-        .tv-seasons {
-            margin-top: 24px;
-        }
-
-        .tv-season-summary {
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin: 12px 0;
-            border-left: 4px solid #ef4444;
-        }
-
-        .season-count {
-            color: #fca5a5;
-            font-weight: 600;
-            font-size: 1.0em;
-            margin-bottom: 6px;
-        }
-
-        .season-episodes {
-            color: #ffffff !important;
-            font-size: 0.875em;
-            font-weight: 400;
-            line-height: 1.4;
-        }
-
-        .footer {
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            text-align: center;
-            padding: 48px 40px;
-        }
-
-        .footer-logo {
-            font-size: 1.5em;
-            font-weight: 700;
-            color: #ef4444;
-            margin-bottom: 16px;
-        }
-
-        .footer-content {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9375em;
-            line-height: 1.6;
-        }
-
-        .footer a {
-            color: #ef4444;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .footer-divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 24px 0;
-        }
-
-        .no-items {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 80px 40px;
-            background: rgba(239, 68, 68, 0.05);
-            border-radius: 16px;
-            margin: 24px 0;
-            border: 1px solid rgba(239, 68, 68, 0.15);
-        }
-
-        .no-items-icon {
-            font-size: 4em;
-            margin-bottom: 24px;
-            opacity: 0.6;
-        }
-
-        .no-items h3 {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: #ffffff;
-            margin: 0 0 8px 0;
-        }
-
-        .no-items p {
-            font-size: 1em;
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        /* Mobile responsive design */
-        @media only screen and (max-width: 640px) {
-            .email-wrapper {
-                padding: 10px;
-            }
-
-            .header {
-                padding: 32px 24px;
-            }
-
-            .header h1 {
-                font-size: 2.25em;
-            }
-
-            .stats-section {
-                padding: 32px 20px;
-            }
-
-            .stats-container {
-                gap: 32px;
-            }
-
-            .stat-item {
-                min-width: 120px;
-                max-width: 160px;
-            }
-
-            .stat-number {
-                font-size: 2.2em;
-            }
-
-            .section {
-                padding: 32px 24px;
-            }
-
-            .section h2 {
-                font-size: 1.5em;
-            }
-
-            .section-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.25em;
-            }
-
-            .item {
-                margin: 20px 0;
-            }
-
-            .item-table {
-                display: block !important;
-                width: 100% !important;
-            }
-
-            .item-poster {
-                display: block !important;
-                width: 100% !important;
-                height: 240px !important;
-                text-align: center !important;
-                padding: 15px !important;
-                box-sizing: border-box;
-            }
-
-            .item-poster img {
-                width: auto !important;
-                height: 200px !important;
-                max-width: 100% !important;
-                margin: 0 auto !important;
-            }
-
-            .no-poster {
-                width: 100% !important;
-                height: 200px !important;
-            }
-
-            .item-content {
-                display: block !important;
-                padding: 20px !important;
-                width: 100% !important;
-                box-sizing: border-box;
-            }
-
-            .item-meta {
-                justify-content: center;
-                text-align: center;
-            }
-
-            .tv-season-summary {
-                padding: 12px 16px;
-            }
-
-            .season-count, .season-episodes {
-                text-align: center;
-            }
-
-            .season-episodes {
-                color: #ffffff !important;
-            }
-
-            .footer {
-                padding: 32px 24px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Hidden content to prevent Gmail clipping -->
-    <div style="display: none; max-height: 0px; overflow: hidden;">
-        ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍
-    </div>
-
-    <div class="email-wrapper">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-            <tr>
-                <td>
-                    <div class="container">
-                        <div class="header">
-                            <h1>${title}</h1>
-                            <p class="subtitle">${subtitle}</p>
-                            <a href="${emby_url}" class="button">🎭 Discover Now</a>
-                        </div>
-
-                        <!-- Statistics Section -->
-                        <div class="stats-section">
-                            <div class="stats-container">
-                                ${statistics}
-                            </div>
-                        </div>
-
-                        <!-- Movies Section -->
-                        <div class="section" style="${display_movies}">
-                            <div class="section-header">
-                                <div class="section-icon">🎬</div>
-                                <h2>New Movies</h2>
-                                <div class="section-line"></div>
-                            </div>
-                            ${movies}
-                        </div>
-
-                        <!-- TV Shows Section -->
-                        <div class="section" style="${display_tv}">
-                            <div class="section-header">
-                                <div class="section-icon">📺</div>
-                                <h2>New TV Episodes</h2>
-                                <div class="section-line"></div>
-                            </div>
-                            ${tv_shows}
-                        </div>
-
-                        <!-- No content message -->
-                        <div class="section" style="display: ${has_server_stats};">
-                            <div class="no-items">
-                                <div class="no-items-icon">🎭</div>
-                                <h3>No New Content</h3>
-                                <p>No new content has been added recently.<br>Check back soon for the latest movies and TV shows!</p>
-                            </div>
-                        </div>
-
-                        <!-- Footer -->
-                        <div class="footer">
-                            <div class="footer-logo">${emby_owner_name}</div>
-                            <div class="footer-divider"></div>
-                            <div class="footer-content">
-                                <p>
-                                    🎭 Enjoy your content on <a href="${emby_url}">${emby_owner_name}</a>
-                                </p>
-                                <p>
-                                    📧 To unsubscribe, contact <a href="mailto:${unsubscribe_email}">${unsubscribe_email}</a>
-                                </p>
-                                <p>
-                                    <small>
-                                        <a href="https://github.com/SeaweedbrainCY/emby-newsletter">Emby Newsletter</a>
-                                        • Enhanced with TMDB • Developed with ❤️ by
-                                        <a href="https://github.com/SeaweedbrainCY/">Seaweedbrain</a>
-                                    </small>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Prevent Gmail clipping -->
-    <div style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">
-        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-    </div>
-</body>
-</html>
-
-        .tv-seasons {
-            margin-top: 24px;
-        }
-
-        .tv-season-summary {
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin: 12px 0;
-            border-left: 4px solid #ef4444;
-        }
-
-        .season-count {
-            color: #fca5a5;
-            font-weight: 600;
-            font-size: 1.0em;
-            margin-bottom: 6px;
-        }
-
-        .tv-season-summary .season-episodes {
-            color: #ffffff !important;  /* Force white with specific selector */
-            font-size: 0.875em;
-            font-weight: 400;
-            line-height: 1.4;
-        }
-
-        /* Additional selectors to override any inheritance */
-        .tv-seasons .season-episodes,
-        .tv-season-summary div.season-episodes,
-        div.season-episodes {
-            color: #ffffff !important;
-        }
-
-        .footer {
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            text-align: center;
-            padding: 48px 40px;
-        }
-
-        .footer-logo {
-            font-size: 1.5em;
-            font-weight: 700;
-            color: #ef4444;
-            margin-bottom: 16px;
-        }
-
-        .footer-content {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9375em;
-            line-height: 1.6;
-        }
-
-        .footer a {
-            color: #ef4444;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .footer-divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 24px 0;
-        }
-
-        .no-items {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 80px 40px;
-            background: rgba(239, 68, 68, 0.05);
-            border-radius: 16px;
-            margin: 24px 0;
-            border: 1px solid rgba(239, 68, 68, 0.15);
-        }
-
-        .no-items-icon {
-            font-size: 4em;
-            margin-bottom: 24px;
-            opacity: 0.6;
-        }
-
-        .no-items h3 {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: #ffffff;
-            margin: 0 0 8px 0;
-        }
-
-        .no-items p {
-            font-size: 1em;
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        /* Mobile responsive design from original */
-        @media only screen and (max-width: 640px) {
-            .email-wrapper {
-                padding: 10px;
-            }
-
-            .header {
-                padding: 32px 24px;
-            }
-
-            .header h1 {
-                font-size: 2.25em;
-            }
-
-            .stats-section {
-                padding: 32px 20px;
-            }
-
-            .stats-container {
-                gap: 32px;
-            }
-
-            .stat-item {
-                min-width: 120px;
-                max-width: 160px;
-            }
-
-            .stat-number {
-                font-size: 2.2em;
-            }
-
-            .section {
-                padding: 32px 24px;
-            }
-
-            .section h2 {
-                font-size: 1.5em;
-            }
-
-            .section-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.25em;
-            }
-
-            .item {
-                margin: 20px 0;
-            }
-
-            .item-table {
-                display: block !important;
-                width: 100% !important;
-            }
-
-            .item-poster {
-                display: block !important;
-                width: 100% !important;
-                height: 240px !important;
-                text-align: center !important;
-                padding: 15px !important;
-                box-sizing: border-box;
-            }
-
-            .item-poster img {
-                width: auto !important;
-                height: 200px !important;
-                max-width: 100% !important;
-                margin: 0 auto !important;
-            }
-
-            .no-poster {
-                width: 100% !important;
-                height: 200px !important;
-            }
-
-            .item-content {
-                display: block !important;
-                padding: 20px !important;
-                width: 100% !important;
-                box-sizing: border-box;
-            }
-
-            .item-meta {
-                justify-content: center;
-                text-align: center;
-            }
-
-            .tv-season-summary {
-                padding: 12px 16px;
-            }
-
-            .season-count, .season-episodes {
-                text-align: center;
-            }
-
-            .season-episodes,
-            .tv-season-summary .season-episodes,
-            div.season-episodes {
-                color: #ffffff !important;  /* Multiple selectors for mobile */
-            }
-
-            .footer {
-                padding: 32px 24px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Hidden content to prevent Gmail clipping (from original) -->
-    <div style="display: none; max-height: 0px; overflow: hidden;">
-        ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍
-    </div>
-
-    <div class="email-wrapper">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-            <tr>
-                <td>
-                    <div class="container">
-                        <div class="header">
-                            <h1>{{ title }}</h1>
-                            <p class="subtitle">{{ subtitle }}</p>
-                            <a href="{{ emby_url }}" class="button">🎭 Discover Now</a>
-                        </div>
-
-                        <!-- Enhanced Statistics Section -->
-                        {% if movies or tv_shows %}
-                        <div class="stats-section">
-                            <div class="stats-container">
-                                {% if total_movies_server and total_tv_shows_server %}
-                                <!-- Server totals when available -->
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ total_movies_server + total_tv_shows_server }}</div>
-                                    <div class="stat-label">Total on Server</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ total_movies_server }}</div>
-                                    <div class="stat-label">Movies on Server</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ total_tv_shows_server }}</div>
-                                    <div class="stat-label">TV Shows on Server</div>
-                                </div>
-                                {% if movies|length + tv_shows|length > 0 %}
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ movies|length + tv_shows|length }}</div>
-                                    <div class="stat-label">New This Update</div>
-                                </div>
-                                {% endif %}
-                                {% else %}
-                                <!-- Fallback when server stats aren't available -->
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ movies|length + tv_shows|length }}</div>
-                                    <div class="stat-label">New Items</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ movies|length }}</div>
-                                    <div class="stat-label">New Movies</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ tv_shows|length }}</div>
-                                    <div class="stat-label">New TV Shows</div>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <!-- Enhanced Movies Section -->
-                        {% if movies %}
-                        <div class="section">
-                            <div class="section-header">
-                                <div class="section-icon">🎬</div>
-                                <h2>New Movies</h2>
-                                <div class="section-line"></div>
-                            </div>
-                            {% for movie in movies %}
-                            <div class="item">
-                                <table class="item-table" role="presentation" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td class="item-poster">
-                                            {% set poster_url = movie.tmdb_poster or movie.poster_url %}
-                                            {% if poster_url %}
-                                            <img src="{{ poster_url }}" alt="{{ movie.title }} poster">
-                                            {% else %}
-                                            <div class="no-poster">No Poster<br>Available</div>
-                                            {% endif %}
-                                        </td>
-                                        <td class="item-content">
-                                            <div class="item-title">{{ movie.title }}</div>
-
-                                            <!-- Enhanced meta information -->
-                                            <div class="item-meta">
-                                                {% if movie.year %}
-                                                <span class="item-year">{{ movie.year }}</span>
-                                                {% endif %}
-
-                                                <!-- TMDB rating support -->
-                                                {% set rating = movie.rating or (movie.tmdb_data.vote_average if movie.tmdb_data) %}
-                                                {% if rating and rating > 0 %}
-                                                <span class="item-rating">★ {{ "%.1f"|format(rating) }}</span>
-                                                {% endif %}
-
-                                                <!-- Source indicator -->
-                                                {% if movie.tmdb_data or movie.tmdb_poster %}
-                                                <span class="item-source">TMDB Enhanced</span>
-                                                {% elif movie.poster_url %}
-                                                <span class="item-source">Emby</span>
-                                                {% endif %}
-                                            </div>
-
-                                            <!-- Enhanced overview with TMDB priority -->
-                                            {% set overview = (movie.tmdb_data.overview if movie.tmdb_data) or movie.tmdb_overview or movie.overview %}
-                                            {% if overview %}
-                                            <div class="item-overview">{{ overview }}</div>
-                                            {% endif %}
-
-                                            <!-- Enhanced genres with TMDB priority -->
-                                            {% set genres = [] %}
-                                            {% if movie.tmdb_data and movie.tmdb_data.genres %}
-                                                {% set genres = movie.tmdb_data.genres %}
-                                            {% elif movie.tmdb_genres %}
-                                                {% set genres = movie.tmdb_genres %}
-                                            {% elif movie.genres %}
-                                                {% set genres = movie.genres %}
-                                            {% endif %}
-
-                                            {% if genres %}
-                                            <div>
-                                                {% for genre in genres[:5] %}
-                                                    {% if genre is string %}
-                                                    <span class="genre-tag">{{ genre }}</span>
-                                                    {% elif genre.name %}
-                                                    <span class="genre-tag">{{ genre.name }}</span>
-                                                    {% elif genre.Name %}
-                                                    <span class="genre-tag">{{ genre.Name }}</span>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-
-                        <!-- Enhanced TV Shows Section -->
-                        {% if tv_shows %}
-                        <div class="section">
-                            <div class="section-header">
-                                <div class="section-icon">📺</div>
-                                <h2>New TV Episodes</h2>
-                                <div class="section-line"></div>
-                            </div>
-                            {% for show in tv_shows %}
-                            <div class="item">
-                                <table class="item-table" role="presentation" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td class="item-poster">
-                                            {% set poster_url = "" %}
-                                            {% if show.tmdb_data and show.tmdb_data.poster_path %}
-                                                {% set poster_url = "https://image.tmdb.org/t/p/w500" + show.tmdb_data.poster_path %}
-                                            {% elif show.tmdb_poster %}
-                                                {% set poster_url = show.tmdb_poster %}
-                                            {% elif show.poster_url %}
-                                                {% set poster_url = show.poster_url %}
-                                            {% endif %}
-
-                                            {% if poster_url %}
-                                            <img src="{{ poster_url }}" alt="{{ show.title }} poster">
-                                            {% else %}
-                                            <div class="no-poster">No Poster<br>Available</div>
-                                            {% endif %}
-                                        </td>
-                                        <td class="item-content">
-                                            <div class="item-title">{{ show.title }}</div>
-
-                                            <!-- Enhanced meta information -->
-                                            <div class="item-meta">
-                                                {% if show.year %}
-                                                <span class="item-year">{{ show.year }}</span>
-                                                {% endif %}
-
-                                                <!-- TMDB rating support -->
-                                                {% set rating = show.rating or (show.tmdb_data.vote_average if show.tmdb_data) %}
-                                                {% if rating and rating > 0 %}
-                                                <span class="item-rating">★ {{ "%.1f"|format(rating) }}</span>
-                                                {% endif %}
-
-                                                <!-- Source indicator -->
-                                                {% if show.tmdb_data or show.tmdb_poster %}
-                                                <span class="item-source">TMDB Enhanced</span>
-                                                {% elif show.poster_url %}
-                                                <span class="item-source">Emby</span>
-                                                {% endif %}
-                                            </div>
-
-                                            <!-- Enhanced overview with TMDB priority -->
-                                            {% set overview = (show.tmdb_data.overview if show.tmdb_data) or show.tmdb_overview or show.overview %}
-                                            {% if overview %}
-                                            <div class="item-overview">{{ overview }}</div>
-                                            {% endif %}
-
-                                            <!-- Enhanced genres with TMDB priority -->
-                                            {% set genres = [] %}
-                                            {% if show.tmdb_data and show.tmdb_data.genres %}
-                                                {% set genres = show.tmdb_data.genres %}
-                                            {% elif show.tmdb_genres %}
-                                                {% set genres = show.tmdb_genres %}
-                                            {% elif show.genres %}
-                                                {% set genres = show.genres %}
-                                            {% endif %}
-
-                                            {% if genres %}
-                                            <div>
-                                                {% for genre in genres[:5] %}
-                                                    {% if genre is string %}
-                                                    <span class="genre-tag">{{ genre }}</span>
-                                                    {% elif genre.name %}
-                                                    <span class="genre-tag">{{ genre.name }}</span>
-                                                    {% elif genre.Name %}
-                                                    <span class="genre-tag">{{ genre.Name }}</span>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
-
-                                            <!-- Compact seasons display with totals -->
-                                            {% if show.seasons %}
-                                            <div class="tv-seasons">
-                                                {% set total_seasons = show.seasons|length %}
-                                                {% set total_episodes = show.seasons.values()|map('length')|sum %}
-                                                {% set latest_season = show.seasons.items()|list|first %}
-                                                {% set season_keys = show.seasons.keys()|list %}
-
-                                                <div class="tv-season-summary">
-                                                    {% if total_seasons == 1 %}
-                                                    {% set season_num = latest_season[0].split(' ')[-1] if latest_season[0].split(' ')[-1].isdigit() else '1' %}
-                                                    <div class="season-count">Season {{ season_num }} • {{ latest_season[1]|length }} episodes</div>
-                                                    <div class="season-episodes">The show has {{ season_num }} season with {{ latest_season[1]|length }} episodes in total.</div>
-                                                    {% else %}
-                                                    {% set oldest_season_num = season_keys|map('regex_replace', '.*?(\d+).*', '\\1')|map('int')|min %}
-                                                    {% set latest_season_num = season_keys|map('regex_replace', '.*?(\d+).*', '\\1')|map('int')|max %}
-                                                    <div class="season-count">Seasons {{ oldest_season_num }}-{{ latest_season_num }} available • {{ total_episodes }} episodes</div>
-
-                                                    {% if show.tmdb_data and (show.tmdb_data.number_of_seasons > total_seasons or show.tmdb_data.number_of_episodes > total_episodes) %}
-                                                    <div class="season-episodes">The show has {{ show.tmdb_data.number_of_seasons }} seasons with {{ show.tmdb_data.number_of_episodes }} episodes in total.</div>
-                                                    {% else %}
-                                                    <div class="season-episodes">The show has {{ total_seasons }} seasons with {{ total_episodes }} episodes in total.</div>
-                                                    {% endif %}
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}        {% if episode.overview %}
-                                                        <div class="episode-overview">{{ episode.overview }}</div>
-                                                        {% endif %}
-                                                    </div>
-                                                    {% endfor %}
-                                                </div>
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-
-                        <!-- No content message (same as original) -->
-                        {% if not movies and not tv_shows %}
-                        <div class="section">
-                            <div class="no-items">
-                                <div class="no-items-icon">🎭</div>
-                                <h3>No New Content</h3>
-                                <p>No new content has been added recently.</p>
-                                <p>Check back soon for the latest movies and TV shows!</p>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <!-- Enhanced footer -->
-                        <div class="footer">
-                            <div class="footer-logo">{{ emby_owner_name }}</div>
-                            <div class="footer-divider"></div>
-                            <div class="footer-content">
-                                <p>
-                                    🎭 Enjoy your content on <a href="{{ emby_url }}">{{ emby_owner_name }}</a>
-                                </p>
-                                <p>
-                                    📧 To unsubscribe, contact <a href="mailto:{{ unsubscribe_email }}">{{ unsubscribe_email }}</a>
-                                </p>
-                                <p>
-                                    <small>
-                                        <a href="https://github.com/SeaweedbrainCY/emby-newsletter">Emby Newsletter</a>
-                                        • Enhanced with TMDB • Developed with ❤️ by
-                                        <a href="https://github.com/SeaweedbrainCY/">Seaweedbrain</a>
-                                    </small>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Prevent Gmail clipping (from original) -->
     <div style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">
         &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
     </div>
