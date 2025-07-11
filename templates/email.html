@@ -343,63 +343,67 @@
         ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍
     </div>
 
-    <center>
-        <table class="main-table" role="presentation" cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-                <td class="content-cell" bgcolor="#000011">
-                    <!-- Title Section -->
-                    <table width="100%" role="presentation" cellpadding="0" cellspacing="0">
+    <!-- Full-width black background wrapper -->
+    <table width="100%" style="background: #000011; margin: 0; padding: 0;" role="presentation" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="background: #000011; padding: 0;">
+                <center>
+                    <table class="main-table" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto;">
                         <tr>
-                            <td class="title">
-                                <h1>${title}</h1>
-                                <p>${subtitle}</p>
-                                <br>
-                                <a href="${emby_url}" class="button">${discover_now}</a>
-                            </td>
-                        </tr>
-                    </table>
+                            <td class="content-cell" bgcolor="#000011">
+                                <!-- Title Section -->
+                                <table width="100%" role="presentation" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td class="title">
+                                            <h1>${title}</h1>
+                                            <p>${subtitle}</p>
+                                            <br>
+                                            <a href="${emby_url}" class="button">${discover_now}</a>
+                                        </td>
+                                    </tr>
+                                </table>
 
-                    <!-- Movies Section -->
-                    <div style="${display_movies}">
-                        <h2 class="section-title">${new_film}</h2>
-                        <div class="movie-container">
-                            ${films}
-                        </div>
-                    </div>
+                                <!-- Movies Section -->
+                                <div style="${display_movies}">
+                                    <h2 class="section-title">${new_film}</h2>
+                                    <div class="movie-container">
+                                        ${films}
+                                    </div>
+                                </div>
 
-                    <!-- TV Shows Section -->
-                    <div style="${display_tv}">
-                        <h2 class="section-title">${new_tvs}</h2>
-                        <div class="movie-container">
-                            ${tvs}
-                        </div>
-                    </div>
+                                <!-- TV Shows Section -->
+                                <div style="${display_tv}">
+                                    <h2 class="section-title">${new_tvs}</h2>
+                                    <div class="movie-container">
+                                        ${tvs}
+                                    </div>
+                                </div>
 
-                    <!-- Stats Section -->
-                    <div class="divider"></div>
-                    <h2 class="section-title">${currently_available}</h2>
-                    <table class="stats-table" role="presentation">
-                        <tr>
-                            <td class="stats-cell">
-                                <div class="stats-number">${movies_count}</div>
-                                <div class="stats-label">${movies_label}</div>
-                            </td>
-                            <td class="stats-cell">
-                                <div class="stats-number">${series_count}</div>
-                                <div class="stats-label">${episodes_label}</div>
-                            </td>
-                        </tr>
-                    </table>
+                                <!-- Stats Section -->
+                                <div class="divider"></div>
+                                <h2 class="section-title">${currently_available}</h2>
+                                <table class="stats-table" role="presentation">
+                                    <tr>
+                                        <td class="stats-cell">
+                                            <div class="stats-number">${movies_count}</div>
+                                            <div class="stats-label">${movies_label}</div>
+                                        </td>
+                                        <td class="stats-cell">
+                                            <div class="stats-number">${series_count}</div>
+                                            <div class="stats-label">${episodes_label}</div>
+                                        </td>
+                                    </tr>
+                                </table>
 
-                    <!-- Footer -->
-                    <footer>
-                        ${footer_label}<br><br>
-                        <p>
-                            <a href="https://github.com/SeaweedbrainCY/emby-newsletter" class="footer-link">Emby Newsletter</a>
-                            is an open source project. Developed with ❤️ by
-                            <a href="https://github.com/SeaweedbrainCY/" class="footer-link">Seaweedbrain</a>
-                        </p>
-                    </footer>
+                                <!-- Footer -->
+                                <footer>
+                                    ${footer_label}<br><br>
+                                    <p>
+                                        <a href="https://github.com/SeaweedbrainCY/emby-newsletter" class="footer-link">Emby Newsletter</a>
+                                        is an open source project. Developed with ❤️ by
+                                        <a href="https://github.com/SeaweedbrainCY/" class="footer-link">Seaweedbrain</a>
+                                    </p>
+                                </footer>
                             </td>
                         </tr>
                     </table>
@@ -407,7 +411,6 @@
             </td>
         </tr>
     </table>
-    </center>
 
     <!-- Prevent Gmail clipping -->
     <div style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">

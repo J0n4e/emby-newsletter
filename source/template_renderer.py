@@ -261,7 +261,7 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section (like the original)
+        # Statistics section (like the original) - USE TOTAL SERVER COUNTS!
         template = re.sub(r"\${series_count}", str(total_tv), template)
         template = re.sub(r"\${movies_count}", str(total_movie), template)
 
@@ -275,7 +275,7 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
 
 def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
-    Main function to render email (replacement for the complex previous version)
+    Main function to render email - FIXED to use server totals
     """
     try:
         # Convert context to the format expected by populate_email_template
@@ -323,15 +323,21 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'tmdb_data': show.get('tmdb_data')
             }
 
-        # Get totals - use server totals, not just new items count
-        total_movies = context.get('total_movies_server', 0)
-        total_tv_shows = context.get('total_tv_shows_server', 0)
+        # FIXED: Get TOTAL SERVER COUNTS, not just new items!
+        # This is the key fix - we prioritize server totals over new content counts
+        total_movies_server = context.get('total_movies_server', 0)
+        total_tv_shows_server = context.get('total_tv_shows_server', 0)
 
-        # If server totals aren't available, fall back to new items count
-        if total_movies == 0:
-            total_movies = len(movies)
-        if total_tv_shows == 0:
-            total_tv_shows = len(tv_shows)
+        # Only fall back to new items count if server totals are 0 or missing
+        if total_movies_server == 0:
+            total_movies_server = len(movies)
+            logger.warning(f"Server movie count was 0, using new movies count: {total_movies_server}")
+
+        if total_tv_shows_server == 0:
+            total_tv_shows_server = len(tv_shows)
+            logger.warning(f"Server TV count was 0, using new TV shows count: {total_tv_shows_server}")
+
+        logger.info(f"Using server totals - Movies: {total_movies_server}, TV Shows: {total_tv_shows_server}")
 
         # Create mock config object
         class MockConfig:
@@ -347,7 +353,8 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         config = MockConfig(context)
 
-        return populate_email_template(movies_dict, series_dict, total_tv_shows, total_movies, config)
+        # Pass the TOTAL SERVER COUNTS to the template function
+        return populate_email_template(movies_dict, series_dict, total_tv_shows_server, total_movies_server, config)
 
     except Exception as e:
         logger.error(f"Error rendering email with server stats: {e}")
@@ -402,11 +409,11 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
                     timeout=10
                 )
 
-                # Get total TV shows
-                series_response = requests.get(
+                # Get total TV shows (Episodes, not Series for episode count)
+                episodes_response = requests.get(
                     endpoint,
                     params={
-                        'IncludeItemTypes': 'Series',
+                        'IncludeItemTypes': 'Episode',
                         'Recursive': 'true',
                         'Fields': 'ItemCounts'
                     },
@@ -414,27 +421,26 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
                     timeout=10
                 )
 
-                if movies_response.status_code == 200 and series_response.status_code == 200:
+                if movies_response.status_code == 200 and episodes_response.status_code == 200:
                     total_movies = movies_response.json().get('TotalRecordCount', 0)
-                    total_series = series_response.json().get('TotalRecordCount', 0)
+                    total_episodes = episodes_response.json().get('TotalRecordCount', 0)
                     logger.info(f"Success with endpoint: {endpoint}")
-                    logger.debug(f"Retrieved {total_movies} movies and {total_series} TV shows from server")
-                    break
+                    logger.debug(f"Retrieved {total_movies} movies and {total_episodes} episodes from server")
+
+                    return {
+                        'total_movies_server': total_movies,
+                        'total_tv_shows_server': total_episodes  # Episodes count, not series count
+                    }
                 else:
                     logger.debug(
-                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, series={series_response.status_code}")
+                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, episodes={episodes_response.status_code}")
 
             except requests.exceptions.RequestException as e:
                 logger.debug(f"Request failed for endpoint {endpoint}: {e}")
                 continue
 
-        if total_movies == 0 and total_series == 0:
-            logger.warning("All API endpoints failed or returned zero results")
-
-        return {
-            'total_movies_server': total_movies,
-            'total_tv_shows_server': total_series
-        }
+        logger.warning("All API endpoints failed or returned zero results")
+        return {'total_movies_server': 0, 'total_tv_shows_server': 0}
 
     except ImportError:
         logger.error("requests library not available for API calls")
