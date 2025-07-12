@@ -81,19 +81,7 @@ def get_metadata_badges(item_data: Dict[str, Any]) -> str:
         except (ValueError, TypeError):
             pass
     
-    # Source badge (purple)
-    source = item_data.get('source', item_data.get('metadata_source', ''))
-    
-    # Check if we have TMDB data
-    if not source and 'tmdb_data' in item_data:
-        source = 'TMDB Enhanced'
-    elif not source and 'ProviderIds' in item_data:
-        provider_ids = item_data['ProviderIds']
-        if 'Tmdb' in provider_ids or 'TheMovieDb' in provider_ids:
-            source = 'TMDB Enhanced'
-    
-    if source:
-        badges_html += f'<span class="meta-badge source-badge">{source}</span>'
+    # Source badge removed - no longer needed
     
     return badges_html
 
