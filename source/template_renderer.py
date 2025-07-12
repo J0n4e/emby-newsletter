@@ -41,38 +41,60 @@ translation = {
 def get_metadata_badges(item_data: Dict[str, Any]) -> str:
     """Generate metadata badges HTML for movies and TV shows"""
     badges_html = ""
-
-    # Year badge (blue)
-    year = item_data.get('year', item_data.get('release_year', item_data.get('first_air_date', '')))
+    
+    # Year badge (blue) - extract from various possible fields
+    year = item_data.get('year', item_data.get('release_year', ''))
+    
+    # Check for TMDB data structure
+    if not year and 'tmdb_data' in item_data:
+        tmdb = item_data['tmdb_data']
+        year = tmdb.get('release_date', tmdb.get('first_air_date', ''))
+    
+    # Extract year from date string if needed
+    if year and '-' in str(year):
+        year = str(year).split('-')[0]
+    
     if year:
-        # Extract just the year if it's a full date
-        if '-' in str(year):
-            year = str(year).split('-')[0]
         badges_html += f'<span class="meta-badge year-badge">{year}</span>'
-
-    # Rating badge (green with star) - try multiple possible rating fields
-    rating = item_data.get('rating',
-                           item_data.get('imdb_rating',
-                                         item_data.get('tmdb_rating',
-                                                       item_data.get('vote_average', ''))))
+    
+    # Rating badge (green with star) - check multiple sources
+    rating = None
+    
+    # Direct rating fields
+    rating = item_data.get('rating', item_data.get('vote_average', ''))
+    
+    # Check TMDB data if available
+    if not rating and 'tmdb_data' in item_data:
+        tmdb = item_data['tmdb_data']
+        rating = tmdb.get('vote_average', '')
+    
+    # Check if rating is in nested structures
+    if not rating and 'ProviderIds' in item_data:
+        # This suggests we have Jellyfin data, rating might be elsewhere
+        pass
+    
     if rating:
         try:
-            # Format rating to 1 decimal place
             rating_float = float(rating)
-            if rating_float > 0:  # Only show if rating is greater than 0
+            if rating_float > 0:
                 badges_html += f'<span class="meta-badge rating-badge">★ {rating_float:.1f}</span>'
         except (ValueError, TypeError):
             pass
-
-    # Source badge (purple) - for both movies and TV shows
+    
+    # Source badge (purple)
     source = item_data.get('source', item_data.get('metadata_source', ''))
+    
+    # Check if we have TMDB data
+    if not source and 'tmdb_data' in item_data:
+        source = 'TMDB Enhanced'
+    elif not source and 'ProviderIds' in item_data:
+        provider_ids = item_data['ProviderIds']
+        if 'Tmdb' in provider_ids or 'TheMovieDb' in provider_ids:
+            source = 'TMDB Enhanced'
+    
     if source:
         badges_html += f'<span class="meta-badge source-badge">{source}</span>'
-    elif 'tmdb' in str(item_data.get('external_ids', {})).lower():
-        badges_html += f'<span class="meta-badge source-badge">TMDB Enhanced</span>'
-    elif item_data.get('tmdb_id') or item_data.get('TheMovieDb'):
-        badges_html += f'<span class="meta-badge source-badge">TMDB Enhanced</span>'
-
+    
     return badges_html
 
 
@@ -81,7 +103,7 @@ def get_tv_season_info(serie_data: Dict[str, Any]) -> str:
     seasons = serie_data.get('seasons', {})
     if not seasons:
         return ""
-
+    
     # Count total episodes across all seasons
     total_episodes = 0
     for season_episodes in seasons.values():
@@ -92,20 +114,20 @@ def get_tv_season_info(serie_data: Dict[str, Any]) -> str:
         elif isinstance(season_episodes, dict):
             # If it's a dict, try to get episode count
             total_episodes += len(season_episodes.get('episodes', []))
-
+    
     season_count = len(seasons)
-
+    
     # Format like "Seasons 4 available • 89 episodes"
     season_text = f"Season{'s' if season_count != 1 else ''} {season_count} available"
     if total_episodes > 0:
         season_text += f" • {total_episodes} episode{'s' if total_episodes != 1 else ''}"
-
+    
     total_text = f"The show has {season_count} season{'s' if season_count != 1 else ''}"
     if total_episodes > 0:
         total_text += f" with {total_episodes} episode{'s' if total_episodes != 1 else ''} in total."
     else:
         total_text += "."
-
+    
     return f"""
     <div class="tv-season-info">
         <div class="season-summary">{season_text}</div>
@@ -159,11 +181,11 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
 
             for movie_title, movie_data in movies.items():
                 metadata_badges = get_metadata_badges(movie_data)
-
+                
                 # Escape HTML in movie title and description
                 safe_title = html.escape(movie_title)
                 safe_description = html.escape(movie_data.get('description', ''))
-
+                
                 movies_html += f"""
                 <div class="movie_container" style="margin-bottom: 15px;">
                     <div class="movie_bg" style="background: url('{movie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
@@ -201,11 +223,11 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
             for serie_title, serie_data in series.items():
                 metadata_badges = get_metadata_badges(serie_data)
                 season_info = get_tv_season_info(serie_data)
-
+                
                 # Escape HTML in series title and description
                 safe_title = html.escape(serie_title)
                 safe_description = html.escape(serie_data.get('description', ''))
-
+                
                 series_html += f"""
                 <div class="movie_container" style="margin-bottom: 15px;">
                     <div class="movie_bg" style="background: url('{serie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
@@ -261,37 +283,30 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
         movies_dict = {}
         for movie in movies:
             title = movie.get('title', 'Unknown')
+            
+            # Pass the full movie data to preserve API structures
             movies_dict[title] = {
                 'created_on': movie.get('date_added', ''),
                 'description': movie.get('overview', ''),
                 'poster': movie.get('poster_url', ''),
-                'year': movie.get('year', movie.get('release_year', '')),
-                'rating': movie.get('rating',
-                                    movie.get('imdb_rating', movie.get('tmdb_rating', movie.get('vote_average', '')))),
-                'source': movie.get('source', movie.get('metadata_source', '')),
-                'external_ids': movie.get('external_ids', {}),
-                'tmdb_id': movie.get('tmdb_id', ''),
-                'TheMovieDb': movie.get('TheMovieDb', '')
+                # Keep all the original data for metadata extraction
+                **movie  # This preserves ProviderIds, tmdb_data, etc.
             }
 
-        # Convert TV shows list to dictionary format with enhanced data
+        # Convert TV shows list to dictionary format with enhanced data  
         series_dict = {}
         for show in tv_shows:
             title = show.get('title', 'Unknown')
             seasons = show.get('seasons', {})
 
+            # Pass the full show data to preserve API structures
             series_dict[title] = {
                 'created_on': show.get('date_added', ''),
                 'description': show.get('overview', ''),
                 'poster': show.get('poster_url', ''),
-                'seasons': seasons,  # Keep the full seasons data for episode counting
-                'year': show.get('year', show.get('release_year', show.get('first_air_date', ''))),
-                'rating': show.get('rating',
-                                   show.get('imdb_rating', show.get('tmdb_rating', show.get('vote_average', '')))),
-                'source': show.get('source', show.get('metadata_source', '')),
-                'external_ids': show.get('external_ids', {}),
-                'tmdb_id': show.get('tmdb_id', ''),
-                'TheMovieDb': show.get('TheMovieDb', '')
+                'seasons': seasons,
+                # Keep all the original data for metadata extraction
+                **show  # This preserves ProviderIds, tmdb_data, etc.
             }
 
         # Get the total server statistics
@@ -464,7 +479,7 @@ def example_usage():
             }
         ]
     }
-
+    
     # Render the email
     html_output = render_email_with_server_stats(sample_context)
     return html_output
