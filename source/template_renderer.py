@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Template rendering for Emby Newsletter using the EXACT original approach
-Based on the original email_template.py implementation
+Enhanced Template rendering for Emby Newsletter with metadata badges
+Based on the original email_template.py implementation with visual enhancements
 """
 
 import os
@@ -38,9 +38,76 @@ translation = {
 }
 
 
+def get_metadata_badges(item_data: Dict[str, Any]) -> str:
+    """Generate metadata badges HTML for movies and TV shows"""
+    badges_html = ""
+
+    # Year badge (blue)
+    year = item_data.get('year', item_data.get('release_year', ''))
+    if year:
+        badges_html += f'<span class="meta-badge year-badge">{year}</span>'
+
+    # Rating badge (green with star)
+    rating = item_data.get('rating', item_data.get('imdb_rating', item_data.get('tmdb_rating', '')))
+    if rating:
+        try:
+            # Format rating to 1 decimal place
+            rating_float = float(rating)
+            badges_html += f'<span class="meta-badge rating-badge">★ {rating_float:.1f}</span>'
+        except (ValueError, TypeError):
+            pass
+
+    # Source badge (purple)
+    source = item_data.get('source', item_data.get('metadata_source', ''))
+    if source:
+        badges_html += f'<span class="meta-badge source-badge">{source}</span>'
+    elif 'tmdb' in str(item_data.get('external_ids', {})).lower():
+        badges_html += f'<span class="meta-badge source-badge">TMDB Enhanced</span>'
+
+    return badges_html
+
+
+def get_tv_season_info(serie_data: Dict[str, Any]) -> str:
+    """Generate season information for TV shows like 'Seasons 4 available • 89 episodes'"""
+    seasons = serie_data.get('seasons', {})
+    if not seasons:
+        return ""
+
+    # Count total episodes across all seasons
+    total_episodes = 0
+    for season_episodes in seasons.values():
+        if isinstance(season_episodes, list):
+            total_episodes += len(season_episodes)
+        elif isinstance(season_episodes, int):
+            total_episodes += season_episodes
+        elif isinstance(season_episodes, dict):
+            # If it's a dict, try to get episode count
+            total_episodes += len(season_episodes.get('episodes', []))
+
+    season_count = len(seasons)
+
+    # Format like "Seasons 4 available • 89 episodes"
+    season_text = f"Season{'s' if season_count != 1 else ''} {season_count} available"
+    if total_episodes > 0:
+        season_text += f" • {total_episodes} episode{'s' if total_episodes != 1 else ''}"
+
+    total_text = f"The show has {season_count} season{'s' if season_count != 1 else ''}"
+    if total_episodes > 0:
+        total_text += f" with {total_episodes} episode{'s' if total_episodes != 1 else ''} in total."
+    else:
+        total_text += "."
+
+    return f"""
+    <div class="tv-season-info">
+        <div class="season-summary">{season_text}</div>
+        <div class="season-total">{total_text}</div>
+    </div>
+    """
+
+
 def populate_email_template(movies, series, total_tv, total_movie, config) -> str:
     """
-    EXACT same function as original email_template.py but with enhanced HTML template
+    Enhanced function with metadata badges and improved styling like the photo
     """
     try:
         # Read the template file
@@ -50,10 +117,10 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
 
         logger.info(f"Template loaded from: {template_path}")
 
-        # Get language from config - EXACT same as original
+        # Get language from config
         language = getattr(config.email_template, 'language', 'en')
 
-        # Apply translations - EXACT same as original
+        # Apply translations
         if language in ["fr", "en"]:
             for key in translation[language]:
                 template = re.sub(
@@ -64,7 +131,7 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         else:
             raise Exception(f"[FATAL] Language {language} not supported. Supported languages are fr and en")
 
-        # Apply custom configuration keys - EXACT same as original
+        # Apply custom configuration keys
         custom_keys = [
             {"key": "title", "value": config.email_template.title},
             {"key": "subtitle", "value": config.email_template.subtitle},
@@ -76,29 +143,38 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         for key in custom_keys:
             template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
 
-        # Movies section - EXACT same logic as original
+        # Movies section with enhanced styling
         if movies:
             template = re.sub(r"\${display_movies}", "", template)
             movies_html = ""
 
             for movie_title, movie_data in movies.items():
                 added_date = movie_data["created_on"].split("T")[0]
+                metadata_badges = get_metadata_badges(movie_data)
+
+                # Escape HTML in movie title and description
+                safe_title = html.escape(movie_title)
+                safe_description = html.escape(movie_data.get('description', ''))
+
                 movies_html += f"""
                 <div class="movie_container" style="margin-bottom: 15px;">
                     <div class="movie_bg" style="background: url('{movie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
-                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.7); border-radius: 10px; width: 100%;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.8); border-radius: 10px; width: 100%;">
                             <tr>
                                 <td class="movie-image" valign="top" style="padding: 15px; text-align: center; width: 120px;">
-                                    <img src="{movie_data['poster']}" alt="{movie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
+                                    <img src="{movie_data['poster']}" alt="{safe_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto; border-radius: 8px;">
                                 </td>
                                 <td class="movie-content-cell" valign="top" style="padding: 15px;">
                                     <div class="mobile-text-container">
-                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{movie_title}</h3>
-                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 8px !important; font-size: 18px !important; font-weight: 600;">{safe_title}</h3>
+                                        <div style="margin-bottom: 12px;">
+                                            {metadata_badges}
+                                        </div>
+                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 12px !important;">
                                             {translation[language]['added_on']} {added_date}
                                         </div>
-                                        <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
-                                            {movie_data['description']}
+                                        <div class="movie-description" style="color: #ffffff !important; font-size: 14px !important; line-height: 1.5 !important;">
+                                            {safe_description}
                                         </div>
                                     </div>
                                 </td>
@@ -112,31 +188,41 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         else:
             template = re.sub(r"\${display_movies}", "display:none", template)
 
-        # TV Shows section - EXACT same logic as original
+        # TV Shows section with enhanced styling and season info
         if series:
             template = re.sub(r"\${display_tv}", "", template)
             series_html = ""
 
             for serie_title, serie_data in series.items():
                 added_date = serie_data["created_on"].split("T")[0]
-                seasons_str = ", ".join(serie_data["seasons"])
+                metadata_badges = get_metadata_badges(serie_data)
+                season_info = get_tv_season_info(serie_data)
+
+                # Escape HTML in series title and description
+                safe_title = html.escape(serie_title)
+                safe_description = html.escape(serie_data.get('description', ''))
+
                 series_html += f"""
                 <div class="movie_container" style="margin-bottom: 15px;">
                     <div class="movie_bg" style="background: url('{serie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
-                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.7); border-radius: 10px; width: 100%;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.8); border-radius: 10px; width: 100%;">
                             <tr>
                                 <td class="movie-image" valign="top" style="padding: 15px; text-align: center; width: 120px;">
-                                    <img src="{serie_data['poster']}" alt="{serie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
+                                    <img src="{serie_data['poster']}" alt="{safe_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto; border-radius: 8px;">
                                 </td>
                                 <td class="movie-content-cell" valign="top" style="padding: 15px;">
                                     <div class="mobile-text-container">
-                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{serie_title} {seasons_str}</h3>
-                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 8px !important; font-size: 18px !important; font-weight: 600;">{safe_title}</h3>
+                                        <div style="margin-bottom: 12px;">
+                                            {metadata_badges}
+                                        </div>
+                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 12px !important;">
                                             {translation[language]['added_on']} {added_date}
                                         </div>
-                                        <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
-                                            {serie_data['description']}
+                                        <div class="movie-description" style="color: #ffffff !important; font-size: 14px !important; line-height: 1.5 !important;">
+                                            {safe_description}
                                         </div>
+                                        {season_info}
                                     </div>
                                 </td>
                             </tr>
@@ -149,11 +235,11 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section - EXACT same as original
+        # Statistics section
         template = re.sub(r"\${series_count}", str(total_tv), template)
         template = re.sub(r"\${movies_count}", str(total_movie), template)
 
-        logger.info(f"Template populated successfully with stats: {total_movie} movies, {total_tv} episodes")
+        logger.info(f"Template populated successfully with enhanced styling: {total_movie} movies, {total_tv} episodes")
         return template
 
     except Exception as e:
@@ -163,14 +249,14 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
 
 def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
-    Main function to render email - expects total_tv and total_movie to be passed correctly
+    Main function to render email with enhanced metadata
     """
     try:
         # Convert context to the format expected by populate_email_template
         movies = context.get('movies', [])
         tv_shows = context.get('tv_shows', [])
 
-        # Convert movies list to dictionary format like original
+        # Convert movies list to dictionary format with enhanced data
         movies_dict = {}
         for movie in movies:
             title = movie.get('title', 'Unknown')
@@ -178,9 +264,13 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'created_on': movie.get('date_added', ''),
                 'description': movie.get('overview', ''),
                 'poster': movie.get('poster_url', ''),
+                'year': movie.get('year', movie.get('release_year', '')),
+                'rating': movie.get('rating', movie.get('imdb_rating', movie.get('tmdb_rating', ''))),
+                'source': movie.get('source', movie.get('metadata_source', '')),
+                'external_ids': movie.get('external_ids', {})
             }
 
-        # Convert TV shows list to dictionary format like original
+        # Convert TV shows list to dictionary format with enhanced data
         series_dict = {}
         for show in tv_shows:
             title = show.get('title', 'Unknown')
@@ -190,11 +280,14 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'created_on': show.get('date_added', ''),
                 'description': show.get('overview', ''),
                 'poster': show.get('poster_url', ''),
-                'seasons': list(seasons.keys()) if seasons else [],
+                'seasons': seasons,  # Keep the full seasons data for episode counting
+                'year': show.get('year', show.get('release_year', '')),
+                'rating': show.get('rating', show.get('imdb_rating', show.get('tmdb_rating', ''))),
+                'source': show.get('source', show.get('metadata_source', '')),
+                'external_ids': show.get('external_ids', {})
             }
 
-        # THE KEY PART: Get the total server statistics
-        # These should be the TOTAL counts from your Emby server, not just new items
+        # Get the total server statistics
         total_movies_server = context.get('total_movies_server', 0)
         total_episodes_server = context.get('total_episodes_server', 0)
 
@@ -202,11 +295,10 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
         logger.info(f"Context total_movies_server: {total_movies_server}")
         logger.info(f"Context total_episodes_server: {total_episodes_server}")
 
-        # If we don't have server totals, we need to fetch them
+        # If we don't have server totals, try alternative keys
         if total_movies_server == 0 or total_episodes_server == 0:
             logger.warning("Server totals not provided in context, trying to fetch...")
 
-            # Try to get them from context with different keys
             total_movies_server = context.get('total_movies_on_server',
                                               context.get('server_movie_count',
                                                           context.get('movie_count_total', 0)))
@@ -230,7 +322,6 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         config = MockConfig(context)
 
-        # Call exactly like the original: populate_email_template(movies, series, total_tv, total_movie)
         return populate_email_template(movies_dict, series_dict, total_episodes_server, total_movies_server, config)
 
     except Exception as e:
@@ -238,7 +329,7 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
         raise
 
 
-# Keep these functions for compatibility
+# Keep existing functions for compatibility
 def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
     """Load configuration from YAML file."""
     try:
@@ -255,16 +346,13 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
     try:
         import requests
 
-        # Clean up the URL (remove trailing slash if present)
         emby_url = emby_url.rstrip('/')
-
         headers = {'X-Emby-Token': api_key}
 
-        # Try different API endpoints - Emby/Jellyfin can vary
         api_endpoints = [
-            f"{emby_url}/emby/Items",  # Standard Emby
-            f"{emby_url}/Items",  # Alternative
-            f"{emby_url}/api/Items"  # Another alternative
+            f"{emby_url}/emby/Items",
+            f"{emby_url}/Items",
+            f"{emby_url}/api/Items"
         ]
 
         total_movies = 0
@@ -274,7 +362,6 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
             try:
                 logger.debug(f"Trying endpoint: {endpoint}")
 
-                # Get total movies
                 movies_response = requests.get(
                     endpoint,
                     params={
@@ -286,7 +373,6 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
                     timeout=10
                 )
 
-                # Get total episodes
                 episodes_response = requests.get(
                     endpoint,
                     params={
@@ -325,3 +411,64 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
     except Exception as e:
         logger.error(f"Error fetching server statistics: {e}")
         return {'total_movies_server': 0, 'total_episodes_server': 0}
+
+
+# Example usage and data format helper
+def example_usage():
+    """
+    Example of how to use the enhanced template renderer
+    """
+    # Example context data with metadata
+    sample_context = {
+        'language': 'en',
+        'title': 'Weekly Emby Newsletter',
+        'subtitle': 'New content this week',
+        'emby_url': 'https://emby.example.com',
+        'emby_owner_name': 'John Doe',
+        'unsubscribe_email': 'unsubscribe@example.com',
+        'total_movies_server': 1247,
+        'total_episodes_server': 8934,
+        'movies': [
+            {
+                'title': 'The Karate Kid',
+                'date_added': '2024-01-15T10:30:00Z',
+                'overview': '12-year-old Dre Parker could\'ve been the most popular kid in Detroit...',
+                'poster_url': 'https://image.tmdb.org/path/to/poster.jpg',
+                'year': '2010',
+                'tmdb_rating': '6.6',
+                'metadata_source': 'TMDB Enhanced'
+            }
+        ],
+        'tv_shows': [
+            {
+                'title': 'Once Upon a Time',
+                'date_added': '2024-01-14T15:45:00Z',
+                'overview': 'There is a town in Maine where every story book character...',
+                'poster_url': 'https://image.tmdb.org/path/to/poster2.jpg',
+                'year': '2011',
+                'tmdb_rating': '7.4',
+                'metadata_source': 'TMDB Enhanced',
+                'seasons': {
+                    'Season 1': 22,  # 22 episodes
+                    'Season 2': 22,
+                    'Season 3': 22,
+                    'Season 4': 23
+                }
+            }
+        ]
+    }
+
+    # Render the email
+    html_output = render_email_with_server_stats(sample_context)
+    return html_output
+
+
+if __name__ == "__main__":
+    # Test the enhanced template
+    print("Testing enhanced template renderer...")
+    try:
+        html = example_usage()
+        print("✅ Template rendered successfully!")
+        print(f"Output length: {len(html)} characters")
+    except Exception as e:
+        print(f"❌ Error: {e}")
