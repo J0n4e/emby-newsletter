@@ -294,29 +294,15 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 **show  # This preserves ProviderIds, tmdb_data, etc.
             }
 
-        # Get the total server statistics
+        # IMPORTANT: Get the server statistics exactly like the original pattern
+        # These should be the TOTAL counts from your server, not just new items
         total_movies_server = context.get('total_movies_server', 0)
-        total_series_server = context.get('total_series_server', 0)  # Changed from episodes to series
+        total_series_server = context.get('total_series_server', 0)
 
         # Debug logging
-        logger.info(f"Context total_movies_server: {total_movies_server}")
-        logger.info(f"Context total_series_server: {total_series_server}")
+        logger.info(f"Server totals being passed: Movies={total_movies_server}, Series={total_series_server}")
 
-        # If we don't have server totals, try alternative keys
-        if total_movies_server == 0 or total_series_server == 0:
-            logger.warning("Server totals not provided in context, trying to fetch...")
-
-            total_movies_server = context.get('total_movies_on_server',
-                                              context.get('server_movie_count',
-                                                          context.get('movie_count_total', 0)))
-            total_series_server = context.get('total_series_on_server',
-                                              context.get('server_series_count',
-                                                          context.get('series_count_total',
-                                                                      context.get('total_shows_server', 0))))
-
-        logger.info(f"Final server totals: Movies={total_movies_server}, Series={total_series_server}")
-
-        # Create mock config object
+        # Create mock config object to match original pattern
         class MockConfig:
             def __init__(self, context):
                 self.email_template = type('obj', (object,), {
@@ -330,11 +316,55 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         config = MockConfig(context)
 
+        # Call exactly like the original: populate_email_template(movies, series, total_series, total_movies, config)
         return populate_email_template(movies_dict, series_dict, total_series_server, total_movies_server, config)
 
     except Exception as e:
         logger.error(f"Error rendering email with server stats: {e}")
         raise
+
+
+def get_server_totals_from_jellyfin():
+    """
+    Function to get server totals using your existing JellyfinAPI pattern
+    Call this from your main code where you have access to configuration
+    """
+    try:
+        from source import configuration
+        import requests
+
+        headers = {
+            "Authorization": f'MediaBrowser Token="{configuration.conf.jellyfin.api_token}"'
+        }
+
+        # Get total movies - same pattern as your get_item_from_parent
+        movies_response = requests.get(
+            f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Movie&Recursive=true',
+            headers=headers
+        )
+
+        # Get total series - same pattern as your get_item_from_parent
+        series_response = requests.get(
+            f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Series&Recursive=true',
+            headers=headers
+        )
+
+        total_movies = 0
+        total_series = 0
+
+        if movies_response.status_code == 200:
+            total_movies = movies_response.json().get("TotalRecordCount", 0)
+
+        if series_response.status_code == 200:
+            total_series = series_response.json().get("TotalRecordCount", 0)
+
+        logger.info(f"Server statistics: {total_movies} movies, {total_series} series")
+
+        return total_movies, total_series
+
+    except Exception as e:
+        logger.error(f"Error getting server statistics: {e}")
+        return 0, 0
 
 
 # Keep existing functions for compatibility
