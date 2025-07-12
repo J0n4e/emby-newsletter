@@ -21,7 +21,7 @@ translation = {
         "new_tvs": "New shows:",
         "currently_available": "Currently available in Emby:",
         "movies_label": "Movies",
-        "episodes_label": "Series",
+        "episodes_label": "Episodes",
         "footer_label": "You are receiving this email because you are using ${emby_owner_name}'s Emby server. If you want to stop receiving these emails, you can unsubscribe by notifying ${unsubscribe_email}.",
         "added_on": "Added on"
     },
@@ -31,7 +31,7 @@ translation = {
         "new_tvs": "Nouvelles séries :",
         "currently_available": "Actuellement disponible sur Emby :",
         "movies_label": "Films",
-        "episodes_label": "Séries",
+        "episodes_label": "Épisodes",
         "footer_label": "Vous recevez cet email car vous utilisez le serveur Emby de ${emby_owner_name}. Si vous ne souhaitez plus recevoir ces emails, vous pouvez vous désinscrire en notifiant ${unsubscribe_email}.",
         "added_on": "Ajouté le"
     }
@@ -124,7 +124,7 @@ def get_tv_season_info(serie_data: Dict[str, Any]) -> str:
     """
 
 
-def populate_email_template(movies, series, total_series, total_movies, config) -> str:
+def populate_email_template(movies, series, total_tv, total_movie, config) -> str:
     """
     Enhanced function with metadata badges and improved styling like the photo
     """
@@ -242,12 +242,11 @@ def populate_email_template(movies, series, total_series, total_movies, config) 
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section - now shows total series instead of episodes
-        template = re.sub(r"\${series_count}", str(total_series), template)
-        template = re.sub(r"\${movies_count}", str(total_movies), template)
+        # Statistics section
+        template = re.sub(r"\${series_count}", str(total_tv), template)
+        template = re.sub(r"\${movies_count}", str(total_movie), template)
 
-        logger.info(
-            f"Template populated successfully with enhanced styling: {total_movies} movies, {total_series} series")
+        logger.info(f"Template populated successfully with enhanced styling: {total_movie} movies, {total_tv} episodes")
         return template
 
     except Exception as e:
@@ -258,7 +257,6 @@ def populate_email_template(movies, series, total_series, total_movies, config) 
 def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
     Main function to render email with enhanced metadata
-    IMPORTANT: This function now properly fetches server statistics if not provided
     """
     try:
         # Convert context to the format expected by populate_email_template
@@ -295,31 +293,28 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 **show  # This preserves ProviderIds, tmdb_data, etc.
             }
 
-        # IMPORTANT: Get the server statistics
-        # First check if they're provided in context
+        # Get the total server statistics
         total_movies_server = context.get('total_movies_server', 0)
-        total_series_server = context.get('total_series_server', 0)
-
-        # If stats are 0 or not provided, try to fetch them
-        if total_movies_server == 0 or total_series_server == 0:
-            logger.warning("Server statistics are 0 or missing, attempting to fetch from Jellyfin...")
-            try:
-                # Try to get stats using the helper function
-                stats = get_jellyfin_server_statistics()
-                total_movies_server = stats.get('total_movies_server', 0)
-                total_series_server = stats.get('total_series_server', 0)
-            except Exception as e:
-                logger.error(f"Failed to fetch server statistics: {e}")
-                # If that fails, try the alternative method
-                try:
-                    total_movies_server, total_series_server = get_server_totals_from_jellyfin()
-                except Exception as e2:
-                    logger.error(f"Alternative fetch also failed: {e2}")
+        total_episodes_server = context.get('total_episodes_server', 0)
 
         # Debug logging
-        logger.info(f"Server totals being passed: Movies={total_movies_server}, Series={total_series_server}")
+        logger.info(f"Context total_movies_server: {total_movies_server}")
+        logger.info(f"Context total_episodes_server: {total_episodes_server}")
 
-        # Create mock config object to match original pattern
+        # If we don't have server totals, try alternative keys
+        if total_movies_server == 0 or total_episodes_server == 0:
+            logger.warning("Server totals not provided in context, trying to fetch...")
+
+            total_movies_server = context.get('total_movies_on_server',
+                                              context.get('server_movie_count',
+                                                          context.get('movie_count_total', 0)))
+            total_episodes_server = context.get('total_episodes_on_server',
+                                                context.get('server_episode_count',
+                                                            context.get('episode_count_total', 0)))
+
+        logger.info(f"Final server totals: Movies={total_movies_server}, Episodes={total_episodes_server}")
+
+        # Create mock config object
         class MockConfig:
             def __init__(self, context):
                 self.email_template = type('obj', (object,), {
@@ -333,55 +328,11 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         config = MockConfig(context)
 
-        # Call exactly like the original: populate_email_template(movies, series, total_series, total_movies, config)
-        return populate_email_template(movies_dict, series_dict, total_series_server, total_movies_server, config)
+        return populate_email_template(movies_dict, series_dict, total_episodes_server, total_movies_server, config)
 
     except Exception as e:
         logger.error(f"Error rendering email with server stats: {e}")
         raise
-
-
-def get_server_totals_from_jellyfin():
-    """
-    Function to get server totals using your existing JellyfinAPI pattern
-    This should be called from your main code where you have access to configuration
-    """
-    try:
-        from source import configuration
-        import requests
-
-        headers = {
-            "Authorization": f'MediaBrowser Token="{configuration.conf.jellyfin.api_token}"'
-        }
-
-        # Get total movies - using the exact same pattern as get_item_from_parent
-        movies_response = requests.get(
-            f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Movie&Recursive=true',
-            headers=headers
-        )
-
-        # Get total series - using the exact same pattern as get_item_from_parent
-        series_response = requests.get(
-            f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Series&Recursive=true',
-            headers=headers
-        )
-
-        total_movies = 0
-        total_series = 0
-
-        if movies_response.status_code == 200:
-            total_movies = movies_response.json().get("TotalRecordCount", 0)
-
-        if series_response.status_code == 200:
-            total_series = series_response.json().get("TotalRecordCount", 0)
-
-        logger.info(f"Server statistics fetched: {total_movies} movies, {total_series} series")
-
-        return total_movies, total_series
-
-    except Exception as e:
-        logger.error(f"Error getting server statistics: {e}")
-        return 0, 0
 
 
 # Keep existing functions for compatibility
@@ -396,94 +347,76 @@ def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
         return {}
 
 
-def get_jellyfin_server_statistics() -> Dict[str, int]:
-    """
-    Get total server statistics using the same pattern as your JellyfinAPI.py
-    This returns a dictionary with the proper keys
-    """
+def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
+    """Fetch total server statistics from Emby API."""
     try:
-        # Import your existing API functions
-        from source import configuration
         import requests
 
-        headers = {
-            "Authorization": f'MediaBrowser Token="{configuration.conf.jellyfin.api_token}"'
-        }
+        emby_url = emby_url.rstrip('/')
+        headers = {'X-Emby-Token': api_key}
 
-        # Get total movies
-        movies_response = requests.get(
-            f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Movie&Recursive=true',
-            headers=headers
-        )
-
-        # Get total series
-        series_response = requests.get(
-            f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Series&Recursive=true',
-            headers=headers
-        )
+        api_endpoints = [
+            f"{emby_url}/emby/Items",
+            f"{emby_url}/Items",
+            f"{emby_url}/api/Items"
+        ]
 
         total_movies = 0
-        total_series = 0
+        total_episodes = 0
 
-        if movies_response.status_code == 200:
-            total_movies = movies_response.json().get("TotalRecordCount", 0)
+        for endpoint in api_endpoints:
+            try:
+                logger.debug(f"Trying endpoint: {endpoint}")
 
-        if series_response.status_code == 200:
-            total_series = series_response.json().get("TotalRecordCount", 0)
+                movies_response = requests.get(
+                    endpoint,
+                    params={
+                        'IncludeItemTypes': 'Movie',
+                        'Recursive': 'true',
+                        'Fields': 'ItemCounts'
+                    },
+                    headers=headers,
+                    timeout=10
+                )
 
-        logger.info(f"Server statistics: {total_movies} movies, {total_series} series")
+                episodes_response = requests.get(
+                    endpoint,
+                    params={
+                        'IncludeItemTypes': 'Episode',
+                        'Recursive': 'true',
+                        'Fields': 'ItemCounts'
+                    },
+                    headers=headers,
+                    timeout=10
+                )
 
-        return {
-            'total_movies_server': total_movies,
-            'total_series_server': total_series
-        }
+                if movies_response.status_code == 200 and episodes_response.status_code == 200:
+                    total_movies = movies_response.json().get('TotalRecordCount', 0)
+                    total_episodes = episodes_response.json().get('TotalRecordCount', 0)
+                    logger.info(f"Success with endpoint: {endpoint}")
+                    logger.debug(f"Retrieved {total_movies} movies and {total_episodes} episodes from server")
 
+                    return {
+                        'total_movies_server': total_movies,
+                        'total_episodes_server': total_episodes
+                    }
+                else:
+                    logger.debug(
+                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, episodes={episodes_response.status_code}")
+
+            except requests.exceptions.RequestException as e:
+                logger.debug(f"Request failed for endpoint {endpoint}: {e}")
+                continue
+
+        logger.warning("All API endpoints failed or returned zero results")
+        return {'total_movies_server': 0, 'total_episodes_server': 0}
+
+    except ImportError:
+        logger.error("requests library not available for API calls")
+        return {'total_movies_server': 0, 'total_episodes_server': 0}
     except Exception as e:
-        logger.error(f"Error getting server statistics: {e}")
-        return {'total_movies_server': 0, 'total_series_server': 0}
-
-
-def get_server_stats_from_existing_data(movies_data, series_data, parent_totals=None):
-    """
-    Alternative method: extract server totals from your existing API calls
-    Use this if you're already calling get_item_from_parent()
-    """
-    total_movies = 0
-    total_series = 0
-
-    # If you have parent totals from get_item_from_parent calls
-    if parent_totals:
-        total_movies = parent_totals.get('movies_total', 0)
-        total_series = parent_totals.get('series_total', 0)
-    else:
-        # Fallback: estimate from the data you already have
-        # This won't be accurate but better than 0
-        total_movies = len(movies_data) if movies_data else 0
-        total_series = len(series_data) if series_data else 0
-
-    return {
-        'total_movies_server': total_movies,
-        'total_series_server': total_series
-    }
-
-
-# IMPORTANT: Function to be called from your main application
-def fetch_and_add_server_stats_to_context(context: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Helper function to fetch server stats and add them to your context
-    Call this before calling render_email_with_server_stats
-    """
-    try:
-        stats = get_jellyfin_server_statistics()
-        context['total_movies_server'] = stats['total_movies_server']
-        context['total_series_server'] = stats['total_series_server']
-        logger.info(f"Added server stats to context: {stats}")
-    except Exception as e:
-        logger.error(f"Failed to add server stats to context: {e}")
-        context['total_movies_server'] = 0
-        context['total_series_server'] = 0
-
-    return context
+        logger.error(f"Error fetching server statistics: {e}")
+        return {'total_movies_server': 0, 'total_episodes_server': 0}
 
 
 # Example usage and data format helper
@@ -499,8 +432,8 @@ def example_usage():
         'emby_url': 'https://emby.example.com',
         'emby_owner_name': 'John Doe',
         'unsubscribe_email': 'unsubscribe@example.com',
-        'total_movies_server': 1247,  # This should come from your Jellyfin API
-        'total_series_server': 89,  # This should come from your Jellyfin API
+        'total_movies_server': 1247,
+        'total_episodes_server': 8934,
         'movies': [
             {
                 'title': 'The Karate Kid',

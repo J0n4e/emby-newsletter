@@ -299,47 +299,6 @@ class EmbyAPI:
             logger.error(f"Error getting image URL for item {item_id}: {e}")
             return None
 
-    def get_server_statistics(self) -> Dict[str, int]:
-        """Get total count of movies and series in the server"""
-        try:
-            logger.info("Fetching server statistics...")
-
-            # Get total movies
-            movie_params = {
-                'IncludeItemTypes': 'Movie',
-                'Recursive': 'true',
-                'Limit': 0  # Just get the count
-            }
-
-            movie_response = self.session.get(f"{self.base_url}/emby/Items", params=movie_params)
-            movie_response.raise_for_status()
-            total_movies = movie_response.json().get('TotalRecordCount', 0)
-
-            # Get total series
-            series_params = {
-                'IncludeItemTypes': 'Series',
-                'Recursive': 'true',
-                'Limit': 0  # Just get the count
-            }
-
-            series_response = self.session.get(f"{self.base_url}/emby/Items", params=series_params)
-            series_response.raise_for_status()
-            total_series = series_response.json().get('TotalRecordCount', 0)
-
-            logger.info(f"Server statistics: {total_movies} movies, {total_series} series")
-
-            return {
-                'total_movies_server': total_movies,
-                'total_series_server': total_series
-            }
-
-        except Exception as e:
-            logger.error(f"Error fetching server statistics: {e}")
-            return {
-                'total_movies_server': 0,
-                'total_series_server': 0
-            }
-
 
 class TMDBApi:
     """Enhanced TMDB API class based on original implementation"""
@@ -877,17 +836,9 @@ class NewsletterGenerator:
 
         return list(series_dict.values())
 
-    def _clean_series_title(self, title: str) -> str:
-        """Clean series title for better TMDB search"""
-        # Use the same method from TMDB API
-        return self.tmdb_api._clean_search_title(title)
-
     def _generate_html(self, movies: List[Dict], tv_shows: List[Dict]) -> str:
         """Generate HTML newsletter content using secure template rendering"""
         try:
-            # Get server statistics from Emby
-            server_stats = self.emby_api.get_server_statistics()
-
             context = {
                 'language': self.config.email_template.language,
                 'title': self.config.email_template.title,
@@ -896,18 +847,106 @@ class NewsletterGenerator:
                 'tv_shows': tv_shows,
                 'emby_url': self.config.email_template.emby_url,
                 'emby_owner_name': self.config.email_template.emby_owner_name,
-                'unsubscribe_email': self.config.email_template.unsubscribe_email,
-                # Add the server statistics to the context
-                'total_movies_server': server_stats['total_movies_server'],
-                'total_series_server': server_stats['total_series_server']
+                'unsubscribe_email': self.config.email_template.unsubscribe_email
             }
 
-            logger.info(
-                f"Generating HTML with server stats: {server_stats['total_movies_server']} movies, {server_stats['total_series_server']} series")
-
-            # Use the enhanced function that now has the statistics in context
+            # Use the enhanced function that automatically fetches server statistics
             return render_email_with_server_stats(context, config_path="/app/config/config.yml")
 
         except Exception as e:
             logger.error(f"Error generating HTML template: {e}")
             raise
+
+    def send_newsletter(self, html_content: str) -> bool:
+        """Send newsletter via email"""
+        try:
+            logger.info("Starting email send process...")
+
+            # Email configuration
+            email_config = self.config.email
+            recipients = self.config.recipients
+            subject = self.config.email_template.subject
+
+            logger.info(f"Sending to {len(recipients)} recipients: {recipients}")
+            logger.info(f"Using SMTP server: {email_config.smtp_server}:{email_config.smtp_port}")
+
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = email_config.smtp_sender_email
+            msg['To'] = ', '.join(recipients)
+
+            # Add HTML content
+            html_part = MIMEText(html_content, 'html', 'utf-8')
+            msg.attach(html_part)
+
+            # Send email with timeout
+            context = ssl.create_default_context()
+            with smtplib.SMTP(email_config.smtp_server, email_config.smtp_port, timeout=30) as server:
+                server.starttls(context=context)
+                server.login(email_config.smtp_username, email_config.smtp_password)
+                server.sendmail(email_config.smtp_sender_email, recipients, msg.as_string())
+
+            logger.info(f"✅ Newsletter sent successfully to {len(recipients)} recipients")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Error sending newsletter: {e}")
+            return False
+
+
+def main():
+    """Main function with proper timezone handling"""
+    try:
+        # Set up timezone first
+        setup_timezone()
+
+        # Run comprehensive timezone debugging
+        comprehensive_timezone_debug()
+
+        # Get timezone info for logging
+        current_tz = os.environ.get('TZ', 'UTC')
+        logger.info(f"🚀 Starting Enhanced Emby Newsletter with TMDB (Timezone: {current_tz})")
+
+        # Load configuration
+        config_manager = ConfigurationManager()
+        config_manager.load_config()
+
+        # Generate and send newsletter
+        generator = NewsletterGenerator(config_manager)
+        html_content = generator.generate_newsletter()
+
+        if html_content:
+            success = generator.send_newsletter(html_content)
+            if success:
+                current_time = datetime.now()
+                logger.info("✅ Enhanced newsletter generation and sending completed successfully")
+                print("=" * 80)
+                print("🎉 ENHANCED NEWSLETTER COMPLETED SUCCESSFULLY!")
+                print(f"📧 Sent at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+                print(f"⏰ Local time: {current_time}")
+                print(f"🎬 TMDB integration: ACTIVE")
+                print("=" * 80)
+            else:
+                logger.error("❌ Failed to send newsletter")
+                sys.exit(1)
+        else:
+            logger.error("❌ Failed to generate newsletter")
+            sys.exit(1)
+
+    except Exception as e:
+        current_time = datetime.now()
+        current_tz = os.environ.get('TZ', 'UTC')
+        logger.error(f"💥 Unexpected error: {e}")
+        print("=" * 80)
+        print("❌ ENHANCED NEWSLETTER FAILED!")
+        print(f"💥 Error: {e}")
+        print(f"🕐 Failed at: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🌍 Timezone: {current_time.strftime('%Z')} ({current_tz})")
+        print("=" * 80)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
