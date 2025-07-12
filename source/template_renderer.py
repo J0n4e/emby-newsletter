@@ -258,6 +258,7 @@ def populate_email_template(movies, series, total_series, total_movies, config) 
 def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "config.yml") -> str:
     """
     Main function to render email with enhanced metadata
+    IMPORTANT: This function now properly fetches server statistics if not provided
     """
     try:
         # Convert context to the format expected by populate_email_template
@@ -294,10 +295,26 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 **show  # This preserves ProviderIds, tmdb_data, etc.
             }
 
-        # IMPORTANT: Get the server statistics exactly like the original pattern
-        # These should be the TOTAL counts from your server, not just new items
+        # IMPORTANT: Get the server statistics
+        # First check if they're provided in context
         total_movies_server = context.get('total_movies_server', 0)
         total_series_server = context.get('total_series_server', 0)
+
+        # If stats are 0 or not provided, try to fetch them
+        if total_movies_server == 0 or total_series_server == 0:
+            logger.warning("Server statistics are 0 or missing, attempting to fetch from Jellyfin...")
+            try:
+                # Try to get stats using the helper function
+                stats = get_jellyfin_server_statistics()
+                total_movies_server = stats.get('total_movies_server', 0)
+                total_series_server = stats.get('total_series_server', 0)
+            except Exception as e:
+                logger.error(f"Failed to fetch server statistics: {e}")
+                # If that fails, try the alternative method
+                try:
+                    total_movies_server, total_series_server = get_server_totals_from_jellyfin()
+                except Exception as e2:
+                    logger.error(f"Alternative fetch also failed: {e2}")
 
         # Debug logging
         logger.info(f"Server totals being passed: Movies={total_movies_server}, Series={total_series_server}")
@@ -327,7 +344,7 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 def get_server_totals_from_jellyfin():
     """
     Function to get server totals using your existing JellyfinAPI pattern
-    Call this from your main code where you have access to configuration
+    This should be called from your main code where you have access to configuration
     """
     try:
         from source import configuration
@@ -337,13 +354,13 @@ def get_server_totals_from_jellyfin():
             "Authorization": f'MediaBrowser Token="{configuration.conf.jellyfin.api_token}"'
         }
 
-        # Get total movies - same pattern as your get_item_from_parent
+        # Get total movies - using the exact same pattern as get_item_from_parent
         movies_response = requests.get(
             f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Movie&Recursive=true',
             headers=headers
         )
 
-        # Get total series - same pattern as your get_item_from_parent
+        # Get total series - using the exact same pattern as get_item_from_parent
         series_response = requests.get(
             f'{configuration.conf.jellyfin.url}/Items?IncludeItemTypes=Series&Recursive=true',
             headers=headers
@@ -358,7 +375,7 @@ def get_server_totals_from_jellyfin():
         if series_response.status_code == 200:
             total_series = series_response.json().get("TotalRecordCount", 0)
 
-        logger.info(f"Server statistics: {total_movies} movies, {total_series} series")
+        logger.info(f"Server statistics fetched: {total_movies} movies, {total_series} series")
 
         return total_movies, total_series
 
@@ -382,7 +399,7 @@ def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
 def get_jellyfin_server_statistics() -> Dict[str, int]:
     """
     Get total server statistics using the same pattern as your JellyfinAPI.py
-    This should be called from your main application where you have access to configuration
+    This returns a dictionary with the proper keys
     """
     try:
         # Import your existing API functions
@@ -450,6 +467,25 @@ def get_server_stats_from_existing_data(movies_data, series_data, parent_totals=
     }
 
 
+# IMPORTANT: Function to be called from your main application
+def fetch_and_add_server_stats_to_context(context: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Helper function to fetch server stats and add them to your context
+    Call this before calling render_email_with_server_stats
+    """
+    try:
+        stats = get_jellyfin_server_statistics()
+        context['total_movies_server'] = stats['total_movies_server']
+        context['total_series_server'] = stats['total_series_server']
+        logger.info(f"Added server stats to context: {stats}")
+    except Exception as e:
+        logger.error(f"Failed to add server stats to context: {e}")
+        context['total_movies_server'] = 0
+        context['total_series_server'] = 0
+
+    return context
+
+
 # Example usage and data format helper
 def example_usage():
     """
@@ -463,8 +499,8 @@ def example_usage():
         'emby_url': 'https://emby.example.com',
         'emby_owner_name': 'John Doe',
         'unsubscribe_email': 'unsubscribe@example.com',
-        'total_movies_server': 1247,
-        'total_episodes_server': 8934,
+        'total_movies_server': 1247,  # This should come from your Jellyfin API
+        'total_series_server': 89,  # This should come from your Jellyfin API
         'movies': [
             {
                 'title': 'The Karate Kid',
