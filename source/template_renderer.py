@@ -21,7 +21,7 @@ translation = {
         "new_tvs": "New shows:",
         "currently_available": "Currently available in Emby:",
         "movies_label": "Movies",
-        "episodes_label": "Episodes",
+        "episodes_label": "Series",
         "footer_label": "You are receiving this email because you are using ${emby_owner_name}'s Emby server. If you want to stop receiving these emails, you can unsubscribe by notifying ${unsubscribe_email}.",
         "added_on": "Added on"
     },
@@ -31,7 +31,7 @@ translation = {
         "new_tvs": "Nouvelles séries :",
         "currently_available": "Actuellement disponible sur Emby :",
         "movies_label": "Films",
-        "episodes_label": "Épisodes",
+        "episodes_label": "Séries",
         "footer_label": "Vous recevez cet email car vous utilisez le serveur Emby de ${emby_owner_name}. Si vous ne souhaitez plus recevoir ces emails, vous pouvez vous désinscrire en notifiant ${unsubscribe_email}.",
         "added_on": "Ajouté le"
     }
@@ -124,7 +124,7 @@ def get_tv_season_info(serie_data: Dict[str, Any]) -> str:
     """
 
 
-def populate_email_template(movies, series, total_tv, total_movie, config) -> str:
+def populate_email_template(movies, series, total_series, total_movies, config) -> str:
     """
     Enhanced function with metadata badges and improved styling like the photo
     """
@@ -242,11 +242,12 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section
-        template = re.sub(r"\${series_count}", str(total_tv), template)
-        template = re.sub(r"\${movies_count}", str(total_movie), template)
+        # Statistics section - now shows total series instead of episodes
+        template = re.sub(r"\${series_count}", str(total_series), template)
+        template = re.sub(r"\${movies_count}", str(total_movies), template)
 
-        logger.info(f"Template populated successfully with enhanced styling: {total_movie} movies, {total_tv} episodes")
+        logger.info(
+            f"Template populated successfully with enhanced styling: {total_movies} movies, {total_series} series")
         return template
 
     except Exception as e:
@@ -295,24 +296,25 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         # Get the total server statistics
         total_movies_server = context.get('total_movies_server', 0)
-        total_episodes_server = context.get('total_episodes_server', 0)
+        total_series_server = context.get('total_series_server', 0)  # Changed from episodes to series
 
         # Debug logging
         logger.info(f"Context total_movies_server: {total_movies_server}")
-        logger.info(f"Context total_episodes_server: {total_episodes_server}")
+        logger.info(f"Context total_series_server: {total_series_server}")
 
         # If we don't have server totals, try alternative keys
-        if total_movies_server == 0 or total_episodes_server == 0:
+        if total_movies_server == 0 or total_series_server == 0:
             logger.warning("Server totals not provided in context, trying to fetch...")
 
             total_movies_server = context.get('total_movies_on_server',
                                               context.get('server_movie_count',
                                                           context.get('movie_count_total', 0)))
-            total_episodes_server = context.get('total_episodes_on_server',
-                                                context.get('server_episode_count',
-                                                            context.get('episode_count_total', 0)))
+            total_series_server = context.get('total_series_on_server',
+                                              context.get('server_series_count',
+                                                          context.get('series_count_total',
+                                                                      context.get('total_shows_server', 0))))
 
-        logger.info(f"Final server totals: Movies={total_movies_server}, Episodes={total_episodes_server}")
+        logger.info(f"Final server totals: Movies={total_movies_server}, Series={total_series_server}")
 
         # Create mock config object
         class MockConfig:
@@ -328,7 +330,7 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
 
         config = MockConfig(context)
 
-        return populate_email_template(movies_dict, series_dict, total_episodes_server, total_movies_server, config)
+        return populate_email_template(movies_dict, series_dict, total_series_server, total_movies_server, config)
 
     except Exception as e:
         logger.error(f"Error rendering email with server stats: {e}")
@@ -348,7 +350,7 @@ def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
 
 
 def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
-    """Fetch total server statistics from Emby API."""
+    """Fetch total server statistics from Emby API - movies and series count."""
     try:
         import requests
 
@@ -362,7 +364,7 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
         ]
 
         total_movies = 0
-        total_episodes = 0
+        total_series = 0
 
         for endpoint in api_endpoints:
             try:
@@ -379,10 +381,11 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
                     timeout=10
                 )
 
-                episodes_response = requests.get(
+                # Get total TV series (not episodes)
+                series_response = requests.get(
                     endpoint,
                     params={
-                        'IncludeItemTypes': 'Episode',
+                        'IncludeItemTypes': 'Series',
                         'Recursive': 'true',
                         'Fields': 'ItemCounts'
                     },
@@ -390,33 +393,33 @@ def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
                     timeout=10
                 )
 
-                if movies_response.status_code == 200 and episodes_response.status_code == 200:
+                if movies_response.status_code == 200 and series_response.status_code == 200:
                     total_movies = movies_response.json().get('TotalRecordCount', 0)
-                    total_episodes = episodes_response.json().get('TotalRecordCount', 0)
+                    total_series = series_response.json().get('TotalRecordCount', 0)
                     logger.info(f"Success with endpoint: {endpoint}")
-                    logger.debug(f"Retrieved {total_movies} movies and {total_episodes} episodes from server")
+                    logger.debug(f"Retrieved {total_movies} movies and {total_series} series from server")
 
                     return {
                         'total_movies_server': total_movies,
-                        'total_episodes_server': total_episodes
+                        'total_series_server': total_series
                     }
                 else:
                     logger.debug(
-                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, episodes={episodes_response.status_code}")
+                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, series={series_response.status_code}")
 
             except requests.exceptions.RequestException as e:
                 logger.debug(f"Request failed for endpoint {endpoint}: {e}")
                 continue
 
         logger.warning("All API endpoints failed or returned zero results")
-        return {'total_movies_server': 0, 'total_episodes_server': 0}
+        return {'total_movies_server': 0, 'total_series_server': 0}
 
     except ImportError:
         logger.error("requests library not available for API calls")
-        return {'total_movies_server': 0, 'total_episodes_server': 0}
+        return {'total_movies_server': 0, 'total_series_server': 0}
     except Exception as e:
         logger.error(f"Error fetching server statistics: {e}")
-        return {'total_movies_server': 0, 'total_episodes_server': 0}
+        return {'total_movies_server': 0, 'total_series_server': 0}
 
 
 # Example usage and data format helper
