@@ -350,68 +350,63 @@ def load_config(config_path: str = "config.yml") -> Dict[str, Any]:
 
 
 def get_emby_server_statistics(emby_url: str, api_key: str) -> Dict[str, int]:
-    """Fetch total server statistics from Emby API - movies and series count."""
+    """Fetch total server statistics from Jellyfin/Emby API - movies and series count."""
     try:
         import requests
 
         emby_url = emby_url.rstrip('/')
-        headers = {'X-Emby-Token': api_key}
 
-        api_endpoints = [
-            f"{emby_url}/emby/Items",
-            f"{emby_url}/Items",
-            f"{emby_url}/api/Items"
-        ]
+        # Use the same authorization format as your JellyfinAPI.py
+        headers = {
+            "Authorization": f'MediaBrowser Token="{api_key}"'
+        }
 
-        total_movies = 0
-        total_series = 0
+        try:
+            logger.debug(f"Trying Jellyfin endpoint: {emby_url}/Items")
 
-        for endpoint in api_endpoints:
-            try:
-                logger.debug(f"Trying endpoint: {endpoint}")
+            # Get total movies
+            movies_response = requests.get(
+                f'{emby_url}/Items',
+                params={
+                    'IncludeItemTypes': 'Movie',
+                    'Recursive': 'true'
+                },
+                headers=headers,
+                timeout=10
+            )
 
-                movies_response = requests.get(
-                    endpoint,
-                    params={
-                        'IncludeItemTypes': 'Movie',
-                        'Recursive': 'true',
-                        'Fields': 'ItemCounts'
-                    },
-                    headers=headers,
-                    timeout=10
-                )
+            # Get total TV series (not episodes)
+            series_response = requests.get(
+                f'{emby_url}/Items',
+                params={
+                    'IncludeItemTypes': 'Series',
+                    'Recursive': 'true'
+                },
+                headers=headers,
+                timeout=10
+            )
 
-                # Get total TV series (not episodes)
-                series_response = requests.get(
-                    endpoint,
-                    params={
-                        'IncludeItemTypes': 'Series',
-                        'Recursive': 'true',
-                        'Fields': 'ItemCounts'
-                    },
-                    headers=headers,
-                    timeout=10
-                )
+            if movies_response.status_code == 200 and series_response.status_code == 200:
+                total_movies = movies_response.json().get('TotalRecordCount', 0)
+                total_series = series_response.json().get('TotalRecordCount', 0)
 
-                if movies_response.status_code == 200 and series_response.status_code == 200:
-                    total_movies = movies_response.json().get('TotalRecordCount', 0)
-                    total_series = series_response.json().get('TotalRecordCount', 0)
-                    logger.info(f"Success with endpoint: {endpoint}")
-                    logger.debug(f"Retrieved {total_movies} movies and {total_series} series from server")
+                logger.info(f"Success with Jellyfin API")
+                logger.info(f"Retrieved {total_movies} movies and {total_series} series from server")
 
-                    return {
-                        'total_movies_server': total_movies,
-                        'total_series_server': total_series
-                    }
-                else:
-                    logger.debug(
-                        f"Failed with endpoint {endpoint}: movies={movies_response.status_code}, series={series_response.status_code}")
+                return {
+                    'total_movies_server': total_movies,
+                    'total_series_server': total_series
+                }
+            else:
+                logger.error(
+                    f"Failed API calls: movies={movies_response.status_code}, series={series_response.status_code}")
+                logger.error(f"Movies response: {movies_response.text}")
+                logger.error(f"Series response: {series_response.text}")
 
-            except requests.exceptions.RequestException as e:
-                logger.debug(f"Request failed for endpoint {endpoint}: {e}")
-                continue
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request failed for Jellyfin API: {e}")
 
-        logger.warning("All API endpoints failed or returned zero results")
+        logger.warning("Jellyfin API calls failed, returning zero counts")
         return {'total_movies_server': 0, 'total_series_server': 0}
 
     except ImportError:
