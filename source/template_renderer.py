@@ -43,25 +43,34 @@ def get_metadata_badges(item_data: Dict[str, Any]) -> str:
     badges_html = ""
 
     # Year badge (blue)
-    year = item_data.get('year', item_data.get('release_year', ''))
+    year = item_data.get('year', item_data.get('release_year', item_data.get('first_air_date', '')))
     if year:
+        # Extract just the year if it's a full date
+        if '-' in str(year):
+            year = str(year).split('-')[0]
         badges_html += f'<span class="meta-badge year-badge">{year}</span>'
 
-    # Rating badge (green with star)
-    rating = item_data.get('rating', item_data.get('imdb_rating', item_data.get('tmdb_rating', '')))
+    # Rating badge (green with star) - try multiple possible rating fields
+    rating = item_data.get('rating',
+                           item_data.get('imdb_rating',
+                                         item_data.get('tmdb_rating',
+                                                       item_data.get('vote_average', ''))))
     if rating:
         try:
             # Format rating to 1 decimal place
             rating_float = float(rating)
-            badges_html += f'<span class="meta-badge rating-badge">★ {rating_float:.1f}</span>'
+            if rating_float > 0:  # Only show if rating is greater than 0
+                badges_html += f'<span class="meta-badge rating-badge">★ {rating_float:.1f}</span>'
         except (ValueError, TypeError):
             pass
 
-    # Source badge (purple)
+    # Source badge (purple) - for both movies and TV shows
     source = item_data.get('source', item_data.get('metadata_source', ''))
     if source:
         badges_html += f'<span class="meta-badge source-badge">{source}</span>'
     elif 'tmdb' in str(item_data.get('external_ids', {})).lower():
+        badges_html += f'<span class="meta-badge source-badge">TMDB Enhanced</span>'
+    elif item_data.get('tmdb_id') or item_data.get('TheMovieDb'):
         badges_html += f'<span class="meta-badge source-badge">TMDB Enhanced</span>'
 
     return badges_html
@@ -257,9 +266,12 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'description': movie.get('overview', ''),
                 'poster': movie.get('poster_url', ''),
                 'year': movie.get('year', movie.get('release_year', '')),
-                'rating': movie.get('rating', movie.get('imdb_rating', movie.get('tmdb_rating', ''))),
+                'rating': movie.get('rating',
+                                    movie.get('imdb_rating', movie.get('tmdb_rating', movie.get('vote_average', '')))),
                 'source': movie.get('source', movie.get('metadata_source', '')),
-                'external_ids': movie.get('external_ids', {})
+                'external_ids': movie.get('external_ids', {}),
+                'tmdb_id': movie.get('tmdb_id', ''),
+                'TheMovieDb': movie.get('TheMovieDb', '')
             }
 
         # Convert TV shows list to dictionary format with enhanced data
@@ -273,10 +285,13 @@ def render_email_with_server_stats(context: Dict[str, Any], config_path: str = "
                 'description': show.get('overview', ''),
                 'poster': show.get('poster_url', ''),
                 'seasons': seasons,  # Keep the full seasons data for episode counting
-                'year': show.get('year', show.get('release_year', '')),
-                'rating': show.get('rating', show.get('imdb_rating', show.get('tmdb_rating', ''))),
+                'year': show.get('year', show.get('release_year', show.get('first_air_date', ''))),
+                'rating': show.get('rating',
+                                   show.get('imdb_rating', show.get('tmdb_rating', show.get('vote_average', '')))),
                 'source': show.get('source', show.get('metadata_source', '')),
-                'external_ids': show.get('external_ids', {})
+                'external_ids': show.get('external_ids', {}),
+                'tmdb_id': show.get('tmdb_id', ''),
+                'TheMovieDb': show.get('TheMovieDb', '')
             }
 
         # Get the total server statistics
