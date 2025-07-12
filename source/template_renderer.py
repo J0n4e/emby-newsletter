@@ -149,7 +149,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
             movies_html = ""
 
             for movie_title, movie_data in movies.items():
-                added_date = movie_data["created_on"].split("T")[0]
                 metadata_badges = get_metadata_badges(movie_data)
 
                 # Escape HTML in movie title and description
@@ -169,9 +168,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
                                         <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 8px !important; font-size: 18px !important; font-weight: 600;">{safe_title}</h3>
                                         <div style="margin-bottom: 12px;">
                                             {metadata_badges}
-                                        </div>
-                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 12px !important;">
-                                            {translation[language]['added_on']} {added_date}
                                         </div>
                                         <div class="movie-description" style="color: #ffffff !important; font-size: 14px !important; line-height: 1.5 !important;">
                                             {safe_description}
@@ -194,7 +190,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
             series_html = ""
 
             for serie_title, serie_data in series.items():
-                added_date = serie_data["created_on"].split("T")[0]
                 metadata_badges = get_metadata_badges(serie_data)
                 season_info = get_tv_season_info(serie_data)
 
@@ -215,9 +210,6 @@ def populate_email_template(movies, series, total_tv, total_movie, config) -> st
                                         <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 8px !important; font-size: 18px !important; font-weight: 600;">{safe_title}</h3>
                                         <div style="margin-bottom: 12px;">
                                             {metadata_badges}
-                                        </div>
-                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 12px !important;">
-                                            {translation[language]['added_on']} {added_date}
                                         </div>
                                         <div class="movie-description" style="color: #ffffff !important; font-size: 14px !important; line-height: 1.5 !important;">
                                             {safe_description}
