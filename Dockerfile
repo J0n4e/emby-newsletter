@@ -1,41 +1,39 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-# Set working directory
+RUN mkdir -p /app/config
+
+COPY source /app/source
+COPY requirements.txt /app
+COPY main.py /app
+COPY template /app/template
+COPY assets /app/assets
+COPY entrypoint.sh /app/entrypoint.sh
+COPY config/config-example.yml /app/default/config-example.yml
+
+
 WORKDIR /app
 
-# Install system dependencies including procps for ps command
-RUN apt-get update && apt-get install -y \
-    cron \
-    procps \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+RUN chmod +x /app/entrypoint.sh
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN apt update 
 
-# Copy application code
-COPY source/ ./source/
-COPY templates/ ./templates/
-COPY config/ ./config/
-COPY entrypoint.sh .
-COPY check_config.py .
+RUN apt install -y --no-install-recommends locales python3-pip python3-dev build-essential libssl-dev libffi-dev python3-setuptools gcc gosu
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
+RUN echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen && \
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
+    locale-gen
 
-# Create a non-root user with specific UID/GID
-RUN groupadd -g 1000 emby && useradd -u 1000 -g emby -m emby
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
 
-# Create necessary directories and set permissions
-RUN mkdir -p /var/log /var/spool/cron/crontabs \
-    && chmod 0755 /var/spool/cron \
-    && chmod 0755 /var/spool/cron/crontabs \
-    && chown -R emby:emby /app /var/log
+RUN pip install --no-cache --upgrade pip setuptools
 
-# Set environment variables
-ENV PYTHONPATH=/app/source
-ENV PYTHONUNBUFFERED=1
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+RUN apt remove -y python3-dev build-essential libssl-dev libffi-dev python3-setuptools gcc
 
-ENTRYPOINT ["./entrypoint.sh"]
+RUN apt autoremove -y
+
+
+ENTRYPOINT ["/app/entrypoint.sh"]

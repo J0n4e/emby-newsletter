@@ -1,61 +1,38 @@
-name: "Build and Push Docker Image"
+name: "Jellyfin-newsletter docker image deployment"
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+
 
 jobs:
-  security_test:
-    uses: ./.github/workflows/security_test.yml
-
-  build:
-    needs: [security_test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Container Registry
-      if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+    security_test:
+        uses: ./.github/workflows/security_test.yml 
+    build_and_publish :
+      needs: [security_test]
+      name: Build and publish image
+      runs-on: ubuntu-latest
+      env:
+        DOCKER_IMAGE_NAME: "jellyfin-newsletter"
+      steps:
+        - uses: actions/checkout@v3
+        - name: Build
+          working-directory: ./
+          run: |
+            current_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+            current_short_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\).*$/\1/')
+            docker build -t $DOCKER_IMAGE_NAME:latest -t $DOCKER_IMAGE_NAME:$current_version -t $DOCKER_IMAGE_NAME:$current_short_version .
+        - name: Login to GitHub Container Registry
+          run: echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ secrets.USERNAME }} --password-stdin
+        - name: Push Docker image to GitHub Container Registry
+          run: |
+            current_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+            current_short_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\).*$/\1/')
+            docker tag $DOCKER_IMAGE_NAME:latest ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:latest
+            docker tag $DOCKER_IMAGE_NAME:$current_version ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_version
+            docker tag $DOCKER_IMAGE_NAME:$current_short_version ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_short_version
+            docker push ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:latest
+            docker push ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_version
+            docker push ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_short_version

@@ -14,12 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+
       - name: Update version in files
         run: |
-          sed -i -E "s|ghcr.io/j0n4e/emby-newsletter:v[0-9]+\.[0-9]+\.[0-9]+|ghcr.io/j0n4e/emby-newsletter:${{ github.event.release.tag_name }}|g" README.md
-          sed -i -E "s|ghcr.io/j0n4e/emby-newsletter:latest|ghcr.io/j0n4e/emby-newsletter:${{ github.event.release.tag_name }}|g" README.md
-          sed -i -E "s|ghcr.io/j0n4e/emby-newsletter:v[0-9]+\.[0-9]+\.[0-9]+|ghcr.io/j0n4e/emby-newsletter:${{ github.event.release.tag_name }}|g" docker-compose.yml
-          sed -i -E "s|ghcr.io/j0n4e/emby-newsletter:latest|ghcr.io/j0n4e/emby-newsletter:${{ github.event.release.tag_name }}|g" docker-compose.yml
+          sed -i -E "s|ghcr.io/seaweedbraincy/jellyfin-newsletter:v[0-9]+\.[0-9]+\.[0-9]+|ghcr.io/seaweedbraincy/jellyfin-newsletter:${{ github.event.release.tag_name }}|g" README.md
+          sed -i -E "s|ghcr.io/seaweedbraincy/jellyfin-newsletter:v[0-9]+\.[0-9]+\.[0-9]+|ghcr.io/seaweedbraincy/jellyfin-newsletter:${{ github.event.release.tag_name }}|g" docker-compose.yml
 
       - name: Commit and push changes
         run: |
