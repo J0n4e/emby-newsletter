@@ -18,7 +18,7 @@ def send_email(html_content):
 
     for recipient in configuration.conf.recipients:
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = configuration.conf.email_template.subject.format_map(context.placeholders)
+        msg['Subject'] = f"{configuration.conf.email_template.subject} for {context.placeholders['day_name']}"
         msg['From'] = configuration.conf.email.smtp_sender_email
         msg['To'] = recipient
 

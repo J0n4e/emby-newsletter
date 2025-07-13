@@ -21,7 +21,7 @@ def get_item_from_parent(parent_id, type, minimum_creation_date=None):
         "X-Emby-Token": conf.server.api_token
     }
 
-    response = requests.get(f'{conf.server.url}/emby/Items?ParentId={parent_id}&fields=DateCreated,ProviderIds&Recursive=true', headers=headers)
+    response = requests.get(f'{conf.server.url}/emby/Items?ParentId={parent_id}&fields=DateCreated,ProviderIds,ProductionYear&Recursive=true', headers=headers)
     if response.status_code != 200:
         logging.error(f"Error while getting the items from parent, status code: {response.status_code}.")
         raise Exception(f"Error while getting the items from parent, status code: {response.status_code}. Answer: {response.text}.")
@@ -46,7 +46,7 @@ def get_item_from_parent_by_name(parent_id, name):
     headers = {
         "X-Emby-Token": conf.server.api_token
     }
-    response = requests.get(f'{conf.server.url}/emby/Items?ParentId={parent_id}&fields=DateCreated,ProviderIds&Recursive=true', headers=headers)
+    response = requests.get(f'{conf.server.url}/emby/Items?ParentId={parent_id}&fields=DateCreated,ProviderIds,ProductionYear&Recursive=true', headers=headers)
     if response.status_code != 200:
         logging.error(f"Error while getting the items from parent, status code: {response.status_code}.")
         raise Exception(f"Error while getting the items from parent, status code: {response.status_code}. Answer: {response.text}.")

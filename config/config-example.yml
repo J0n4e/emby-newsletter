@@ -45,7 +45,7 @@ email_template:
     # Language of the email, supported languages are "en" and "fr"
     language: "en"
     # Subject of the email
-    subject: ""
+    subject: "Emby newsletter for"
     # Title of the email
     title: ""
     # Subtitle of the email

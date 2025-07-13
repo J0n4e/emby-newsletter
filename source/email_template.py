@@ -90,11 +90,16 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
                                 </td>
                                 <td class="movie-content-cell" valign="middle" style="padding: 15px;">
                                     <div class="mobile-text-container">
-                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{movie_title}</h3>
+                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{movie_title} ({movie_data['year']})</h3>
                                         <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
                                             {translation[configuration.conf.email_template.language]['added_on']} {added_date}
                                         </div>
-                                        {item_overview_html}
+                                        <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important; margin-bottom: 10px;">
+                                            {movie_data['description']}
+                                        </div>
+                                        <div class="movie-rating" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                            User Score: {movie_data['rating'] if movie_data['rating'] != '0.0/10' else 'N/A'}
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -128,7 +133,6 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
                     serie_data["seasons"].sort()
                     added_items_str = ", ".join(serie_data["seasons"])
 
-                item_overview_html = ""
                 if include_overview:
                     item_overview_html = f"""
 <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
@@ -145,11 +149,19 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
                                 </td>
                                 <td class="movie-content-cell" valign="middle" style="padding: 15px;">
                                     <div class="mobile-text-container">
-                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{serie_title}: {added_items_str}</h3>
+                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{serie_title}</h3>
                                         <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
                                             {translation[configuration.conf.email_template.language]['added_on']} {added_date}
                                         </div>
-                                        {item_overview_html}
+                                        <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important; margin-bottom: 10px;">
+                                            {serie_data['description']}
+                                        </div>
+                                        <div class="movie-episodes" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                            {added_items_str}
+                                        </div>
+                                        <div class="movie-rating" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                            User Score: {serie_data['rating'] if serie_data['rating'] != '0.0/10' else 'N/A'}
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

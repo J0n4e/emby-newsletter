@@ -40,6 +40,7 @@ def populate_series_item_from_episode(series_items, item):
             "created_on": "undefined",
             "description": "No description available.",  # will be populated later, when parsing the series item
             "year": "undefined",  # will be populated later, when parsing the series item
+            "rating": 0,
             "poster": "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png"
             # will be populated later, when parsing the series item
         }
@@ -66,7 +67,14 @@ def populate_series_item_with_series_related_information(series_items, watched_t
         for serie_name in series_items.keys():
             item = ServerAPI.get_item_from_parent_by_name(parent_id=folder_id, name=serie_name)
             if item is not None:
-                series_items[item['Name']]["year"] = item["ProductionYear"]
+                series_year = item.get("ProductionYear")
+                if series_year == 0 or series_year is None:
+                    series_year_for_tmdb = None
+                    series_year_for_display = "N/A"
+                else:
+                    series_year_for_tmdb = series_year
+                    series_year_for_display = series_year
+                series_items[item['Name']]["year"] = series_year_for_display
                 tmdb_id = None
                 if "ProviderIds" in item.keys():
                     if "Tmdb" in item["ProviderIds"].keys():
@@ -75,18 +83,18 @@ def populate_series_item_with_series_related_information(series_items, watched_t
                 if tmdb_id is not None:  # id provided by server
                     tmdb_info = TmdbAPI.get_media_detail_from_id(id=tmdb_id, type="tv")
                 else:
-                    logging.info(f"Item {item['SeriesName']} has no TMDB id, searching by title.")
-                    tmdb_info = TmdbAPI.get_media_detail_from_title(title=item["SeriesName"], type="tv",
-                                                                    year=item["ProductionYear"])
+                    logging.info(f"Item {item['Name']} has no TMDB id, searching by title.")
+                    tmdb_info = TmdbAPI.get_media_detail_from_title(title=item["Name"], type="tv",
+                                                                    year=series_year_for_tmdb)
 
                 if tmdb_info is None:
                     logging.warning(f"Item {item['Name']} has not been found on TMDB. Skipping.")
                 else:
                     if "overview" not in tmdb_info.keys():
-                        logging.warning(f"Item {item['SeriesName']} has no overview.")
-                        tmdb_info["Overview"] = "No overview available."
+                        logging.warning(f"Item {item['Name']} has no overview.")
+                        tmdb_info["overview"] = "No overview available."
                     series_items[item['Name']]["description"] = tmdb_info["overview"]
-
+                    series_items[item['Name']]["rating"] = f"{tmdb_info.get('vote_average', 0):.1f}/10"
                     series_items[item['Name']][
                         "poster"] = f"https://image.tmdb.org/t/p/w500{tmdb_info['poster_path']}" if tmdb_info[
                         "poster_path"] else "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png"
@@ -121,10 +129,16 @@ def send_newsletter():
                                                                 days=configuration.conf.server.observed_period_days))
         total_movie += total_count
         for item in items:
+            logging.debug(f"Processing movie item: {item}")
             tmdb_id = None
-            if "ProductionYear" not in item.keys():
-                logging.warning(f"Item {item['Name']} has no production year.")
-                item["ProductionYear"] = 0
+            movie_year = item.get("ProductionYear")
+            if movie_year == 0 or movie_year is None:
+                movie_year_for_tmdb = None
+                movie_year_for_display = "N/A"
+            else:
+                movie_year_for_tmdb = movie_year
+                movie_year_for_display = movie_year
+
             if "DateCreated" not in item.keys():
                 logging.warning(f"Item {item['Name']} has no creation date.")
                 item["DateCreated"] = None
@@ -137,19 +151,27 @@ def send_newsletter():
             else:
                 logging.info(f"Item {item['Name']} has no TMDB id, searching by title.")
                 tmdb_info = TmdbAPI.get_media_detail_from_title(title=item["Name"], type="movie",
-                                                                year=item["ProductionYear"])
+                                                                year=movie_year_for_tmdb)
 
             if tmdb_info is None:
-                logging.warning(f"Item {item['Name']} has not been found on TMDB. Skipping.")
+                logging.warning(f"Item {item['Name']} has not been found on TMDb. Skipping.")
+                movie_items[item["Name"]] = {
+                    "year": movie_year_for_display,
+                    "created_on": item["DateCreated"],
+                    "description": "No description available.",
+                    "rating": "N/A",
+                    "poster": "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png"
+                }
             else:
                 if "overview" not in tmdb_info.keys():
                     logging.warning(f"Item {item['Name']} has no overview.")
                     tmdb_info["overview"] = "No overview available."
 
                 movie_items[item["Name"]] = {
-                    "year": item["ProductionYear"],
+                    "year": movie_year_for_display,
                     "created_on": item["DateCreated"],
                     "description": tmdb_info["overview"],
+                    "rating": f"{tmdb_info.get('vote_average', 0):.1f}/10",
                     "poster": f"https://image.tmdb.org/t/p/w500{tmdb_info['poster_path']}" if tmdb_info[
                         "poster_path"] else "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png"
                 }
