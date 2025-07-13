@@ -65,17 +65,17 @@ def populate_email_template(movies, series, total_tv, total_movie, total_movies_
 
                 movies_html += f"""
                 <div class="media-item">
-                    <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600"><tr><td width="240" valign="top"><![endif]-->
+                    <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td width="25%" valign="top"><![endif]-->
                     <div class="column">
-                        <img src="{movie_data['poster']}" alt="{movie_title}" width="240" style="width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto;" />
+                        <img src="{movie_data['poster']}" alt="{movie_title}" style="width: 100%; height: auto; display: block; margin: 0 auto;" />
                     </div>
-                    <!--[if mso]></td><td width="360" valign="top"><![endif]-->
-                    <div class="column">
+                    <!--[if mso]></td><td width="70%" valign="top"><![endif]-->
+                    <div class="column content">
                         <div class="media-content">
                             <h3 class="media-title">{movie_title} ({movie_data['year']})</h3>
                             <div class="media-meta">{translation[configuration.conf.email_template.language]['added_on']} {added_date}</div>
                             <p class="media-description">{movie_data['description']}</p>
-                            <p class="media-rating">User Score: {movie_data['rating'] if movie_data['rating'] != '0.0/10' else 'N/A'}</p>
+                            <p class="media-rating">Rating: {movie_data['rating'] if movie_data['rating'] != '0.0/10' else 'N/A'}</p>
                         </div>
                     </div>
                     <!--[if mso]></td></tr></table><![endif]-->
@@ -111,18 +111,19 @@ def populate_email_template(movies, series, total_tv, total_movie, total_movies_
 
                 series_html += f"""
                 <div class="media-item">
-                    <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600"><tr><td width="240" valign="top"><![endif]-->
+                    <!--[if mso]><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td width="25%" valign="top"><![endif]-->
                     <div class="column">
-                        <img src="{serie_data['poster']}" alt="{serie_title}" width="240" style="width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto;" />
+                        <img src="{serie_data['poster']}" alt="{serie_title}" style="width: 100%; height: auto; display: block; margin: 0 auto;" />
                     </div>
-                    <!--[if mso]></td><td width="360" valign="top"><![endif]-->
-                    <div class="column">
+                    <!--[if mso]></td><td width="70%" valign="top"><![endif]-->
+                    <div class="column content">
                         <div class="media-content">
                             <h3 class="media-title">{serie_title}</h3>
                             <div class="media-meta">{translation[configuration.conf.email_template.language]['added_on']} {added_date}</div>
                             <p class="media-description">{serie_data['description']}</p>
                             <div class="media-meta">{added_items_str}</div>
-                            <p class="media-rating">User Score: {serie_data['rating'] if serie_data['rating'] != '0.0/10' else 'N/A'}</p>
+                            <br>
+                            <p class="media-rating">Rating: {serie_data['rating'] if serie_data['rating'] != '0.0/10' else 'N/A'}</p>
                         </div>
                     </div>
                     <!--[if mso]></td></tr></table><![endif]-->
