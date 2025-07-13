@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="eb1b0aea-3f39-4141-a690-7cf829eeb2c9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/source/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/template_renderer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/configuration_checker.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/configuration_checker.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,7 +64,7 @@
       <workItem from="1752202498417" duration="12827000" />
       <workItem from="1752355451469" duration="1860000" />
       <workItem from="1752358454054" duration="3012000" />
-      <workItem from="1752379162606" duration="598000" />
+      <workItem from="1752379162606" duration="984000" />
     </task>
     <servers />
   </component>
