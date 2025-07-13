@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/j0n4e/emby-newsletter/main/assets/emby_newsletter.png" width=100>
+<img src="https://raw.githubusercontent.com/j0n4e/emby-newsletter/main/assets/emby_newsletter.jpg" width=100>
 </p>
 
 A newsletter service for Emby and Jellyfin media servers to notify your users of the latest additions. This application connects to your media server's API to retrieve recently added items and sends beautifully formatted newsletters to your users.
