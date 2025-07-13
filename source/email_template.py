@@ -133,7 +133,7 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
                     item_overview_html = f"""
 <div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
                                             {serie_data['description']}
-                                        </div>
+</div>
 """
                 series_html += f"""
                 <div class="movie_container" style="margin-bottom: 15px;">
