@@ -17,7 +17,7 @@ translation = {
     "fr": {
         "discover_now": "Découvrir maintenant",
         "new_film": "Nouveaux films :",
-        "new_tvs": "Nouvelles séries :",
+        "new_tvs": "Nouvelles  séries :",
         "currently_available": "Actuellement disponible sur votre serveur :",
         "movies_label": "Films",
         "episodes_label": "Épisodes",

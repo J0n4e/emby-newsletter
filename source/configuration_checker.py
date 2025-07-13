@@ -104,7 +104,7 @@ def check_scheduler_configuration():
 def check_configuration():
     """
     Check if the configuration is valid.
-    The goal is to ensure all values fetched from the configuration file are valid.
+    The goal is to ensure all  values fetched from the configuration file are valid.
     """
     check_server_configuration()
     check_tmdb_configuration()
