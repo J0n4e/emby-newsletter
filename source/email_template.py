@@ -8,7 +8,7 @@ translation = {
         "new_tvs": "New shows:",
         "currently_available": "Currently available in your server:",
         "movies_label": "Movies",
-        "episodes_label": "Episodes",
+        "episodes_label": "TV Shows",
         "footer_label": "You are recieving this email because you are using ${server_owner_name}'s media server. If you want to stop receiving these emails, you can unsubscribe by notifying ${unsubscribe_email}.",
         "added_on": "Added on",
         "episodes": "Episodes",
@@ -20,10 +20,10 @@ translation = {
         "new_tvs": "Nouvelles séries :",
         "currently_available": "Actuellement disponible sur votre serveur :",
         "movies_label": "Films",
-        "episodes_label": "Épisodes",
+        "episodes_label": "TV Shows",
         "footer_label": "Vous recevez cet email car vous utilisez le serveur multimédia de ${server_owner_name}. Si vous ne souhaitez plus recevoir ces emails, vous pouvez vous désinscrire en notifiant ${unsubscribe_email}.",
         "added_on": "Ajouté le",
-        "episodes": "Épisodes",
+        "episodes_label": "TV Shows",
         "episode": "Épisode",
     }
 }
@@ -56,7 +56,9 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
             {"key": "server_owner_name",
              "value": configuration.conf.email_template.server_owner_name.format_map(context.placeholders)},
             {"key": "unsubscribe_email",
-             "value": configuration.conf.email_template.unsubscribe_email.format_map(context.placeholders)}
+             "value": configuration.conf.email_template.unsubscribe_email.format_map(context.placeholders)},
+            {"key": "movies_label", "value": translation[configuration.conf.email_template.language]["movies_label"]},
+            {"key": "episodes_label", "value": translation[configuration.conf.email_template.language]["episodes_label"]}
         ]
 
         # Also support old variable names for backward compatibility
@@ -177,5 +179,8 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
         # Statistics section
         template = re.sub(r"\${series_count}", str(total_tv), template)
         template = re.sub(r"\${movies_count}", str(total_movie), template)
+
+        server_name = "Jellyfin" if configuration.conf.server.type == "jellyfin" else "Emby"
+        template = re.sub(r"\${server_name}", server_name, template)
 
         return template
