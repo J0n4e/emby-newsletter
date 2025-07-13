@@ -17,7 +17,7 @@ translation = {
     "fr": {
         "discover_now": "Découvrir maintenant",
         "new_film": "Nouveaux films :",
-        "new_tvs": "Nouvelles  séries :",
+        "new_tvs": "Nouvelles séries :",
         "currently_available": "Actuellement disponible sur votre serveur :",
         "movies_label": "Films",
         "episodes_label": "Épisodes",
@@ -35,7 +35,7 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
         include_overview = False
         configuration.logging.info(
             "There are more than 10 new items, overview will not be included in the email template to avoid too much content.")
-    with open("./template/new_media_notification.html") as template_file:
+    with open("./template/new_media_notification.html", encoding='utf-8') as template_file:
         template = template_file.read()
 
         if configuration.conf.email_template.language in ["fr", "en"]:
@@ -72,7 +72,7 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
             movies_html = ""
 
             for movie_title, movie_data in movies.items():
-                added_date = movie_data["created_on"].split("T")[0]
+                added_date = movie_data["created_on"].split("T")[0] if movie_data["created_on"] else "Unknown"
                 item_overview_html = ""
                 if include_overview:
                     item_overview_html = f"""
@@ -113,7 +113,8 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
             series_html = ""
 
             for serie_title, serie_data in series.items():
-                added_date = serie_data["created_on"].split("T")[0]
+                added_date = serie_data["created_on"].split("T")[0] if serie_data[
+                                                                           "created_on"] != "undefined" else "Unknown"
                 if len(serie_data["seasons"]) == 1:
                     if len(serie_data["episodes"]) == 1:
                         added_items_str = f"{serie_data['seasons'][0]}, {translation[configuration.conf.email_template.language]['episode']} {serie_data['episodes'][0]}"

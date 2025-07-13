@@ -1,329 +1,163 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- Gmail-specific meta tags -->
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="format-detection" content="date=no">
-    <meta name="format-detection" content="address=no">
-    <meta name="format-detection" content="email=no">
-    <style>
-        /* Reset for email clients */
-        body, table, td, p, a, h1, h2, h3 {
-            font-family: Arial, Helvetica, sans-serif;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-            color: #ffffff !important;
-        }
-        
-        body {
-            background: #000011;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .main-table {
-            width: 100%;
-            max-width: 600px;
-            border-collapse: collapse;
-            margin: 0 auto;
-        }
-        
-        .content-cell {
-            padding: 15px;
-        }
-        
-        .title {
-            text-align: center;
-            padding: 20px 0;
-        }
-        
-        h1 {
-            color: #00ccff !important;
-            font-size: 24px !important;
-            margin: 0 0 10px !important;
-        }
-        
-        p {
-            font-size: 16px !important;
-            line-height: 1.4 !important;
-            margin: 0 0 15px !important;
-            color: #dddddd !important;
-        }
-        
-        .button {
-            background-color: #00ccff;
-            color: #ffffff !important;
-            display: inline-block;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .movie-container {
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
+from source import configuration, context, utils
+import re
 
-        .movie_bg {
-            background-size: cover;
-            background-position: center;
-            border-radius: 10px;
-        }
-        
-        .movie {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            width: 100%;
-            border-collapse: collapse;
-        }
+translation = {
+    "en":{
+        "discover_now": "Discover now",
+        "new_film": "New movies:",
+        "new_tvs": "New shows:",
+        "currently_available": "Currently available in your server:",
+        "movies_label": "Movies",
+        "episodes_label": "Episodes",
+        "footer_label":"You are recieving this email because you are using ${server_owner_name}'s media server. If you want to stop receiving these emails, you can unsubscribe by notifying ${unsubscribe_email}.",
+        "added_on": "Added on",
+        "episodes": "Episodes",
+         "episode": "Episode",
+    },
+    "fr":{
+        "discover_now": "Découvrir maintenant",
+        "new_film": "Nouveaux films :",
+        "new_tvs": "Nouvelles séries :",
+        "currently_available": "Actuellement disponible sur votre serveur :",
+        "movies_label": "Films",
+        "episodes_label": "Épisodes",
+        "footer_label":"Vous recevez cet email car vous utilisez le serveur multimédia de ${server_owner_name}. Si vous ne souhaitez plus recevoir ces emails, vous pouvez vous désinscrire en notifiant ${unsubscribe_email}.",
+        "added_on": "Ajouté le",
+        "episodes": "Épisodes",
+        "episode": "Épisode",
+    }
+}
 
-        .movie-card {
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid #444;
-            border-radius: 10px;
-            margin: 0 0 15px;
-            overflow: hidden;
-        }
+def populate_email_template(movies, series, total_tv, total_movie) -> str:
+    include_overview = True
+    if len(movies) + len(series) > 10 :
+        include_overview = False
+        configuration.logging.info("There are more than 10 new items, overview will not be included in the email template to avoid too much content.")
+    with open("./template/new_media_notification.html", encoding='utf-8') as template_file:
+        template = template_file.read()
         
-        .movie-content {
-            padding: 15px;
-        }
-        
-        .movie-image {
-            text-align: center;
-            padding: 15px;
-            width: 120px;
-        }
-        
-        .movie-image img {
-            max-width: 100px;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-        
-        .movie-title {
-            font-size: 18px !important;
-            margin: 0 0 5px !important;
-            color: #ffffff !important;
-        }
-        
-        .movie-date {
-            color: #dddddd !important;
-            font-size: 14px !important;
-            margin: 0 0 10px !important;
-        }
-        
-        .movie-description {
-            font-size: 14px !important;
-            line-height: 1.4 !important;
-            color: #dddddd !important;
-            word-wrap: break-word !important;
-            overflow-wrap: break-word !important;
-            max-width: 100% !important;
-            word-break: break-word !important;
-        }
-        
-        .section-title {
-            color: #00ccff !important;
-            font-size: 20px !important;
-            padding: 10px 15px;
-        }
-        
-        .stats-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        .stats-cell {
-            padding: 15px;
-            width: 50%;
-        }
-        
-        .stats-number {
-            font-size: 28px !important;
-            margin: 0 0 5px !important;
-            color: #00ccff !important;
-        }
-        
-        .stats-label {
-            font-size: 14px !important;
-            color: #dddddd !important;
-        }
-        
-        .divider {
-            border-top: 1px solid #333;
-            margin: 30px 0;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 20px 0;
-            font-size: 12px !important;
-            color: #aaaaaa !important;
-        }
-        
-        .footer-link, .footer-link:visited {
-            color: #4287f5 !important;
-            text-decoration: underline !important;
-        }
-        
-        /* Gmail-specific fixes */
-        u + .body a {
-            color: inherit !important;
-            text-decoration: none !important;
-            font-size: inherit !important;
-            font-family: inherit !important;
-            font-weight: inherit !important;
-            line-height: inherit !important;
-        }
-        
-        /* Mobile spacing container */
-        .mobile-text-container {
-            /* No changes needed for desktop */
-        }
+        if configuration.conf.email_template.language in ["fr", "en"]:
+            for key in translation[configuration.conf.email_template.language]:
+                template = re.sub(
+                    r"\${" + key + "}", 
+                    translation[configuration.conf.email_template.language][key], 
+                    template
+                )
+        else:
+            raise Exception(f"[FATAL] Language {configuration.conf.email_template.language} not supported. Supported languages are fr and en")
 
-        /* Mobile-specific spacing */
-        @media screen and (max-width: 600px) {
-            .mobile-text-container {
-                margin-top: 20px; /* Increased space above text */
-            }
+        custom_keys = [
+            {"key": "title", "value": configuration.conf.email_template.title.format_map(context.placeholders)}, 
+            {"key": "subtitle", "value": configuration.conf.email_template.subtitle.format_map(context.placeholders)},
+            {"key": "server_url", "value": configuration.conf.email_template.server_url},
+            {"key": "server_owner_name", "value": configuration.conf.email_template.server_owner_name.format_map(context.placeholders)},
+            {"key": "unsubscribe_email", "value": configuration.conf.email_template.unsubscribe_email.format_map(context.placeholders)}
+        ]
+        
+        # Also support old variable names for backward compatibility
+        template = re.sub(r"\${jellyfin_url}", configuration.conf.email_template.server_url, template)
+        template = re.sub(r"\${jellyfin_owner_name}", configuration.conf.email_template.server_owner_name, template)
+        
+        for key in custom_keys:
+            template = re.sub(r"\${" + key["key"] + "}", key["value"], template)
+
+        # Movies section
+        if movies:
+            template = re.sub(r"\${display_movies}", "", template)
+            movies_html = ""
             
-            .movie-image {
-                padding-bottom: 0 !important;
-            }
+            for movie_title, movie_data in movies.items():
+                added_date = movie_data["created_on"].split("T")[0]
+                item_overview_html = ""
+                if include_overview:
+                    item_overview_html = f"""
+<div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
+                                            {movie_data['description']}
+</div>
+"""
+                movies_html += f"""
+                <div class="movie_container" style="margin-bottom: 15px;">
+                    <div class="movie_bg" style="background: url('{movie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.7); border-radius: 10px; width: 100%;">
+                            <tr>
+                                <td class="movie-image" valign="middle" style="padding: 15px; text-align: center; width: 120px;">
+                                    <img src="{movie_data['poster']}" alt="{movie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
+                                </td>
+                                <td class="movie-content-cell" valign="middle" style="padding: 15px;">
+                                    <div class="mobile-text-container">
+                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{movie_title}</h3>
+                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                            {translation[configuration.conf.email_template.language]['added_on']} {added_date}
+                                        </div>
+                                        {item_overview_html}
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                """
+                
+            template = re.sub(r"\${films}", movies_html, template)
+        else:
+            template = re.sub(r"\${display_movies}", "display:none", template)
+
+        # TV Shows section
+        if series:
+            template = re.sub(r"\${display_tv}", "", template)
+            series_html = ""
             
-            .movie-content-cell {
-                padding-top: 5px !important; /* Reduced cell padding */
-                padding-left: 15px !important;
-                padding-right: 15px !important;
-            }
-        }
-        /* Media Queries */
-        @media screen and (max-width: 600px) {
-            .movie-card-table {
-                display: block !important;
-                width: 100% !important;
-            }
-            .movie-image, .movie-content-cell {
-                display: block !important;
-                width: 100% !important;
-                text-align: center !important;
-                padding: 10px !important;
-                box-sizing: border-box;
-            }
-            .movie-image {
-                padding-bottom: 0 !important;
-            }
-            .movie-image img {
-                margin: 0 auto !important;
-            }
-            .movie-content-cell {
-                padding-top: 0 !important;
-                padding-left: 15px !important;
-                padding-right: 15px !important;
-            }
-            .movie-description {
-                font-size: 13px !important;
-            }
-            .movie_container {
-                margin: 0 10px 15px;
-            }
-            .main-table {
-                width: 100% !important;
-            }
-            .content-cell {
-                padding: 10px !important;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Hidden content to prevent Gmail clipping -->
-    <div style="display: none; max-height: 0px; overflow: hidden;">
-        ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ ‌ ‍ 
-    </div>
-    
-    <center>
-        <table class="main-table" role="presentation" cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-                <td class="content-cell" bgcolor="#000011">
-                    <!-- Title Section -->
-                    <table width="100%" role="presentation" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td class="title">
-                                <h1>${title}</h1>
-                                <p>${subtitle}</p>
-                                <br>
-                                <a href="${jellyfin_url}" class="button">${discover_now}</a>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <!-- Movies Section -->
-                    <div style="${display_movies}">
-                        <h2 class="section-title">${new_film}</h2>
-                        <div class="movie-container">
-                            ${films}
-                        </div>
+            for serie_title, serie_data in series.items():
+                added_date = serie_data["created_on"].split("T")[0]
+                if len(serie_data["seasons"]) == 1 :
+                    if len(serie_data["episodes"]) == 1:
+                        added_items_str = f"{serie_data['seasons'][0]}, {translation[configuration.conf.email_template.language]['episode']} {serie_data['episodes'][0]}"
+                    else:
+                        episodes_ranges = utils.summarize_ranges(serie_data["episodes"])
+                        if len(episodes_ranges) == 1:
+                            added_items_str = f"{serie_data['seasons'][0]}, {translation[configuration.conf.email_template.language]['episodes']} {episodes_ranges[0]}"
+                        else:
+                            added_items_str = f"{serie_data['seasons'][0]}, {translation[configuration.conf.email_template.language]['episodes']} {', '.join(episodes_ranges[:-1])} & {episodes_ranges[-1]}"
+                else:
+                    serie_data["seasons"].sort()
+                    added_items_str = ", ".join(serie_data["seasons"])
+
+                item_overview_html = ""
+                if include_overview:
+                    item_overview_html = f"""
+<div class="movie-description" style="color: #dddddd !important; font-size: 14px !important; line-height: 1.4 !important;">
+                                            {serie_data['description']}
+                                        </div>
+"""
+                series_html += f"""
+                <div class="movie_container" style="margin-bottom: 15px;">
+                    <div class="movie_bg" style="background: url('{serie_data['poster']}') no-repeat center center; background-size: cover; border-radius: 10px;">
+                        <table class="movie" width="100%" role="presentation" cellpadding="0" cellspacing="0" style="background: rgba(0, 0, 0, 0.7); border-radius: 10px; width: 100%;">
+                            <tr>
+                                <td class="movie-image" valign="middle" style="padding: 15px; text-align: center; width: 120px;">
+                                    <img src="{serie_data['poster']}" alt="{serie_title}" style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
+                                </td>
+                                <td class="movie-content-cell" valign="middle" style="padding: 15px;">
+                                    <div class="mobile-text-container">
+                                        <h3 class="movie-title" style="color: #ffffff !important; margin: 0 0 5px !important; font-size: 18px !important;">{serie_title}: {added_items_str}</h3>
+                                        <div class="movie-date" style="color: #dddddd !important; font-size: 14px !important; margin: 0 0 10px !important;">
+                                            {translation[configuration.conf.email_template.language]['added_on']} {added_date}
+                                        </div>
+                                        {item_overview_html}
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
-                    
-                    <!-- TV Shows Section -->
-                    <div style="${display_tv}">
-                        <h2 class="section-title">${new_tvs}</h2>
-                        <div class="movie-container">
-                            ${tvs}
-                        </div>
-                    </div>
-                    
-                    <!-- Stats Section -->
-                    <div class="divider"></div>
-                    <h2 class="section-title">${currently_available}</h2>
-                    <table class="stats-table" role="presentation">
-                        <tr>
-                            <td class="stats-cell">
-                                <div class="stats-number">${movies_count}</div>
-                                <div class="stats-label">${movies_label}</div>
-                            </td>
-                            <td class="stats-cell">
-                                <div class="stats-number">${series_count}</div>
-                                <div class="stats-label">${episodes_label}</div>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <!-- Footer -->
-                    <footer>
-                        ${footer_label}<br><br>
-                        <p>
-                            <a href="https://github.com/SeaweedbrainCY/jellyfin-newsletter" class="footer-link">Jellyfin Newsletter</a> 
-                            is an open source project. Developed with ❤️ by 
-                            <a href="https://github.com/SeaweedbrainCY/" class="footer-link">Seaweedbrain</a>
-                        </p>
-                    </footer>
-                </td>
-            </tr>
-        </table>
-    </center>
-    
-    <!-- Prevent Gmail clipping -->
-    <div style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">
-        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-    </div>
-</body>
-</html>
+                </div>
+                """
+                
+            template = re.sub(r"\${tvs}", series_html, template)
+        else:
+            template = re.sub(r"\${display_tv}", "display:none", template)
+
+        # Statistics section
+        template = re.sub(r"\${series_count}", str(total_tv), template)
+        template = re.sub(r"\${movies_count}", str(total_movie), template)
+        
+        return template

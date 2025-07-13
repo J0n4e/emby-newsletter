@@ -1,10 +1,16 @@
 import sys
-from source import configuration, ServerAPI, TmdbAPI, email_template, email_controller
+from source import configuration, TmdbAPI, email_template, email_controller
 import datetime as dt
 from source.configuration import logging
 from source.configuration_checker import check_configuration
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
+
+# Import the correct API based on server type
+if configuration.conf.server.type == "emby":
+    from source import EmbyAPI as ServerAPI
+else:
+    from source import JellyfinAPI as ServerAPI
 
 
 def populate_series_item_from_episode(series_items, item):
@@ -197,7 +203,7 @@ if __name__ == "__main__":
     logging.info(f"""
 
 {server_name} Newsletter is starting ....
-###############################################
+##############################################
 
 
 

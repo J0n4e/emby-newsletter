@@ -29,11 +29,11 @@ placeholders = SafeFormatDict({
     "month_name": dt.datetime.now().strftime("%B"),
     "month_number": dt.datetime.now().strftime("%m"),
     "year": dt.datetime.now().strftime("%Y"),
-    "start_date": (dt.datetime.now() - dt.timedelta(days=configuration.conf.jellyfin.observed_period_days)).strftime("%Y-%m-%d"),
-    "start_day_name": (dt.datetime.now() - dt.timedelta(days=configuration.conf.jellyfin.observed_period_days)).strftime("%A"),
-    "start_day_number": (dt.datetime.now() - dt.timedelta(days=configuration.conf.jellyfin.observed_period_days)).strftime("%d"),
-    "start_month_name": (dt.datetime.now() - dt.timedelta(days=configuration.conf.jellyfin.observed_period_days)).strftime("%B"),
-    "start_month_number": (dt.datetime.now() - dt.timedelta(days=configuration.conf.jellyfin.observed_period_days)).strftime("%m"),
-    "start_year": (dt.datetime.now() - dt.timedelta(days=configuration.conf.jellyfin.observed_period_days)).strftime("%Y")
+    "start_date": (dt.datetime.now() - dt.timedelta(days=configuration.conf.server.observed_period_days)).strftime("%Y-%m-%d"),
+    "start_day_name": (dt.datetime.now() - dt.timedelta(days=configuration.conf.server.observed_period_days)).strftime("%A"),
+    "start_day_number": (dt.datetime.now() - dt.timedelta(days=configuration.conf.server.observed_period_days)).strftime("%d"),
+    "start_month_name": (dt.datetime.now() - dt.timedelta(days=configuration.conf.server.observed_period_days)).strftime("%B"),
+    "start_month_number": (dt.datetime.now() - dt.timedelta(days=configuration.conf.server.observed_period_days)).strftime("%m"),
+    "start_year": (dt.datetime.now() - dt.timedelta(days=configuration.conf.server.observed_period_days)).strftime("%Y")
 
 })

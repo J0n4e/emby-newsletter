@@ -5,7 +5,7 @@ import logging
 class Scheduler:
     def __init__(self, data):
         if data is None or "cron" not in data:
-            logging.info("No cron expression given.  The newsletter will run once at startup and then stop.")
+            logging.info("No cron expression given. The newsletter will run once at startup and then stop.")
             self.enabled = False
         else:
             self.enabled = True
@@ -16,7 +16,7 @@ class Scheduler:
                     f"[FATAL] Load config fail. Was expecting a valid cron expression in scheduler.cron, got {self.cron}")
             try:
                 # The week of day, if an int, is 0-6, where 0 is Sunday, according to official/usual crontab expression
-                # However, APScheduler, always starts week on Monday, so there is a shift of 1 
+                # However, APScheduler, always starts week on Monday, so there is a shift of 1
                 # We are fixing this, by modifying the cron expression, so 0-6 shift from mon-sun to sun-sat
                 self.week_of_day = int(parsed_cron[4])
                 self.week_of_day = (self.week_of_day - 1) % 7
@@ -85,13 +85,19 @@ class Email:
 
 
 class Config:
-    required_keys = ["server", "tmdb", "email_template", "email", "recipients"]
+    required_keys = ["tmdb", "email_template", "email", "recipients"]
 
     def __init__(self, data):
         # Support backward compatibility
         if "jellyfin" in data and "server" not in data:
             data["server"] = data["jellyfin"]
             data["server"]["type"] = "jellyfin"
+
+        # Check for either 'server' or 'jellyfin' key
+        if "server" not in data and "jellyfin" not in data:
+            logging.error(
+                f"[FATAL] Load config fail. Was expecting the key 'server' (or 'jellyfin' for backward compatibility)")
+            exit(1)
 
         # Backward compatibility for email_template fields
         if "email_template" in data:
