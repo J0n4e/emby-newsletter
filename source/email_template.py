@@ -17,7 +17,7 @@ translation = {
 }
 
 
-def populate_email_template(movies, series, total_tv, total_movie) -> str:
+def populate_email_template(movies, series, total_tv, total_movie, total_movies_on_server, total_tv_on_server) -> str:
     include_overview = True
     if len(movies) + len(series) > 10:
         include_overview = False
@@ -133,8 +133,10 @@ def populate_email_template(movies, series, total_tv, total_movie) -> str:
         else:
             template = re.sub(r"\${display_tv}", "display:none", template)
 
-        # Statistics section - not used in new template but kept for compatibility
-        template = re.sub(r"\${series_count}", str(total_tv), template)
-        template = re.sub(r"\${movies_count}", str(total_movie), template)
+        # Statistics section
+        template = re.sub(r'\${series_count}', str(total_tv), template)
+        template = re.sub(r'\${movies_count}', str(total_movie), template)
+        template = re.sub(r'\${total_movies_on_server}', str(total_movies_on_server), template)
+        template = re.sub(r'\${total_tv_on_server}', str(total_tv_on_server), template)
 
         return template

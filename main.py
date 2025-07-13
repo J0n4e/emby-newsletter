@@ -189,8 +189,9 @@ def send_newsletter():
                                                          watched_tv_folders_id=watched_tv_folders_id)
     logging.debug("Series populated : " + str(series_items))
     if len(movie_items) + len(series_items) > 0:
+        total_movies_on_server, total_tv_on_server = ServerAPI.get_server_statistics(watched_film_folders_id, watched_tv_folders_id)
         template = email_template.populate_email_template(movies=movie_items, series=series_items, total_tv=total_tv,
-                                                          total_movie=total_movie)
+                                                          total_movie=total_movie, total_movies_on_server=total_movies_on_server, total_tv_on_server=total_tv_on_server)
 
         email_controller.send_email(template)
 

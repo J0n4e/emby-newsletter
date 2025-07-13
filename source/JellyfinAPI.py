@@ -56,3 +56,27 @@ def get_item_from_parent_by_name(parent_id, name):
         if "Name" in item.keys():
             if item["Name"] == name:
                 return item
+
+
+def get_server_statistics(watched_film_folders_id, watched_tv_folders_id):
+    headers = {
+        "Authorization": f'MediaBrowser Token="{conf.jellyfin.api_token}"'
+    }
+    
+    total_movies = 0
+    for folder_id in watched_film_folders_id:
+        response = requests.get(f'{conf.jellyfin.url}/Items?ParentId={folder_id}&IncludeItemTypes=Movie&Recursive=true', headers=headers)
+        if response.status_code == 200:
+            total_movies += response.json()['TotalRecordCount']
+        else:
+            logging.error(f"Error getting movie count for folder {folder_id}: {response.status_code}")
+
+    total_series = 0
+    for folder_id in watched_tv_folders_id:
+        response = requests.get(f'{conf.jellyfin.url}/Items?ParentId={folder_id}&IncludeItemTypes=Series&Recursive=true', headers=headers)
+        if response.status_code == 200:
+            total_series += response.json()['TotalRecordCount']
+        else:
+            logging.error(f"Error getting series count for folder {folder_id}: {response.status_code}")
+            
+    return total_movies, total_series
