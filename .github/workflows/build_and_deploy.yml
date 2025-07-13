@@ -1,0 +1,38 @@
+name: "Jellyfin-newsletter docker image deployment"
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+
+
+jobs:
+    security_test:
+        uses: ./.github/workflows/security_test.yml 
+    build_and_publish :
+      needs: [security_test]
+      name: Build and publish image
+      runs-on: ubuntu-latest
+      env:
+        DOCKER_IMAGE_NAME: "jellyfin-newsletter"
+      steps:
+        - uses: actions/checkout@v3
+        - name: Build
+          working-directory: ./
+          run: |
+            current_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+            current_short_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\).*$/\1/')
+            docker build -t $DOCKER_IMAGE_NAME:latest -t $DOCKER_IMAGE_NAME:$current_version -t $DOCKER_IMAGE_NAME:$current_short_version .
+        - name: Login to GitHub Container Registry
+          run: echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ secrets.USERNAME }} --password-stdin
+        - name: Push Docker image to GitHub Container Registry
+          run: |
+            current_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+            current_short_version=$(echo ${{ github.ref_name }} | sed 's/\([0-9]*\.[0-9]*\).*$/\1/')
+            docker tag $DOCKER_IMAGE_NAME:latest ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:latest
+            docker tag $DOCKER_IMAGE_NAME:$current_version ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_version
+            docker tag $DOCKER_IMAGE_NAME:$current_short_version ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_short_version
+            docker push ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:latest
+            docker push ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_version
+            docker push ghcr.io/${{ secrets.USERNAME }}/$DOCKER_IMAGE_NAME:$current_short_version
