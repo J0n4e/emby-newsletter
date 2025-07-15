@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb1b0aea-3f39-4141-a690-7cf829eeb2c9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/email_template.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/email_template.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/template/new_media_notification.html" beforeDir="false" afterPath="$PROJECT_DIR$/template/new_media_notification.html" afterDir="false" />
-    </list>
+    <list default="true" id="eb1b0aea-3f39-4141-a690-7cf829eeb2c9" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -69,7 +65,7 @@
       <workItem from="1752379162606" duration="6503000" />
       <workItem from="1752386033617" duration="12237000" />
       <workItem from="1752412202607" duration="7633000" />
-      <workItem from="1752426763433" duration="3200000" />
+      <workItem from="1752426763433" duration="4092000" />
     </task>
     <servers />
   </component>

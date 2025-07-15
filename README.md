@@ -6,9 +6,6 @@
 <img src="https://img.shields.io/github/v/release/j0n4e/emby-newsletter"/>
 </p>
 
-<p align="center">
-<img src="https://raw.githubusercontent.com/j0n4e/emby-newsletter/main/assets/emby_newsletter.jpg" width=100>
-</p>
 
 A newsletter service for Emby and Jellyfin media servers to notify your users of the latest additions. This application connects to your media server's API to retrieve recently added items and sends beautifully formatted newsletters to your users.
 
@@ -31,7 +28,7 @@ It is fully customizable and can be run on a schedule using a cron job or a task
 
 ## What it looks like 
 <p align="center">
-<img src="https://raw.githubusercontent.com/j0n4e/emby-newsletter/main/assets/new_media_notification_preview.png" width=500>
+<img src="https://raw.githubusercontent.com/j0n4e/emby-newsletter/main/assets/emby_newsletter.jpg" width=500>
 </p>
 
 ## Features
