@@ -28,7 +28,7 @@ It is fully customizable and can be run on a schedule using a cron job or a task
 
 ## What it looks like 
 <p align="center">
-<img src="https://raw.githubusercontent.com/j0n4e/emby-newsletter/main/assets/emby_newsletter.jpg" width=500>
+<img src="https://raw.githubusercontent.com/J0n4e/emby-newsletter/refs/heads/main/assets/emby_newsletter.jpg" width=500>
 </p>
 
 ## Features
@@ -36,10 +36,6 @@ It is fully customizable and can be run on a schedule using a cron job or a task
 - Retrieve the last added movies and TV shows from your media server
 - Send newsletters to your users with the latest added items
 - Retrieve movie details from TMDB, including posters
-- Group TV shows by seasons and episodes
-- Fully customizable and responsive email template
-- Easy to maintain, extend, setup and run
-- Support for multiple languages
 - Configure the list of recipients
 - Configure specific folders to watch for new items
 - Built-in scheduler with cron expressions
